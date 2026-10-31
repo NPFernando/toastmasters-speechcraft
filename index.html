@@ -68,6 +68,10 @@ label.f,.f{display:flex;flex-direction:column;font-size:12px;color:var(--muted);
 .roles .me{font-size:17px;flex:1;min-width:200px}
 .roles .me small{display:block;font-size:12px;color:var(--muted)}
 .roles .team{font-size:12px;color:var(--muted)}
+.roles small b{color:var(--g)} .roles small i{font-style:normal;opacity:.8}
+.roles small .onl{white-space:nowrap}
+.dotg,.doty{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:middle}
+.dotg{background:var(--g)} .doty{background:var(--a);animation:blink 1s infinite}
 #welcome{position:fixed;inset:0;z-index:80;background:var(--bg);overflow:auto;display:none;padding:20px 14px}
 #welcome.on{display:block}
 .wbox{max-width:660px;margin:0 auto}
@@ -633,8 +637,14 @@ function renderMeta(){
 function renderRoles(){
   var r=ROLES.find(function(x){return x.id===L.role;});
   var team=ROLES.filter(function(x){return x.id!==L.role && S.people[x.id];}).map(function(x){return x.icon+" "+esc(S.people[x.id]);});
+  var sub;
+  if(NET.mode && NET.status==="on" && NET.peers.length){
+    var online=NET.peers.map(function(p){ var rr=ROLES.find(function(x){return x.id===p.role;}); return '<span class="onl">'+(rr?rr.icon+" ":"")+esc(p.name||(rr?rr.name:"Device"))+(p.host?' <i>(host)</i>':'')+'</span>'; });
+    sub='<span class="dotg"></span><b>'+NET.peers.length+' online</b> · '+online.join(" · ");
+  } else if(NET.mode){ sub='<span class="doty"></span>'+esc(NET.msg||"Connecting…"); }
+  else sub=team.length?'Team: '+team.join(" · ")+' · <i>not connected</i>':'Your role on this device · not connected';
   document.getElementById("roles").innerHTML='<div class="me">'+r.icon+' <b>'+r.name+'</b>'+(S.people[L.role]?' · '+esc(S.people[L.role]):'')+
-    '<small>'+(team.length?'Team: '+team.join(" · "):'Your role on this device')+'</small></div><button class="btn sm" data-change-role>Change role</button>';
+    '<small>'+sub+'</small></div><button class="btn sm" data-change-role>Change role</button>';
 }
 /* who is speaking now (from the Timer) — shown on the other roles */
 function renderNow(){
@@ -1149,7 +1159,7 @@ function makeCode(){ var A="ABCDEFGHJKMNPQRSTUVWXYZ23456789", s="", r=new Uint8A
 function fmtCode(c){ return c.slice(0,3)+"-"+c.slice(3); }
 function cleanCode(s){ return String(s||"").toUpperCase().replace(/[^A-Z0-9]/g,""); }
 function send(c,m){ try{ if(c.open) c.send(m); }catch(e){} }
-function setStatus(st,msg){ NET.status=st; NET.msg=msg||""; renderConnBtn(); if(document.getElementById("connModal").classList.contains("on")) renderConnBox(); refreshWelcome(); }
+function setStatus(st,msg){ NET.status=st; NET.msg=msg||""; renderConnBtn(); renderRoles(); if(document.getElementById("connModal").classList.contains("on")) renderConnBox(); refreshWelcome(); }
 function retryLater(fn,ms){ clearTimeout(NET.retry); NET.retry=setTimeout(fn,ms||3000); }
 function stopNet(keep){
   clearTimeout(NET.retry); NET.conns.forEach(function(c){ try{c.close();}catch(e){} }); NET.conns=[]; NET.peers=[];
@@ -1198,7 +1208,8 @@ function wire(c){
     send(c,{t:"hello",role:L.role,name:S.people[L.role]||"",state:S});
     if(NET.mode==="host") sendPeers();
   });
-  c.on("data",function(m){ onMsg(c,m); });
+  c._last=now();
+  c.on("data",function(m){ c._last=now(); onMsg(c,m); });
   c.on("close",function(){
     NET.conns=NET.conns.filter(function(x){return x!==c;});
     if(NET.mode==="join"){ setStatus("wait","Lost the host – reconnecting…"); retryLater(connectToHost,3000); }
@@ -1210,10 +1221,13 @@ function sendPeers(){
   if(NET.mode!=="host") return;
   var list=[{role:L.role,name:S.people[L.role]||"",host:true}].concat(NET.conns.filter(function(c){return c.open;}).map(function(c){ return c._info||{role:"?",name:""}; }));
   NET.peers=list; NET.conns.forEach(function(c){ send(c,{t:"peers",list:list}); });
-  renderConnBtn(); if(document.getElementById("connModal").classList.contains("on")) renderConnBox(); refreshWelcome();
+  renderConnBtn(); renderRoles(); if(document.getElementById("connModal").classList.contains("on")) renderConnBox(); refreshWelcome();
 }
 function onMsg(c,m){
   if(!m||typeof m!=="object") return;
+  if(m.t==="ping"){ send(c,{t:"pong"}); return; }
+  if(m.t==="pong") return;
+  if(m.t==="bye"){ try{ c.close(); }catch(e){} NET.conns=NET.conns.filter(function(x){return x!==c;}); if(NET.mode==="host") sendPeers(); else { setStatus("wait","The host left – reconnecting…"); retryLater(connectToHost,3000); } return; }
   if(m.t==="peers"&&Array.isArray(m.list)){ NET.peers=m.list.slice(0,30); renderConnBtn(); if(document.getElementById("connModal").classList.contains("on")) renderConnBox(); refreshWelcome(); if(!NET.mode) return; renderRoles(); return; }
   if(m.t==="hello"||m.t==="who"){ c._info={role:String(m.role||"").slice(0,10),name:String(m.name||"").slice(0,60)}; if(NET.mode==="host") sendPeers(); }
   if(m.state&&typeof m.state==="object"){
@@ -1278,6 +1292,17 @@ document.getElementById("connBox").addEventListener("click",function(e){
   else if(t.closest("#connClose")) document.getElementById("connModal").classList.remove("on");
 });
 document.getElementById("connBox").addEventListener("keydown",function(e){ if(e.key==="Enter"&&e.target.id==="joinCode"){ e.preventDefault(); document.getElementById("joinBtn").click(); } });
+
+/* heartbeat: notice devices that vanish without saying goodbye (phone locked, signal lost) */
+setInterval(function(){
+  if(!NET.mode) return; var t=now();
+  NET.conns.slice().forEach(function(c){
+    if(!c.open) return;
+    if(t-(c._last||t)>15000){ try{ c.close(); }catch(e){} NET.conns=NET.conns.filter(function(x){return x!==c;});
+      if(NET.mode==="host") sendPeers(); else { setStatus("wait","Lost the host – reconnecting…"); retryLater(connectToHost,2000); } }
+    else send(c,{t:"ping"});
+  });
+},5000);
 
 /* ---------- welcome: pick role, then host / join ---------- */
 var W={step:"role",role:null,code:""};
@@ -1358,7 +1383,9 @@ var resumeCode = L.conn&&L.conn.code;
 if(hashCode.length===6 && !(resumeCode===hashCode)){ W.code=hashCode; openWelcome(L.setup?"connect":"role"); W.code=hashCode; renderWelcome(); }
 else if(resumeCode){ if(L.conn.mode==="host") startHost(L.conn.code); else startJoin(L.conn.code); if(!L.setup) openWelcome("role"); }
 else if(!L.setup) openWelcome("role");
-window.addEventListener("beforeunload",function(){ try{ if(NET.peer) NET.peer.destroy(); }catch(e){} });
+function sayBye(){ NET.conns.forEach(function(c){ send(c,{t:"bye"}); }); }
+window.addEventListener("pagehide",sayBye);
+window.addEventListener("beforeunload",function(){ sayBye(); try{ if(NET.peer) NET.peer.destroy(); }catch(e){} });
 })();
 </script>
 </body>
