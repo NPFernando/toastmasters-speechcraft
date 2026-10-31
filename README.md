@@ -27,11 +27,10 @@ One **Meeting report** combines every role and can be saved as a PDF.
 - **Start screen:** type your name first; roles the agenda gives you today appear at the top under ⭐, the rest are grouped (Running the meeting · Timing & reports · Speakers & evaluators · Audience).
 - **Speaker sees their own time:** when the Timer starts someone, that person's device (Speaker, or Member called for Table Topics or an evaluation) shows a big live clock that turns green, amber and red with the signals, their status ("Keep going", "✓ You've qualified", "Start wrapping up", "Finish now") and the time to the next signal. **⛶ Full screen** fills the phone, e.g. on the lectern.
 - **Timer phone:** the screen stays on while a speaker is timed and the phone vibrates at green, amber and red (no sound).
-- **💬 Role list for WhatsApp:** the Coordinator gets the week's role message written from the agenda (date, time, venue, role players, speakers with evaluators, Table Topics evaluators; open roles ask for volunteers), ready to copy or share to the group.
 - **End of meeting:** the Coordinator taps **🏁 Finish meeting**. Every role player gets a prompt with a quick check of their role (e.g. a timer still running, evaluations not submitted, Word of the Day missing, votes not revealed) and taps **Yes, done**. The Coordinator sees each role live as waiting, in progress or complete, with any notes. Then **⤓ Save meeting record** downloads the final member list, role players, agenda, times, reports and votes (feedback stays encrypted). If a browser loses its data, **⤒ Import meeting record** brings it all back on every connected device; unlock with the same Coordinator PIN or recovery code.
 - **Who's coming:** members reply In person / Online / Can't make it, with a note such as "leaving at 8 pm". The Coordinator sees clashes ("can't make it — reassign") and reassigns role players and evaluators.
 - **Running order:** the Toastmaster can move an item to the end (e.g. a late keynote) or skip it; everyone's "Now" line follows.
-- **Hand-over:** role data is shared, so whoever takes over a role carries on. **📋 Copy report text** gives a WhatsApp-ready summary for the Timer, Ah-Counter, Grammarian and General Evaluator.
+- **Hand-over:** role data is shared, so whoever takes over a role carries on. **📋 Copy report text** gives a text summary to paste anywhere for the Timer, Ah-Counter, Grammarian and General Evaluator.
 
 ### Voting
 
@@ -52,7 +51,7 @@ Open **https://npfernando.github.io/toastmasters-speechcraft/** on any phone or 
 ## Getting started at a meeting
 
 1. **Pick your role.** The page opens on a welcome screen: choose Timer, Table Topics Master, Ah-Counter or Grammarian and type your name. Your device then shows only your role (use **Change role** at the top to switch).
-2. **Host or join.** One person (usually the Timer) taps **Host meeting & get code** and shares the 6-character code, or taps **Copy invite link** and sends the link in WhatsApp. Everyone else types the code and taps **Join** (the invite link fills the code in for them).
+2. **Host or join.** One person (usually the Timer) taps **Host meeting & get code** and shares the 6-character code, or taps **Copy invite link** and sends the link to the group. Everyone else types the code and taps **Join** (the invite link fills the code in for them).
 3. **Continue.** Once it shows **✓ Connected**, tap **Continue**. Next time the device opens straight into its role and reconnects to the same meeting.
 
 You can also tap **Continue without connecting** to use a role on its own.

@@ -468,7 +468,7 @@ details.guide td:first-child{font-weight:600;width:190px}
     <summary>How to use</summary>
     <table>
       <tr><td>More than one role</td><td>Covering for someone? Tap <b>＋ Role</b> to add another role on the same device, then switch with one tap. If the agenda already lists you in several roles, the page offers to add them. While you're in one role, small panels keep your other jobs at hand: the Ah-Counter buttons and the Grammarian's Word of the Day +1 for whoever is speaking, and the Timer's live bar.</td></tr>
-      <tr><td>Changes on the day</td><td>Members tap <b>In person / Online / Can't make it</b> (with a note like "leaving at 8") so the Coordinator sees clashes and reassigns roles. The Toastmaster can move an item to the end (e.g. a late keynote) or skip it on the run-sheet. <b>📋 Copy report text</b> (Timer, Ah-Counter, Grammarian, General Evaluator) gives a WhatsApp-ready summary, and anyone taking over a role carries on with the same data.</td></tr>
+      <tr><td>Changes on the day</td><td>Members tap <b>In person / Online / Can't make it</b> (with a note like "leaving at 8") so the Coordinator sees clashes and reassigns roles. The Toastmaster can move an item to the end (e.g. a late keynote) or skip it on the run-sheet. <b>📋 Copy report text</b> (Timer, Ah-Counter, Grammarian, General Evaluator) gives a text summary to paste anywhere, and anyone taking over a role carries on with the same data.</td></tr>
       <tr><td>Pick your role</td><td>When you open the page, choose your role (Timer, Table Topics Master, Ah-Counter or Grammarian), type your name, then host or join the meeting. Your device then shows only your role. Use <b>Change role</b> at the top if you need to switch.</td></tr>
       <tr><td>QR codes</td><td>After starting a meeting, a QR code appears: others scan it with their phone camera to open the page with the code filled in. <b>📱 Open on phone</b> (next to your role) shows a QR code that opens <i>your</i> role on your phone in the same meeting, with all the data.</td></tr>
       <tr><td>Connect devices</td><td>One person (usually the Timer) taps <b>Not connected → Host meeting</b> and reads out the 6-character code. Everyone else opens the page, picks their role and types the code (or opens the host's invite link, which fills the code in). Everything then syncs live. Needs internet; the link between devices is encrypted. If someone's connection drops, they keep working and catch up automatically.</td></tr>
@@ -494,7 +494,6 @@ details.guide td:first-child{font-weight:600;width:190px}
   </details>
 </div>
 
-<div id="waModal" class="modal" role="dialog" aria-modal="true" aria-label="Role list for WhatsApp"><div class="mbox" id="waBox"></div></div>
 <div id="aboutModal" class="modal" role="dialog" aria-modal="true" aria-label="About"><div class="mbox" id="aboutBox"></div></div>
 <div id="welcome" role="dialog" aria-modal="true" aria-label="Get started"><div class="wbox" id="wbox"></div></div>
 <div id="voteBar" class="votebar"></div>
@@ -1183,7 +1182,7 @@ function coordHTML(){
     h+='<div class="selcard" style="border-color:var(--a)"><b>Set a new PIN</b><div class="saved" style="margin:4px 0 8px">You unlocked with the recovery code. Choose a new PIN now.</div><div class="row"><input class="t" id="pin1" type="password" inputmode="numeric" placeholder="New PIN" maxlength="8" style="max-width:200px"><input class="t" id="pin2" type="password" inputmode="numeric" placeholder="Repeat PIN" maxlength="8" style="max-width:200px"><button class="btn primary" id="pinSet">Save new PIN</button></div></div>';
   }
   var A=S.agenda;
-  h+='<div class="row" style="justify-content:space-between"><h2 class="sec" style="margin:0">🗂 Meeting set-up</h2><div class="row"><button class="btn" id="agPrint">📄 Print agenda</button><button class="btn" id="waRoles">💬 Role list for WhatsApp</button><button class="btn" id="pinChange">Change PIN</button><button class="btn" id="coordLock">🔒 Lock</button></div></div>';
+  h+='<div class="row" style="justify-content:space-between"><h2 class="sec" style="margin:0">🗂 Meeting set-up</h2><div class="row"><button class="btn" id="agPrint">📄 Print agenda</button><button class="btn" id="pinChange">Change PIN</button><button class="btn" id="coordLock">🔒 Lock</button></div></div>';
   if(!NET.room) h+='<div class="note" style="margin-bottom:8px">Tip: start a meeting (top of the page) and share its code or QR in your group chat before the meeting. Everyone who joins gets this agenda and their names automatically.</div>';
   h+='<div class="meta" style="margin-top:10px">'+
      '<label class="f">Program title<input class="t" data-ag="title" value="'+esc(A.title)+'"></label>'+
@@ -2575,7 +2574,7 @@ function availabilityHTML(){
 }
 function rsvpBadge(name){ var r=name&&rsvpOf(name); if(!r||!r.status) return ""; return r.status==="no"?' <span class="badge no">can\'t make it</span>':r.status==="online"?' <span class="badge on">online</span>':''; }
 
-/* ---------- copy a role's report as text (for WhatsApp) ---------- */
+/* ---------- copy a role's report as text ---------- */
 function reportText(role){
   var t=now(), L1=[], hd=GROUP+(S.meta.week?" · "+S.meta.week:"")+(S.meta.date?" · "+S.meta.date:"");
   if(role==="timer"){
@@ -2595,7 +2594,7 @@ function reportText(role){
   return L1.join("\n");
 }
 function copyText(txt){
-  var done=function(){ showToastMsg("📋 Copied — paste it into WhatsApp"); };
+  var done=function(){ showToastMsg("📋 Copied — paste it wherever you need it"); };
   try{ navigator.clipboard.writeText(txt).then(done,function(){ fallback(); }); }catch(e){ fallback(); }
   function fallback(){ var ta=document.createElement("textarea"); ta.value=txt; document.body.appendChild(ta); ta.select(); try{ document.execCommand("copy"); done(); }catch(e){ alert(txt); } ta.remove(); }
 }
@@ -2823,47 +2822,6 @@ function renderFin(){
   });
 })();
 
-/* ---------- role list message for the WhatsApp group ---------- */
-function ordinal(n){ var v=n%100; return n+((v>10&&v<14)?"th":({1:"st",2:"nd",3:"rd"}[n%10]||"th")); }
-function waDate(iso){ if(!iso) return ""; var p=iso.split("-"); if(p.length!==3) return iso; var d=new Date(+p[0],+p[1]-1,+p[2]); return d.toLocaleDateString("en-AU",{weekday:"long"})+" "+ordinal(d.getDate())+" "+d.toLocaleDateString("en-AU",{month:"long"}); }
-function waRolesText(){
-  var open="❓ open – any volunteers?", L2=[], one=function(k,label){ L2.push(label+" – "+(assigned(k)||S.people[k]||open)); };
-  var first=itemsSorted()[0];
-  L2.push("*"+GROUP+" – Speechcraft"+(S.meta.week?" "+S.meta.week:"")+"*");
-  L2.push("📅 "+(waDate(S.meta.date)||"Date to be confirmed")+(first&&first.time?" · "+fmtHM(first.time):""));
-  if(S.agenda.venue) L2.push("📍 "+S.agenda.venue);
-  L2.push(""); L2.push("*Role players*");
-  one("president","President"); if(assigned("saa")||S.people.saa) one("saa","Sergeant at Arms");
-  one("tmod","Toastmaster of the Day"); one("ge","General Evaluator");
-  one("timer","Timer"); one("ah","Ah-Counter"); one("gram","Grammarian");
-  one("ttm","Table Topics Master"); one("rrm","Round Robin Master");
-  var k=assigned("keynote"); if(k) L2.push("Keynote – "+k+(S.agenda.ktopic?" (“"+S.agenda.ktopic+"”)":""));
-  var sp=asList("speakers");
-  L2.push(""); L2.push("*Prepared speeches*");
-  if(sp.length) sp.forEach(function(n,i){ var t=speechTitle(n); L2.push("Speaker "+(i+1)+" – "+n+(t?" (“"+t+"”)":"")); L2.push("   Evaluator – "+(evaluatorOf(n)||open)); });
-  else L2.push("Speakers – "+open);
-  var tt=asList("ttevals"); L2.push(""); L2.push("Table Topics Evaluators – "+(tt.length?tt.join(", "):open));
-  L2.push(""); L2.push("Can't make it? Please reply so we can reassign your role. 🙏");
-  return L2.join("\n");
-}
-function openWa(){
-  var txt=waRolesText();
-  document.getElementById("waBox").innerHTML='<div class="finhead"><h2 class="sec" style="margin:0">💬 Role list for WhatsApp</h2><button class="btn ghost" id="waClose">Close</button></div>'+
-    '<div class="saved" style="margin:4px 0 8px">Written from the role players and agenda. Edit it here if you like, then copy or share it to the group. Open roles ask for volunteers.</div>'+
-    '<textarea class="t" id="waText" rows="16" style="font-size:14px;line-height:1.4">'+esc(txt)+'</textarea>'+
-    '<div class="row" style="margin-top:8px"><button class="btn primary" id="waCopy">📋 Copy</button>'+(navigator.share?'<button class="btn go" id="waShare">↗ Share to WhatsApp…</button>':'')+'</div>';
-  document.getElementById("waModal").classList.add("on");
-}
-(function(){
-  document.getElementById("view").addEventListener("click",function(e){ if(e.target.closest("#waRoles")&&L.role==="coord"&&coordUnlocked()) openWa(); });
-  var M=document.getElementById("waModal");
-  M.addEventListener("click",function(e){
-    var t=e.target;
-    if(t.id==="waModal"||t.closest("#waClose")){ M.classList.remove("on"); return; }
-    if(t.closest("#waCopy")){ copyText(document.getElementById("waText").value); return; }
-    if(t.closest("#waShare")){ try{ navigator.share({text:document.getElementById("waText").value}).catch(function(){}); }catch(err){} }
-  });
-})();
 /* ---------- ⋯ More menu ---------- */
 (function(){
   var b=document.getElementById("moreBtn"), m=document.getElementById("moreMenu");
