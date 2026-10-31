@@ -23,6 +23,13 @@ One **Meeting report** combines every role and can be saved as a PDF.
 ### Real meetings change on the day
 
 - **One person, several roles:** tap **＋ Role** to hold more than one role on a device and switch with one tap. If the agenda lists you in several roles, the page offers to add them. Small panels keep your other jobs at hand: Ah-Counter buttons and the Grammarian's Word of the Day +1 for whoever is speaking, and the Timer's live bar.
+- **Look:** Toastmasters brand colours (Loyal Blue, True Maroon, Happy Yellow). **⋯ More → Display** sets Auto / Light / Dark and **Bigger text** for this device.
+- **Sections:** **My role · Now · Agenda** (plus Report and More). On phones this is a bottom tab bar.
+  - **📡 Now** — the meeting at a glance: Now / Next from the Toastmaster's run-sheet, progress through the agenda, timing so far, who's online, role players (● online), Word of the Day and voting.
+  - **📋 Agenda** — the full agenda for everyone with the current item highlighted, done and skipped items marked, and **📄 Print / PDF**.
+- **📺 Projector view** (Now, or ⋯ More): full screen for the room screen or a Zoom share. Shows the speaker's clock in green / amber / red while timing, the Table Topic, the award winners once revealed, otherwise Now / Next; Word of the Day along the bottom.
+- **🎯 Focus** (Timer, Ah-Counter, Grammarian, Toastmaster, Table Topics Master): hides everything except what the role needs right now — big Start buttons, a big filler-word grid with Undo, a big +1 Word of the Day, a big Now / Next with Next ▶, or the current topic with Call speaker.
+- **💡 Tips:** three quick steps the first time each role is opened; 💡 Tips in the role bar shows them again.
 - **Header:** 🏠 Home, connection status, **⋯ More** (Save backup, Restore, New meeting, About & clean up) and Meeting report. **ℹ️ About** explains the app and has **🧹 Clean up** for after a practice run: **Clear meeting** (keeps members, PIN and settings) or **Reset device** (deletes everything this browser saved and leaves the meeting).
 - **Start screen:** type your name first; roles the agenda gives you today appear at the top under ⭐, the rest are grouped (Running the meeting · Timing & reports · Speakers & evaluators · Audience).
 - **Speaker sees their own time:** when the Timer starts someone, that person's device (Speaker, or Member called for Table Topics or an evaluation) shows a big live clock that turns green, amber and red with the signals, their status ("Keep going", "✓ You've qualified", "Start wrapping up", "Finish now") and the time to the next signal. **⛶ Full screen** fills the phone, e.g. on the lectern.
