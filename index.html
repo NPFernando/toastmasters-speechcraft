@@ -311,6 +311,9 @@ tr.queued:not(.nextup) .btn.go{background:transparent;color:var(--g);border-colo
 .cmpb:active{transform:scale(.96)}
 .badge{display:inline-block;font-size:11px;font-weight:700;border-radius:999px;padding:1px 7px;margin-left:4px;vertical-align:middle}
 .badge.no{background:var(--r-bg);color:var(--r)} .badge.on{background:var(--a-bg);color:#8a6100}
+.pastebox{border:1px dashed var(--brand);border-radius:12px;padding:10px 12px;margin:10px 0}
+.pastebox summary{cursor:pointer}
+.pastebox textarea{margin-top:8px}
 .clash{background:var(--r-bg);border-radius:10px;padding:8px 12px;display:grid;gap:4px}
 .runlist li.skipped > span:nth-child(2){text-decoration:line-through;opacity:.6}
 .runact{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
@@ -1144,6 +1147,7 @@ function coordHTML(){
   }
   var A=S.agenda;
   h+='<div class="row" style="justify-content:space-between"><h2 class="sec" style="margin:0">🗂 Meeting set-up</h2><div class="row"><button class="btn" id="agPrint">📄 Print agenda</button><button class="btn" id="pinChange">Change PIN</button><button class="btn" id="coordLock">🔒 Lock</button></div></div>';
+  h+=pasteBoxHTML();
   if(!NET.room) h+='<div class="note" style="margin-bottom:8px">Tip: start a meeting (top of the page) and share its code or QR in your group chat before the meeting. Everyone who joins gets this agenda and their names automatically.</div>';
   h+='<div class="meta" style="margin-top:10px">'+
      '<label class="f">Program title<input class="t" data-ag="title" value="'+esc(A.title)+'"></label>'+
@@ -2547,6 +2551,114 @@ function copyBtn(role){ return '<button class="btn sm" data-copyrep="'+role+'">�
     }
   },true);
   V.addEventListener("input",function(e){ if(e.target.id==="rsvpNote"){ setRsvp(e.target.dataset.rname,null,e.target.value); commitQuiet(); } });
+})();
+
+/* ---------- paste the role list from WhatsApp ---------- */
+var ROLE_WORDS=[
+  [/^president\b/i,"president"],[/^toast\s*master(\s+of\s+the\s+day)?\b|^tmod\b/i,"tmod"],[/^round\s*robin(\s*master)?\b/i,"rrm"],
+  [/^timer\b/i,"timer"],[/^ah+[\s-]*counter\b/i,"ah"],[/^grammarian\b/i,"gram"],[/^general\s*evaluator\b|^ge\b/i,"ge"],
+  [/^table\s*topics?\s*master\b|^ttm\b/i,"ttm"],[/^key\s*note(\s*(speaker|presenter))?\b/i,"keynote"],[/^(speech\s*craft\s*)?coordinator\b/i,"coord"],
+  [/^table\s*topics?\s*evaluators?\b/i,"ttevals"],[/^speaker\s*\d*\b/i,"speaker"],[/^(speech\s*)?evaluat(or|ed\s*by)\b/i,"evaluator"]
+];
+var MONTHS=["january","february","march","april","may","june","july","august","september","october","november","december"];
+function cleanMention(s){
+  s=String(s||"").replace(/[\u200B-\u200F\u202A-\u202E\u2066-\u2069\uFEFF]/g,"").replace(/^[\s:–-]+/,"").replace(/@/g,"").replace(/~/g,"").trim();
+  if(!s||/^[-–—?]+$/.test(s)) return "?";
+  return s;
+}
+/* match a WhatsApp display name ("Rashmi Dijital", "~Afraa") to the member list */
+function matchMember(raw){
+  if(raw==="?") return {name:"",raw:raw,unknown:true};
+  var ms=memberNames(), k=nkey(raw);
+  var exact=ms.find(function(m){return nkey(m)===k;}); if(exact) return {name:exact,raw:raw};
+  var strip=function(n){ return nkey(n).replace(/^(sc|tm)[\s-]+/,""); };
+  var cont=ms.filter(function(m){ var a=strip(m), b=strip(raw); return a.indexOf(b)>=0||b.indexOf(a)>=0; }); if(cont.length===1) return {name:cont[0],raw:raw};
+  var first=strip(raw).split(/\s+/)[0], byFirst=ms.filter(function(m){ return strip(m).split(/[\s-]+/)[0]===first; });
+  if(byFirst.length===1) return {name:byFirst[0],raw:raw,guess:true};
+  return {name:raw,raw:raw,newName:!!ms.length};
+}
+function parseDate(line){
+  var m=line.toLowerCase().match(/(\d{1,2})(st|nd|rd|th)?\s+(of\s+)?([a-z]+)/); if(!m) return "";
+  var mi=MONTHS.findIndex(function(x){return x.indexOf(m[4].slice(0,3))===0;}); if(mi<0) return "";
+  var d=new Date(), y=d.getFullYear(), cand=new Date(y,mi,+m[1]); if(cand-d < -60*864e5) y++;
+  return y+"-"+String(mi+1).padStart(2,"0")+"-"+String(+m[1]).padStart(2,"0");
+}
+function parseRoles(text){
+  var res={date:"",single:{},speakers:[],ttevals:[],warn:[]}, lastSpeaker=null, listKey=null, pendingRole=null;
+  String(text||"").split(/\n/).map(function(l){return l.trim();}).forEach(function(line){
+    if(!line) return;
+    if(/^(meeting\s*)?date\b/i.test(line)){ res.date=parseDate(line); return; }
+    var role=null, rest=line;
+    for(var i=0;i<ROLE_WORDS.length;i++){ var m=line.match(ROLE_WORDS[i][0]); if(m){ role=ROLE_WORDS[i][1]; rest=line.slice(m[0].length); break; } }
+    if(!role){
+      if(/@/.test(line)||pendingRole||listKey){ var nm=cleanMention(line);
+        if(pendingRole){ assignParsed(res,pendingRole,nm,lastSpeaker); if(pendingRole==="speaker") lastSpeaker=res.speakers[res.speakers.length-1]; pendingRole=null; }
+        else if(listKey==="ttevals") res.ttevals.push(matchMember(nm));
+      }
+      return;
+    }
+    listKey=null;
+    if(role==="ttevals"){ listKey="ttevals"; var r0=cleanMention(rest); if(rest.trim()&&r0!=="?") res.ttevals.push(matchMember(r0)); else if(rest.trim()) res.ttevals.push(matchMember("?")); return; }
+    /* "Speaker 1 @X Evaluated by @Y" on one line */
+    var ev=null, mm=rest.match(/(.*?)\s*[-–]?\s*evaluat(?:ed\s*by|or)\s*[:\-]?\s*(.*)$/i);
+    if(role==="speaker"&&mm){ rest=mm[1]; ev=mm[2]; }
+    if(!rest.replace(/[\s:–-]/g,"")){ pendingRole=role; return; }
+    assignParsed(res,role,cleanMention(rest),lastSpeaker);
+    if(role==="speaker"){ lastSpeaker=res.speakers[res.speakers.length-1]; if(ev!=null) lastSpeaker.evaluator=matchMember(cleanMention(ev)); }
+  });
+  return res;
+}
+function assignParsed(res,role,nm,lastSpeaker){
+  if(role==="speaker"){ res.speakers.push({sp:matchMember(nm),evaluator:null}); return; }
+  if(role==="evaluator"){ if(lastSpeaker) lastSpeaker.evaluator=matchMember(nm); else res.warn.push("An evaluator line came before any speaker."); return; }
+  res.single[role]=matchMember(nm);
+}
+function parsedWarnings(p){
+  var w=p.warn.slice(), unk=function(x){return x&&x.unknown;};
+  ["president","tmod","ge","ttm","timer","ah","gram"].forEach(function(k){ if(!p.single[k]) w.push("No "+arole(k).n+" in the message."); else if(unk(p.single[k])) w.push(arole(k).n+": name not readable (WhatsApp shows @~- for contacts without a saved name)."); });
+  p.speakers.forEach(function(s,i){ if(unk(s.sp)) w.push("Speaker "+(i+1)+": name not readable."); if(!s.evaluator) w.push("Speaker "+(i+1)+" has no evaluator."); else if(unk(s.evaluator)) w.push("Evaluator for "+(s.sp.name||"speaker "+(i+1))+": name not readable (@~-)."); });
+  p.ttevals.forEach(function(x,i){ if(unk(x)) w.push("Table Topics evaluator "+(i+1)+": name not readable (@~-)."); });
+  var count={}; var add=function(x,r){ if(x&&x.name){ var k=nkey(x.name); (count[k]=count[k]||{n:x.name,r:[]}).r.push(r); } };
+  Object.keys(p.single).forEach(function(k){ add(p.single[k],arole(k).n); }); p.speakers.forEach(function(s){ add(s.sp,"Speaker"); add(s.evaluator,"Evaluator"); }); p.ttevals.forEach(function(x){ add(x,"TT evaluator"); });
+  Object.keys(count).forEach(function(k){ if(count[k].r.length>=3) w.push("ℹ️ "+count[k].n+" has "+count[k].r.length+" roles: "+count[k].r.join(", ")+"."); });
+  return w;
+}
+var lastParse=null, lastPasteText="";
+function pastePreviewHTML(p){
+  var nm=function(x){ return !x?'<span class="muted">—</span>':x.unknown?'<span class="badge no">unknown (@~-)</span>':esc(x.name)+(x.guess?' <span class="badge on">matched from “'+esc(x.raw)+'”</span>':'')+(x.newName?' <span class="badge on">not in member list</span>':''); };
+  var h='<table class="sumtable" style="margin-top:8px"><tbody>'+(p.date?'<tr><td>Date</td><td>'+esc(fmtDate(p.date))+'</td></tr>':'');
+  Object.keys(p.single).forEach(function(k){ h+='<tr><td>'+arole(k).n+'</td><td>'+nm(p.single[k])+'</td></tr>'; });
+  p.speakers.forEach(function(s,i){ h+='<tr><td>Speaker '+(i+1)+'</td><td>'+nm(s.sp)+' → evaluated by '+nm(s.evaluator)+'</td></tr>'; });
+  if(p.ttevals.length) h+='<tr><td>Table Topic Evaluators</td><td>'+p.ttevals.map(nm).join(", ")+'</td></tr>';
+  h+='</tbody></table>';
+  var w=parsedWarnings(p);
+  if(w.length) h+='<div class="clash" style="margin-top:8px">'+w.map(function(x){return '<div>'+(x.indexOf("ℹ️")===0?'':'⚠ ')+esc(x)+'</div>';}).join("")+'</div>';
+  return h+'<div class="row" style="margin-top:8px"><button class="btn go" id="pasteApply">Apply to this meeting</button><span class="saved">Unknown names are left empty so you can pick them below.</span></div>';
+}
+function applyParsed(p){
+  if(p.date){ S.meta.date=p.date; tick(S.meta); }
+  ["president","tmod","ge","ttm","rrm","keynote","timer","ah","gram","coord"].forEach(function(k){ if(p.single[k]){ if(p.single[k].unknown) delete S.agenda.assign[k]; else S.agenda.assign[k]=p.single[k].name; } });
+  if(p.speakers.length) S.agenda.assign.speakers=p.speakers.filter(function(s){return !s.sp.unknown;}).map(function(s){return s.sp.name;});
+  var se=uniq(p.speakers.filter(function(s){return s.evaluator&&!s.evaluator.unknown;}).map(function(s){return s.evaluator.name;}));
+  if(p.speakers.length) S.agenda.assign.sevals=se;
+  if(p.ttevals.length) S.agenda.assign.ttevals=p.ttevals.filter(function(x){return !x.unknown;}).map(function(x){return x.name;});
+  tick(S.agenda);
+  p.speakers.forEach(function(s){ if(s.sp.unknown) return; var a=upsert(["assigns"],"as|"+nkey(s.sp.name),{speaker:s.sp.name,evaluator:""}); a.speaker=s.sp.name; a.evaluator=s.evaluator&&!s.evaluator.unknown?s.evaluator.name:""; tick(a); });
+  applyAgenda(); commit();
+}
+function pasteBoxHTML(){
+  return '<details class="pastebox"'+(lastParse?' open':'')+'><summary><b>📋 Paste roles from WhatsApp</b> <span class="saved">— fill in role players from the group message</span></summary>'+
+    '<textarea class="t" id="pasteIn" rows="6" placeholder="Paste the message, e.g.\nDate 6th November\nPresident @Upeksha\nToast Master @Rashmi\nTimer @Misfar Siddeek\nSpeaker 1 @Laurel\nEvaluator @Danushka">'+esc(lastPasteText)+'</textarea>'+
+    '<div class="row" style="margin-top:6px"><button class="btn primary" id="pasteRead">Read message</button></div><div id="pastePrev">'+(lastParse?pastePreviewHTML(lastParse):'')+'</div></details>';
+}
+(function(){
+  var V=document.getElementById("view");
+  V.addEventListener("input",function(e){ if(e.target.id==="pasteIn") lastPasteText=e.target.value; });
+  V.addEventListener("click",function(e){
+    if(L.role!=="coord"||!coordUnlocked()) return;
+    if(e.target.closest("#pasteRead")){ lastParse=parseRoles(document.getElementById("pasteIn").value); document.getElementById("pastePrev").innerHTML=pastePreviewHTML(lastParse); return; }
+    if(e.target.closest("#pasteApply")){ if(!lastParse) return; if(!confirm("Replace this meeting's role players with the ones from the message?")) return; applyParsed(lastParse); lastParse=null; showToastMsg("✓ Role players updated from the message"); return; }
+  });
 })();
 
 /* ---------- start ---------- */
