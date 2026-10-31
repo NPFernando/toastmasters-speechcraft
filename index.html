@@ -297,6 +297,24 @@ tr.queued:not(.nextup) .btn.go{background:transparent;color:var(--g);border-colo
 .evcard{border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin:6px 0}
 #report .evcard{border-color:#ccc}
 
+/* several roles on one device */
+.rtabs{display:flex;gap:6px;flex-wrap:wrap;width:100%;margin-bottom:6px}
+.rtab{border:1px solid var(--line);background:var(--chip);border-radius:999px;padding:6px 12px;font-weight:600;cursor:pointer;font-size:14px;display:inline-flex;align-items:center;gap:6px}
+.rtab.on{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
+.rtab.add{background:transparent;border-style:dashed;color:var(--muted)}
+.rtab .rx{font-size:11px;opacity:.6;padding:0 2px}
+.rsuggest{width:100%;font-size:13px;background:var(--run-bg);border-radius:8px;padding:6px 10px;margin-bottom:6px}
+.companion{display:none;margin-bottom:10px} .companion.on{display:block}
+.cmp{border:1px dashed var(--brand);border-radius:12px;padding:8px 12px;margin-bottom:6px;background:var(--card)}
+.cmpbtns{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.cmpb{border:1px solid var(--line);background:var(--chip);border-radius:10px;padding:8px 12px;font-size:15px;cursor:pointer}
+.cmpb:active{transform:scale(.96)}
+.badge{display:inline-block;font-size:11px;font-weight:700;border-radius:999px;padding:1px 7px;margin-left:4px;vertical-align:middle}
+.badge.no{background:var(--r-bg);color:var(--r)} .badge.on{background:var(--a-bg);color:#8a6100}
+.clash{background:var(--r-bg);border-radius:10px;padding:8px 12px;display:grid;gap:4px}
+.runlist li.skipped > span:nth-child(2){text-decoration:line-through;opacity:.6}
+.runact{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+
 /* modals, toast, stage */
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-start;justify-content:center;overflow:auto;padding:24px 12px;z-index:50}
 .modal.on{display:flex}
@@ -424,11 +442,14 @@ details.guide td:first-child{font-weight:600;width:190px}
   <div id="agendaLine" class="agline"></div>
   <div id="live"></div>
   <div id="nowStrip"></div>
+  <div id="companion" class="companion"></div>
   <main id="view"></main>
 
   <details class="guide card">
     <summary>How to use</summary>
     <table>
+      <tr><td>More than one role</td><td>Covering for someone? Tap <b>＋ Role</b> to add another role on the same device, then switch with one tap. If the agenda already lists you in several roles, the page offers to add them. While you're in one role, small panels keep your other jobs at hand: the Ah-Counter buttons and the Grammarian's Word of the Day +1 for whoever is speaking, and the Timer's live bar.</td></tr>
+      <tr><td>Changes on the day</td><td>Members tap <b>In person / Online / Can't make it</b> (with a note like "leaving at 8") so the Coordinator sees clashes and reassigns roles. The Toastmaster can move an item to the end (e.g. a late keynote) or skip it on the run-sheet. <b>📋 Copy report text</b> (Timer, Ah-Counter, Grammarian, General Evaluator) gives a WhatsApp-ready summary, and anyone taking over a role carries on with the same data.</td></tr>
       <tr><td>Pick your role</td><td>When you open the page, choose your role (Timer, Table Topics Master, Ah-Counter or Grammarian), type your name, then host or join the meeting. Your device then shows only your role. Use <b>Change role</b> at the top if you need to switch.</td></tr>
       <tr><td>QR codes</td><td>After starting a meeting, a QR code appears: others scan it with their phone camera to open the page with the code filled in. <b>📱 Open on phone</b> (next to your role) shows a QR code that opens <i>your</i> role on your phone in the same meeting, with all the data.</td></tr>
       <tr><td>Connect devices</td><td>One person (usually the Timer) taps <b>Not connected → Host meeting</b> and reads out the 6-character code. Everyone else opens the page, picks their role and types the code (or opens the host's invite link, which fills the code in). Everything then syncs live. Needs internet; the link between devices is encrypted. If someone's connection drops, they keep working and catch up automatically.</td></tr>
@@ -511,7 +532,7 @@ var KEY="speechcraftMeeting.v2"+NS, LKEY="speechcraftMeeting.local"+NS, OLDKEY="
 var SESSIONS=[{id:"tt",name:"Table Topics",type:"std"},{id:"ps",name:"Prepared Speech",type:"std"},{id:"rr",name:"Round Robin",type:"rr"},{id:"ev",name:"Evaluations",type:"std"},{id:"rep",name:"Role reports",type:"rep"}];
 var ROLES=[{id:"coord",name:"Speechcraft Coordinator",icon:"🗂"},{id:"tmod",name:"Toastmaster of the Day",icon:"🎩"},{id:"ge",name:"General Evaluator",icon:"🧭"},{id:"timer",name:"Timer",icon:"⏱"},{id:"ttm",name:"Table Topics Master",icon:"🎤"},{id:"rrm",name:"Round Robin Master",icon:"🔁"},{id:"ah",name:"Ah-Counter",icon:"🔢"},{id:"gram",name:"Grammarian",icon:"📝"},{id:"speaker",name:"Speaker",icon:"🎙"},{id:"seval",name:"Speech Evaluator",icon:"🗣"},{id:"tteval",name:"Table Topic Evaluator",icon:"💬"},{id:"member",name:"Member / Audience",icon:"🙋"}];
 var FILLERS=["Um","Ah","Er","So","Like","And","You know","Repeat"];
-var COLLS=[["rows","tt"],["rows","ps"],["rows","rr"],["rows","ev"],["rows","rep"],["topics"],["ahRows"],["gramRows"],["evals"],["notes"],["votes"],["rrq"],["speeches"],["assigns"]];
+var COLLS=[["rows","tt"],["rows","ps"],["rows","rr"],["rows","ev"],["rows","rep"],["topics"],["ahRows"],["gramRows"],["evals"],["notes"],["votes"],["rrq"],["speeches"],["assigns"],["rsvp"]];
 var MEETING_LWW=["meta","cur","gram","agenda","run","vote","genotes","rrcur"], KEEP_LWW=["limits","fill","members","pin"];
 
 /* ---------- helpers ---------- */
@@ -549,7 +570,7 @@ function blank(){
     people:{coord:"",tmod:"",ge:"",rrm:"",timer:"",ttm:"",ah:"",gram:""}, peopleU:{coord:0,tmod:0,ge:0,rrm:0,timer:0,ttm:0,ah:0,gram:0},
     limits:{tt:{g:60,a:90,r:120},ps:{g:240,a:300,r:360},rr:{b:20},ev:{g:90,a:105,r:120},rep:{g:30,a:45,r:60},u:0},
     members:{list:[],u:0}, pin:{hash:"",rhash:"",salt:"",u:0}, agenda:defaultAgenda(), run:{cur:null,started:{},u:0},
-    evals:[], notes:[], votes:[], rrq:[], speeches:[], assigns:[], attend:[], keys:[], vote:{state:"closed",u:0}, genotes:{good:"",improve:"",u:0}, rrcur:{id:null,u:0},
+    evals:[], notes:[], votes:[], rrq:[], speeches:[], assigns:[], rsvp:[], attend:[], keys:[], vote:{state:"closed",u:0}, genotes:{good:"",improve:"",u:0}, rrcur:{id:null,u:0},
     rows:{tt:[],ps:[],rr:[],ev:[],rep:[]}, topics:[], cur:{id:null,u:0},
     fill:{words:FILLERS.slice(),u:0}, ahRows:[],
     gram:{wotd:"",meaning:"",u:0}, gramRows:[],
@@ -565,7 +586,7 @@ function normalize(st){
   if(!Array.isArray(o.fill.words)) o.fill.words=FILLERS.slice();
   SESSIONS.forEach(function(s){ var k=s.id; o.rows[k]=Array.isArray(st.rows&&st.rows[k])?st.rows[k]:[]; });
   ["ev","rep"].forEach(function(k){ if(!o.limits[k]) o.limits[k]=blank().limits[k]; });
-  ["evals","notes","votes","rrq","speeches","assigns"].forEach(function(k){ o[k]=Array.isArray(st[k])?st[k]:[]; });
+  ["evals","notes","votes","rrq","speeches","assigns","rsvp"].forEach(function(k){ o[k]=Array.isArray(st[k])?st[k]:[]; });
   o.keys=Array.isArray(st.keys)?st.keys.filter(function(k){return k&&k.id;}).map(function(k){ k.u=+k.u||1; k.ord=+k.ord||1; return k; }):[];
   o.evals.forEach(function(e){ if(e&&(e.c1!=null||e.r!=null||e.c2!=null||e.rate)){ if(e.done==null) e.done=!!(e.c1||e.r||e.c2); delete e.c1; delete e.r; delete e.c2; delete e.rate; } });
   o.notes=o.notes.filter(function(n){ return n&&n.enc; });
@@ -754,7 +775,7 @@ function renderAll(){
   renderMeta(); renderRoles(); renderRoster();
   renderLive(); renderNow();
   var v=document.getElementById("view");
-  if(L.role==="coord") v.innerHTML=coordHTML()+(coordUnlocked()?attendanceHTML()+feedbackPinsHTML():"");
+  if(L.role==="coord") v.innerHTML=(coordUnlocked()?availabilityHTML():"")+coordHTML()+(coordUnlocked()?attendanceHTML()+feedbackPinsHTML():"");
   else if(L.role==="tmod") v.innerHTML=(S.vote.state!=="closed"?'<section class="card" style="margin-bottom:12px">'+voteControlHTML(false,true)+'</section>':'')+tmodHTML();
   else if(L.role==="ge") v.innerHTML=geHTML();
   else if(L.role==="seval"||L.role==="tteval") v.innerHTML=evalHTML();
@@ -766,11 +787,11 @@ function renderAll(){
   else if(L.role==="ah") v.innerHTML=ahHTML();
   else v.innerHTML=gramHTML();
   if(document.getElementById("stage").classList.contains("on")) renderStage();
-  renderAgendaLine(); renderMemberList(); renderVoteBar(); maybeShowWinners(false); flushPending(); checkNewFeedback();
+  renderAgendaLine(); renderMemberList(); renderVoteBar(); maybeShowWinners(false); flushPending(); checkNewFeedback(); renderCompanion();
   if(document.getElementById("voteModal").classList.contains("on")) renderVoteModal();
   renderConnBtn();
 }
-function renderLiveOnly(){ renderNow(); renderAgendaLine(); renderVoteBar(); maybeShowWinners(false); renderConnBtn(); renderRoles(); if(document.getElementById("voteModal").classList.contains("on")) renderVoteModal(); }
+function renderLiveOnly(){ renderNow(); renderCompanion(); renderAgendaLine(); renderVoteBar(); maybeShowWinners(false); renderConnBtn(); renderRoles(); if(document.getElementById("voteModal").classList.contains("on")) renderVoteModal(); }
 function renderMeta(){
   var w=document.getElementById("mWeek"), d=document.getElementById("mDate"), n=document.getElementById("myName");
   if(document.activeElement!==w) w.value=S.meta.week||"";
@@ -784,17 +805,17 @@ function renderRoles(){
   var team=ROLES.filter(function(x){return x.id!==L.role && S.people[x.id];}).map(function(x){return x.icon+" "+esc(S.people[x.id]);});
   var sub;
   if(NET.mode && NET.status==="on" && NET.peers.length){
-    var online=NET.peers.map(function(p){ var rr=ROLES.find(function(x){return x.id===p.role;}); return '<span class="onl">'+(rr?rr.icon+" ":"")+esc(p.name||(rr?rr.name:"Device"))+(p.host?' <i>(host)</i>':'')+'</span>'; });
+    var online=NET.peers.map(function(p){ var rl=(Array.isArray(p.roles)&&p.roles.length?p.roles:[p.role]).map(roleObj).filter(Boolean); return '<span class="onl">'+rl.map(function(r){return r.icon;}).join("")+" "+esc(p.name||(rl[0]?rl[0].name:"Device"))+(p.host?' <i>(host)</i>':'')+'</span>'; });
     sub='<span class="dotg"></span><b>'+NET.peers.length+' online</b> · '+online.join(" · ");
   } else if(NET.mode){ sub='<span class="doty"></span>'+esc(NET.msg||"Connecting…"); }
   else sub=team.length?'Team: '+team.join(" · ")+' · <i>not connected</i>':'Your role on this device · not connected';
-  document.getElementById("roles").innerHTML='<div class="me">'+r.icon+' <b>'+r.name+'</b>'+(myName()?' · '+esc(myName()):'')+
+  document.getElementById("roles").innerHTML=roleTabsHTML()+'<div class="me">'+r.icon+' <b>'+r.name+'</b>'+(myName()?' · '+esc(myName()):'')+
     '<small>'+sub+'</small></div><button class="btn sm" data-open-phone title="Show a QR code to open your role on your phone">📱 Open on phone</button><button class="btn sm" data-change-role>Change role</button>';
 }
 /* who is speaking now (from the Timer) — shown on the other roles */
 function renderNow(){
   var el=document.getElementById("nowStrip");
-  if(L.role==="timer"){ el.classList.remove("on"); el.innerHTML=""; return; }
+  if(myRoles().indexOf("timer")>=0){ el.classList.remove("on"); el.innerHTML=""; return; }
   var run=runningList(), t=now(), h="";
   run.forEach(function(x){
     var sec=elapsed(x.r,t), sg=signal(x.sid,sec,x.r);
@@ -856,13 +877,13 @@ function timerHTML(){
   });
   h+='</tbody></table>';
   var done=rows.filter(function(r){return rowState(r)==="done";}), ok=done.filter(function(r){return status(s.id,r,t).ok;}).length;
-  h+='<div class="foot"><span class="saved">'+done.length+' timed · '+ok+' '+(s.type==="rr"?"within time":"qualified")+'</span><span class="saved" id="panelStats">'+esc(statsText(timeStats([s.id],t),"ran"))+'</span></div></section>';
+  h+='<div class="foot"><span class="saved">'+done.length+' timed · '+ok+' '+(s.type==="rr"?"within time":"qualified")+' '+copyBtn("timer")+'</span><span class="saved" id="panelStats">'+esc(statsText(timeStats([s.id],t),"ran"))+'</span></div></section>';
   return h;
 }
 var lastSig={};
 function renderLive(){
   var el=document.getElementById("live");
-  if(L.role!=="timer"){ el.classList.remove("on"); el.innerHTML=""; return; }
+  if(myRoles().indexOf("timer")<0){ el.classList.remove("on"); el.innerHTML=""; return; }
   var t=now(), h="", focusedId=null, a=document.activeElement;
   if(a&&a.dataset&&a.dataset.edit==="livename"){ focusedId=a.closest(".liveitem").dataset.id; }
   runningList().forEach(function(x){
@@ -967,7 +988,7 @@ function ahHTML(){
     var used=words.filter(function(w){return S.ahRows.some(function(r){return r.c[w];});});
     h+='<h2 class="sec">Summary</h2><div style="overflow-x:auto"><table class="sumtable"><thead><tr><th>Speaker</th>'+used.map(function(w){return '<th>'+esc(w)+'</th>';}).join("")+'<th>Total</th></tr></thead><tbody>';
     S.ahRows.forEach(function(r){ h+='<tr><td>'+esc(r.name)+'</td>'+used.map(function(w){return '<td>'+(r.c[w]||0)+'</td>';}).join("")+'<td><b>'+ahTotal(r)+'</b></td></tr>'; });
-    h+='</tbody></table></div>';
+    h+='</tbody></table></div><div class="row" style="margin-top:8px">'+copyBtn("ah")+'</div>';
   }
   return h+'</section>';
 }
@@ -986,7 +1007,7 @@ function gramHTML(){
   if(S.gramRows.length){
     h+='<h2 class="sec">Summary</h2><table class="sumtable"><thead><tr><th>Speaker</th><th>Word of the Day</th><th>Great phrases</th><th>Slips</th></tr></thead><tbody>';
     S.gramRows.forEach(function(r){ h+='<tr><td>'+esc(r.name)+'</td><td>'+(r.w||0)+'</td><td>'+r.good.length+'</td><td>'+r.slips.length+'</td></tr>'; });
-    h+='</tbody></table>';
+    h+='</tbody></table><div class="row" style="margin-top:8px">'+copyBtn("gram")+'</div>';
   }
   return h+'</section>';
 }
@@ -1139,10 +1160,10 @@ function coordHTML(){
   AROLES.forEach(function(a){
     if(a.multi){
       var v=asList(a.k);
-      h+='<div class="rprow"><span class="rpl">'+a.n+'</span><div class="rpv"><div class="chips">'+v.map(function(n,i){ return '<span class="chip word">'+esc(n)+'<button data-rpdel="'+a.k+'" data-i="'+i+'">✕</button></span>'; }).join("")+'</div>'+
+      h+='<div class="rprow"><span class="rpl">'+a.n+'</span><div class="rpv"><div class="chips">'+v.map(function(n,i){ return '<span class="chip word">'+esc(n)+rsvpBadge(n)+'<button data-rpdel="'+a.k+'" data-i="'+i+'">✕</button></span>'; }).join("")+'</div>'+
          '<div class="row" style="margin-top:4px"><input class="t" data-rpadd-in="'+a.k+'" list="memberlist" autocomplete="off" placeholder="Add a name"><button class="btn sm" data-rpadd="'+a.k+'">+ Add</button></div></div></div>';
     } else {
-      h+='<div class="rprow"><span class="rpl">'+a.n+'</span><div class="rpv"><input class="t" data-rp="'+a.k+'" list="memberlist" autocomplete="off" value="'+esc(assigned(a.k))+'" placeholder="Pick a member or type a guest\'s name"></div></div>';
+      h+='<div class="rprow"><span class="rpl">'+a.n+rsvpBadge(assigned(a.k))+'</span><div class="rpv"><input class="t" data-rp="'+a.k+'" list="memberlist" autocomplete="off" value="'+esc(assigned(a.k))+'" placeholder="Pick a member or type a guest\'s name"></div></div>';
     }
   });
   h+='<div class="rprow"><span class="rpl">Keynote topic</span><div class="rpv row"><input class="t" data-ag="ktopic" value="'+esc(A.ktopic)+'" placeholder="e.g. Effective use of Humor"><input class="t" data-ag="korg" value="'+esc(A.korg)+'" placeholder="Club / organisation (optional)"></div></div></div>';
@@ -1193,7 +1214,7 @@ function openAgendaPrint(){
 }
 
 /* ---------- Toastmaster of the Day: run-sheet ---------- */
-function curItem(){ var its=itemsSorted(); var i=its.findIndex(function(x){return x.id===S.run.cur;}); return {its:its,i:i,cur:i>=0?its[i]:null,next:i>=0?its[i+1]:its[0]}; }
+function curItem(){ var its=runItems(); var i=its.findIndex(function(x){return x.id===S.run.cur;}); return {its:its,i:i,cur:i>=0?its[i]:null,next:nextLive(its,i+1)}; }
 function minutesNow(){ var d=new Date(); return d.getHours()*60+d.getMinutes()+d.getSeconds()/60; }
 function scheduleStatus(){
   var c=curItem(); if(!c.cur) return null;
@@ -1227,9 +1248,11 @@ function tmodHTML(){
   h+='<h2 class="sec">Full agenda</h2><ul class="tlist runlist">';
   c.its.forEach(function(it,i){
     var cls=c.i>=0&&i<c.i?"done":i===c.i?"cur":"";
-    h+='<li data-run="'+it.id+'" class="'+cls+'"><span class="n">'+fmtHM(it.time)+'</span><span style="flex:1"><b>'+arole(it.role).n+'</b>'+(whoFor(it.role)?' · '+esc(whoFor(it.role)):'')+'<br><span class="muted">'+esc(it.text)+'</span></span>'+(cls==="done"?'<span class="donetag">✓</span>':'')+'</li>';
+    var sk=isSkipped(it.id), moved=Array.isArray(S.run.order)&&S.run.order.length&&itemsSorted().indexOf(it)!==i;
+    h+='<li data-run="'+it.id+'" class="'+cls+(sk?' skipped':'')+'"><span class="n">'+fmtHM(it.time)+(moved?'<br><span class="badge on">moved</span>':'')+'</span><span style="flex:1"><b>'+arole(it.role).n+'</b>'+(whoFor(it.role)?' · '+esc(whoFor(it.role)):'')+(sk?' <span class="badge no">skipped</span>':'')+'<br><span class="muted">'+esc(it.text)+'</span></span>'+(cls==="done"?'<span class="donetag">✓</span>':'')+
+       (cls!=="done"&&cls!=="cur"?'<span class="runact"><button class="btn sm" data-runend="'+it.id+'" title="Move this item to the end of the meeting">⤵ To end</button><button class="btn sm" data-runskip="'+it.id+'">'+(sk?'↩ Unskip':'⏭ Skip')+'</button></span>':'')+'</li>';
   });
-  h+='</ul><div class="note">Tap any item to jump to it. Everyone connected sees what\'s happening now.</div></section>';
+  h+='</ul><div class="note">Tap any item to jump to it. Running late or someone missing? <b>⤵ To end</b> moves an item (e.g. a late keynote) to the end, and <b>⏭ Skip</b> leaves it out. Everyone connected sees the new order. The printed agenda keeps the original plan.</div></section>';
   return h;
 }
 function runGo(id){ S.run.cur=id; if(id && !S.run.started[id]) S.run.started[id]=now(); tick(S.run); commit(); }
@@ -1250,8 +1273,9 @@ setInterval(function(){
 
 /* ---------- Stage 2: evaluators, General Evaluator, voting, Round Robin, members ---------- */
 var MULTI_ROLES={seval:1,tteval:1,member:1,speaker:1};
-function myName(){ return MULTI_ROLES[L.role] ? ((L.myNames||{})[L.role]||"") : (S.people[L.role]||""); }
+function myName(){ return MULTI_ROLES[L.role] ? ((L.myNames||{})[L.role]||L.me||"") : (S.people[L.role]||""); }
 function setMyName(v){
+  if(v) L.me=v;
   if(MULTI_ROLES[L.role]){ L.myNames=L.myNames||{}; L.myNames[L.role]=v; saveL(); renderRoles(); NET.hello(); }
   else { S.people[L.role]=v; S.peopleU[L.role]=Math.max(now(),(S.peopleU[L.role]||0)+1); commitQuiet(); }
 }
@@ -1365,7 +1389,7 @@ function voteControlHTML(canOpen,canReveal){
 }
 function geHTML(){
   var h='<section class="card">'+voteControlHTML(true,false);
-  h+='<h2 class="sec">📣 Call for reports</h2><div class="sumlist">'+reportsSummary().map(function(x){ return '<div><b>'+x[0]+'</b>'+(x[1]?' · '+esc(x[1]):'')+'<div class="muted">'+esc(x[2])+'</div></div>'; }).join("")+'</div><div class="row" style="margin-top:6px"><button class="btn" id="geReport">📄 Open full report</button></div>';
+  h+='<h2 class="sec">📣 Call for reports</h2><div class="sumlist">'+reportsSummary().map(function(x){ return '<div><b>'+x[0]+'</b>'+(x[1]?' · '+esc(x[1]):'')+'<div class="muted">'+esc(x[2])+'</div></div>'; }).join("")+'</div><div class="row" style="margin-top:6px"><button class="btn" id="geReport">📄 Open full report</button>'+copyBtn("ge")+'</div>';
   h+='<h2 class="sec">🗣 Evaluations</h2><table class="sumtable"><thead><tr><th>Speaker</th><th>Type</th><th>Assigned</th><th>Status</th></tr></thead><tbody>';
   var rows=preparedSpeakers().map(function(n){return [n,"ps"];}).concat(ttSpeakers().map(function(n){return [n,"tt"];}));
   if(!rows.length) h+='<tr><td colspan="4" class="muted">No speakers yet.</td></tr>';
@@ -1453,6 +1477,7 @@ function memberHTML(){
      (ms.length?ms.map(function(n){ var p=present(n); return '<button class="chip'+(p?' active':'')+'" data-checkin="'+esc(n)+'">'+(p?'✓ ':'')+esc(n)+'</button>'; }).join(""):'<span class="muted">The Coordinator adds the member list.</span>')+
      '</div><div class="row" style="margin-top:8px"><input class="t" id="guestIn" placeholder="Guest? Type your name"><button class="btn" id="guestAdd">Check in</button></div>'+
      '<div class="saved" style="margin-top:6px">'+S.attend.filter(function(a){return a.mid===S.mid&&a.present;}).length+' checked in today</div>';
+  h+=rsvpHTML(me);
   h+='<h2 class="sec">🗳 Voting</h2><div>'+voteStateText()+'</div>'+(S.vote.state==="open"?'<button class="btn go big1" id="openVote" style="margin-top:8px">Vote now</button>':'')+(S.vote.state==="shown"?'<button class="btn" id="showWinners" style="margin-top:8px">Show winners</button>':'');
   var speakers=uniq(preparedSpeakers().concat(ttSpeakers()).concat(ms));
   h+='<h2 class="sec">💌 Send a note to a speaker</h2><div class="saved" style="margin-bottom:6px">Anonymous and encrypted: only the speaker can read it, on their feedback card.</div>'+
@@ -1681,6 +1706,7 @@ function speakerHTML(){
        '<label class="f" style="margin-top:8px">My time limits<select class="t" data-sp="lim" style="max-width:260px">'+LIMIT_PRESETS.map(function(p){return '<option value="'+p[0]+'"'+((s.lim||"")===p[0]?' selected':'')+'>'+p[1]+'</option>';}).join("")+'</select></label>'+
        '<div class="saved" style="margin-top:6px">Your title and objectives show for the Toastmaster, Timer, evaluators and in the report. Your time limits set the Timer\'s green / amber / red for you.</div>';
   }
+  h+=rsvpHTML(me);
   var tm=timesFor(me);
   h+='<h2 class="sec">⏱ My result</h2>'+(tm.length?tm.map(function(x){ return '<div><b>'+x.s.name+':</b> '+fmt(x.sec)+' · <span class="'+(x.st.cls||"")+'">'+esc(x.st.text)+'</span></div>'; }).join(""):'<div class="muted">Appears here after the Timer stops you.</div>');
   h+='<h2 class="sec">📄 My feedback <span class="cnt">🔒 private</span></h2><div class="saved">Evaluations reach you when your evaluator taps Submit. Audience notes arrive as they are sent.</div>'+feedbackBlockHTML(me);
@@ -2148,7 +2174,7 @@ document.addEventListener("keydown",function(e){ if(e.key==="Escape"){ document.
 var APP_ID="dijitalteam-speechcraft-v2";
 var NET={room:null,act:null,mode:null,code:"",status:"off",msg:"",info:{},peers:[],synced:false,decided:false,pushT:null,relayT:null,
   push:function(){ if(!NET.room) return; clearTimeout(NET.pushT); NET.pushT=setTimeout(function(){ sendAll({t:"state",state:S}); },120); },
-  hello:function(){ if(!NET.room) return; sendAll({t:"who",role:L.role,name:myName()}); refreshPeers(); }
+  hello:function(){ if(!NET.room) return; sendAll({t:"who",role:L.role,roles:myRoles(),name:myName()}); refreshPeers(); }
 };
 function flags(m){ m.host=NET.mode==="host"; m.synced=NET.synced||NET.mode==="host"; return m; }
 function sendAll(m){ try{ if(NET.act) NET.act.send(flags(m)); }catch(e){} }
@@ -2158,7 +2184,7 @@ function fmtCode(c){ return c.slice(0,3)+"-"+c.slice(3); }
 function cleanCode(s){ return String(s||"").toUpperCase().replace(/[^A-Z0-9]/g,""); }
 function setStatus(st,msg){ NET.status=st; NET.msg=msg||""; renderConnBtn(); renderRoles(); if(document.getElementById("connModal").classList.contains("on")) renderConnBox(); refreshWelcome(); }
 function refreshPeers(){
-  var t=now(), list=[{role:L.role,name:myName(),host:NET.mode==="host",me:true}];
+  var t=now(), list=[{role:L.role,roles:myRoles(),name:myName(),host:NET.mode==="host",me:true}];
   Object.keys(NET.info).forEach(function(id){ var p=NET.info[id]; if(t-p.last<20000) list.push(p); });
   NET.peers=list;
   if(NET.room){
@@ -2179,7 +2205,7 @@ function startMeeting(code,asHost){
   catch(e){ setStatus("err","Couldn't start the connection: "+(e&&e.message||e)); return; }
   NET.act=NET.room.makeAction("m");
   NET.act.onMessage=function(data,ctx){ onMsg(ctx&&ctx.peerId,data); };
-  NET.room.onPeerJoin=function(pid){ sendTo(pid,{t:"hello",role:L.role,name:myName(),state:S}); };
+  NET.room.onPeerJoin=function(pid){ sendTo(pid,{t:"hello",role:L.role,roles:myRoles(),name:myName(),state:S}); };
   NET.room.onPeerLeave=function(pid){ delete NET.info[pid]; refreshPeers(); };
   setStatus(asHost?"on":"wait", asHost?"":"Looking for meeting "+fmtCode(code)+"…");
   refreshPeers();
@@ -2205,10 +2231,10 @@ function onMsg(pid,m){
   var known=NET.info[pid];
   if(m.t==="bye"){ delete NET.info[pid]; refreshPeers(); return; }
   if(m.t==="hello"||m.t==="who"||!known){
-    NET.info[pid]={role:String(m.role||(known&&known.role)||"").slice(0,10),name:String(m.name!=null?m.name:(known&&known.name)||"").slice(0,60),host:!!m.host,last:now()};
-    if(!known && m.t!=="hello") sendTo(pid,{t:"hello",role:L.role,name:myName(),state:S});
+    NET.info[pid]={roles:Array.isArray(m.roles)?m.roles.slice(0,12).map(String):(known&&known.roles)||null,role:String(m.role||(known&&known.role)||"").slice(0,10),name:String(m.name!=null?m.name:(known&&known.name)||"").slice(0,60),host:!!m.host,last:now()};
+    if(!known && m.t!=="hello") sendTo(pid,{t:"hello",role:L.role,roles:myRoles(),name:myName(),state:S});
     refreshPeers();
-  } else { known.last=now(); known.host=!!m.host; }
+  } else { known.last=now(); known.host=!!m.host; if(Array.isArray(m.roles)) known.roles=m.roles.slice(0,12).map(String); }
   if(m.t==="ping") return;
   if(m.state&&typeof m.state==="object"){
     var remote; try{ remote=normalize(clone(m.state)); }catch(e){ return; }
@@ -2229,7 +2255,7 @@ function onMsg(pid,m){
   }
 }
 /* heartbeat: keep the online list honest when a phone locks or loses signal */
-setInterval(function(){ if(!NET.room) return; sendAll({t:"ping",role:L.role,name:myName()}); refreshPeers(); },5000);
+setInterval(function(){ if(!NET.room) return; sendAll({t:"ping",role:L.role,roles:myRoles(),name:myName()}); refreshPeers(); },5000);
 function sayBye(){ if(NET.room) sendAll({t:"bye"}); }
 function describeMeeting(st){
   var parts=[], sp=0; SESSIONS.forEach(function(s){ sp+=st.rows[s.id].length; });
@@ -2328,7 +2354,7 @@ function renderWelcome(){
       var other=S.people[r.id] && r.id!==L.role ? S.people[r.id] : "";
       return '<button class="rolecard'+(W.role===r.id?' active':'')+'" data-wrole="'+r.id+'"><span class="ic">'+r.icon+'</span><div><b>'+r.name+'</b><span>'+ROLE_DESC[r.id]+'</span>'+(other&&NET.mode?'<span class="taken">Taken by '+esc(other)+'</span>':'')+'</div></button>';
     }).join("")+'</div>';
-    h+='<label class="f">Your name<input class="t" id="wName" list="roster" autocomplete="off" placeholder="Type your name" value="'+esc(W.role?(MULTI_ROLES[W.role]?((L.myNames||{})[W.role]||""):(S.people[W.role]||"")):"")+'"></label>';
+    h+='<label class="f">Your name<input class="t" id="wName" list="roster" autocomplete="off" placeholder="Type your name" value="'+esc(W.role?(MULTI_ROLES[W.role]?((L.myNames||{})[W.role]||L.me||""):(S.people[W.role]||L.me||"")):(L.me||""))+'"></label>';
     h+='<div class="wfoot"><span class="saved">'+(W.role?'':'Choose your role to continue')+'</span><button class="btn primary big1" id="wNext"'+(W.role?'':' disabled')+'>Next →</button></div>';
   } else {
     var r=ROLES.find(function(x){return x.id===L.role;});
@@ -2359,6 +2385,7 @@ wbox.addEventListener("click",function(e){
   if(rc){ W.role=rc.dataset.wrole; renderWelcome(); var n=document.getElementById("wName"); if(n){ n.focus(); } return; }
   if(t.closest("#wNext")){
     var nm=(document.getElementById("wName").value||"").trim();
+    if(W.add){ myRoles(); if(L.roles.indexOf(W.role)<0) L.roles.push(W.role); W.add=false; } else L.roles=[W.role];
     L.role=W.role; saveL();
     if(nm!==myName()) setMyName(nm);
     NET.hello();
@@ -2380,9 +2407,152 @@ wbox.addEventListener("keydown",function(e){
   if(e.target.id==="wName"){ e.preventDefault(); var b=document.getElementById("wNext"); if(b&&!b.disabled) b.click(); }
 });
 
+/* ---------- one person, several roles on the same device ---------- */
+function roleObj(id){ return ROLES.find(function(x){return x.id===id;}); }
+function myRoles(){ if(!Array.isArray(L.roles)||!L.roles.length) L.roles=[L.role]; if(L.roles.indexOf(L.role)<0) L.roles.push(L.role); return L.roles; }
+function switchRole(id){ myRoles(); if(L.roles.indexOf(id)<0) L.roles.push(id); L.role=id; saveL(); NET.hello(); renderAll(); window.scrollTo(0,0); }
+function dropRole(id){ myRoles(); if(L.roles.length<2) return; L.roles=L.roles.filter(function(r){return r!==id;}); if(L.role===id) L.role=L.roles[0]; saveL(); NET.hello(); renderAll(); }
+/* roles the agenda gives this person today */
+function agendaRolesFor(name){
+  if(!name) return []; var k=nkey(name), out=[];
+  ["coord","tmod","ge","ttm","rrm","timer","ah","gram"].forEach(function(r){ if(nkey(assigned(r))===k) out.push(r); });
+  if(asList("sevals").some(function(n){return nkey(n)===k;})||S.assigns.some(function(a){return nkey(a.evaluator)===k;})) out.push("seval");
+  if(asList("ttevals").some(function(n){return nkey(n)===k;})) out.push("tteval");
+  if(asList("speakers").some(function(n){return nkey(n)===k;})) out.push("speaker");
+  return out;
+}
+function roleTabsHTML(){
+  var rs=myRoles(), h='<div class="rtabs">';
+  rs.forEach(function(id){ var r=roleObj(id); h+='<button class="rtab'+(id===L.role?' on':'')+'" data-rtab="'+id+'">'+r.icon+' '+esc(r.name)+(rs.length>1&&id!==L.role?'<span class="rx" data-rdrop="'+id+'" title="Remove this role from this device">✕</span>':'')+'</button>'; });
+  h+='<button class="rtab add" data-radd title="Add another role on this device">＋ Role</button></div>';
+  var miss=agendaRolesFor(L.me||myName()).filter(function(r){ return rs.indexOf(r)<0; });
+  if(miss.length) h+='<div class="rsuggest">📋 The agenda also has you as '+miss.map(function(r){var o=roleObj(r);return o.icon+' '+esc(o.name);}).join(", ")+' <button class="btn sm" data-raddall="'+miss.join(",")+'">Add '+(miss.length>1?'them':'it')+'</button></div>';
+  return h;
+}
+/* compact panels for your other roles, so you can do both at once */
+function speakingNowName(){ var r=runningList()[0]; return r?baseName(displayName(r.r,r.i)):""; }
+function companionHTML(){
+  var rs=myRoles(), h="";
+  if(rs.indexOf("ah")>=0 && L.role!=="ah"){
+    var who=speakingNowName()||((S.ahRows.find(function(r){return r.id===L.ahSel;})||{}).name||"");
+    var rec=who?S.ahRows.find(function(r){return nkey(r.name)===nkey(who);}):null;
+    h+='<div class="cmp"><b>🔢 Ah-Counter</b> <span class="muted">'+(who?esc(who)+(speakingNowName()?' (speaking now)':''):'— no one speaking')+'</span><div class="cmpbtns">'+
+       (who?S.fill.words.map(function(w){ return '<button class="cmpb" data-cmpah="'+esc(w)+'" data-who="'+esc(who)+'">'+esc(w)+' <b>'+((rec&&rec.c[w])||0)+'</b></button>'; }).join(""):'')+'</div></div>';
+  }
+  if(rs.indexOf("gram")>=0 && L.role!=="gram"){
+    var g=speakingNowName(); var gr=g?S.gramRows.find(function(r){return nkey(r.name)===nkey(g);}):null;
+    h+='<div class="cmp"><b>📝 Grammarian</b> <span class="muted">'+(g?esc(g)+' (speaking now)':'— no one speaking')+'</span><div class="cmpbtns">'+
+       (g?'<button class="cmpb" data-cmpgram="'+esc(g)+'">+1 Word of the Day'+(S.gram.wotd?' “'+esc(S.gram.wotd)+'”':'')+' <b>'+((gr&&gr.w)||0)+'</b></button>':'')+'</div></div>';
+  }
+  return h;
+}
+function renderCompanion(){ var el=document.getElementById("companion"); if(!el) return; var h=companionHTML(); el.innerHTML=h; el.classList.toggle("on",!!h); }
+
+/* ---------- Toastmaster can change the running order on the day ---------- */
+function runItems(){
+  var base=itemsSorted(), ord=S.run.order;
+  if(!Array.isArray(ord)||!ord.length) return base;
+  var byId={}; base.forEach(function(it){ byId[it.id]=it; });
+  var out=ord.map(function(id){return byId[id];}).filter(Boolean);
+  base.forEach(function(it){ if(out.indexOf(it)<0) out.push(it); });
+  return out;
+}
+function isSkipped(id){ return !!(S.run.skip&&S.run.skip[id]); }
+function nextLive(its,from){ for(var j=from;j<its.length;j++) if(!isSkipped(its[j].id)) return its[j]; return null; }
+function runMoveEnd(id){ var ids=runItems().map(function(x){return x.id;}).filter(function(x){return x!==id;}); ids.push(id); S.run.order=ids; tick(S.run); commit(); }
+function runToggleSkip(id){ S.run.skip=S.run.skip||{}; if(S.run.skip[id]) delete S.run.skip[id]; else S.run.skip[id]=true; tick(S.run); commit(); }
+
+/* ---------- who's coming (RSVP) and role clashes ---------- */
+var RSVP_OPTS=[["in","In person"],["online","Online"],["no","Can't make it"]];
+function rsvpOf(name){ return S.rsvp.find(function(r){ return r.id==="rv|"+nkey(name); }); }
+function rsvpHTML(name){
+  var h='<h2 class="sec">📅 Coming to this meeting?</h2>';
+  if(!name) return h+'<div class="muted">Choose your name first.</div>';
+  var r=rsvpOf(name)||{};
+  h+='<div class="row">'+RSVP_OPTS.map(function(o){ return '<button class="chip'+(r.status===o[0]?' active':'')+'" data-rsvp="'+o[0]+'" data-rname="'+esc(name)+'">'+o[1]+'</button>'; }).join("")+'</div>'+
+     '<div class="row" style="margin-top:6px"><input class="t" id="rsvpNote" data-rname="'+esc(name)+'" value="'+esc(r.note||"")+'" placeholder="Note for the organisers, e.g. leaving at 8 pm"></div>';
+  var c={in:0,online:0,no:0}; S.rsvp.forEach(function(x){ if(c[x.status]!=null) c[x.status]++; });
+  return h+'<div class="saved" style="margin-top:6px">So far: '+c.in+' in person · '+c.online+' online · '+c.no+' can\'t make it</div>';
+}
+function setRsvp(name,status,note){ var r=upsert(["rsvp"],"rv|"+nkey(name),{name:name,status:"",note:""}); r.name=name; if(status!=null) r.status=status; if(note!=null) r.note=note; tick(r); }
+function roleClashes(){
+  var out=[];
+  AROLES.forEach(function(a){ asList(a.k).forEach(function(n){ var r=rsvpOf(n); if(r&&(r.status==="no"||r.note)) out.push({role:a.n,name:n,status:r.status,note:r.note}); }); });
+  S.assigns.forEach(function(a){ var r=a.evaluator&&rsvpOf(a.evaluator); if(r&&r.status==="no") out.push({role:"Evaluator for "+a.speaker,name:a.evaluator,status:"no",note:r.note}); });
+  return out;
+}
+function availabilityHTML(){
+  var cl=roleClashes(), all=S.rsvp.filter(function(r){return r.status;});
+  if(!all.length && !cl.length) return "";
+  var h='<section class="card" style="margin-bottom:12px"><h2 class="sec" style="margin-top:0">📅 Availability & role changes</h2>';
+  if(cl.length) h+='<div class="clash">'+cl.map(function(x){ return '<div>'+(x.status==="no"?'⚠ <b>'+esc(x.name)+'</b> ('+esc(x.role)+') can\'t make it — reassign below':'ℹ️ <b>'+esc(x.name)+'</b> ('+esc(x.role)+')')+(x.note?' · “'+esc(x.note)+'”':'')+'</div>'; }).join("")+'</div>';
+  h+='<div class="chips" style="margin-top:8px">'+all.map(function(r){ var o=RSVP_OPTS.find(function(x){return x[0]===r.status;}); return '<span class="chip word">'+(r.status==="no"?'✕ ':r.status==="online"?'💻 ':'✓ ')+esc(r.name)+'<span class="c">'+(o?o[1]:'')+(r.note?' · '+esc(r.note):'')+'</span></span>'; }).join("")+'</div>';
+  return h+'</section>';
+}
+function rsvpBadge(name){ var r=name&&rsvpOf(name); if(!r||!r.status) return ""; return r.status==="no"?' <span class="badge no">can\'t make it</span>':r.status==="online"?' <span class="badge on">online</span>':''; }
+
+/* ---------- copy a role's report as text (for WhatsApp) ---------- */
+function reportText(role){
+  var t=now(), L1=[], hd=GROUP+(S.meta.week?" · "+S.meta.week:"")+(S.meta.date?" · "+S.meta.date:"");
+  if(role==="timer"){
+    L1.push("⏱ Timer's report — "+hd);
+    SESSIONS.forEach(function(s){ var d=S.rows[s.id].filter(function(r){return rowState(r)==="done";}); if(!d.length) return; L1.push(""); L1.push(s.name+":"); d.forEach(function(r,i){ L1.push("• "+displayName(r,i)+" — "+fmt(elapsed(r,t))+" — "+status(s.id,r,t).text); }); });
+  } else if(role==="ah"){
+    L1.push("🔢 Ah-Counter's report — "+hd);
+    S.ahRows.forEach(function(r){ var w=S.fill.words.filter(function(x){return r.c[x];}).map(function(x){return x+" "+r.c[x];}); L1.push("• "+r.name+": "+(w.join(", ")||"none")+" (total "+ahTotal(r)+")"); });
+  } else if(role==="gram"){
+    L1.push("📝 Grammarian's report — "+hd); if(S.gram.wotd) L1.push("Word of the Day: "+S.gram.wotd+(S.gram.meaning?" — "+S.gram.meaning:""));
+    S.gramRows.forEach(function(r){ L1.push("• "+r.name+": WOTD ×"+(r.w||0)+(r.good.length?"; great: "+r.good.join("; "):"")+(r.slips.length?"; to polish: "+r.slips.join("; "):"")); });
+  } else if(role==="ge"){
+    L1.push("🧭 General Evaluator's notes — "+hd);
+    reportsSummary().forEach(function(x){ L1.push("• "+x[0].replace(/^\S+\s/,"")+(x[1]?" ("+x[1]+")":"")+": "+x[2]); });
+    if(S.genotes.good) L1.push("What went well: "+S.genotes.good); if(S.genotes.improve) L1.push("What could be better: "+S.genotes.improve);
+  }
+  return L1.join("\n");
+}
+function copyText(txt){
+  var done=function(){ showToastMsg("📋 Copied — paste it into WhatsApp"); };
+  try{ navigator.clipboard.writeText(txt).then(done,function(){ fallback(); }); }catch(e){ fallback(); }
+  function fallback(){ var ta=document.createElement("textarea"); ta.value=txt; document.body.appendChild(ta); ta.select(); try{ document.execCommand("copy"); done(); }catch(e){ alert(txt); } ta.remove(); }
+}
+function copyBtn(role){ return '<button class="btn sm" data-copyrep="'+role+'">📋 Copy report text</button>'; }
+
+/* events */
+(function(){
+  document.getElementById("roles").addEventListener("click",function(e){
+    var t=e.target;
+    var dr=t.closest("[data-rdrop]"); if(dr){ e.stopPropagation(); dropRole(dr.dataset.rdrop); return; }
+    var rt=t.closest("[data-rtab]"); if(rt){ switchRole(rt.dataset.rtab); return; }
+    if(t.closest("[data-radd]")){ W.add=true; openWelcome("role"); return; }
+    var ra=t.closest("[data-raddall]"); if(ra){ ra.dataset.raddall.split(",").forEach(function(r){ if(L.roles.indexOf(r)<0) L.roles.push(r); }); saveL(); NET.hello(); renderAll(); return; }
+  });
+  document.getElementById("companion").addEventListener("click",function(e){
+    var a=e.target.closest("[data-cmpah]");
+    if(a){ var who=a.dataset.who, w=a.dataset.cmpah, rec=S.ahRows.find(function(r){return nkey(r.name)===nkey(who);});
+      if(!rec){ rec={id:uid(),name:who,c:{},ord:maxOrd(S.ahRows)+1,u:now()}; S.ahRows.push(rec); }
+      rec.c[w]=(rec.c[w]||0)+1; tick(rec); commit(); return; }
+    var g=e.target.closest("[data-cmpgram]");
+    if(g){ var who2=g.dataset.cmpgram, gr=S.gramRows.find(function(r){return nkey(r.name)===nkey(who2);});
+      if(!gr){ gr={id:uid(),name:who2,w:0,good:[],slips:[],ord:maxOrd(S.gramRows)+1,u:now()}; S.gramRows.push(gr); }
+      gr.w=(gr.w||0)+1; tick(gr); commit(); return; }
+  });
+  var V=document.getElementById("view");
+  V.addEventListener("click",function(e){
+    var t=e.target;
+    var cp=t.closest("[data-copyrep]"); if(cp){ copyText(reportText(cp.dataset.copyrep)); return; }
+    var rv=t.closest("[data-rsvp]"); if(rv){ var nm=rv.dataset.rname, cur=rsvpOf(nm); setRsvp(nm,(cur&&cur.status===rv.dataset.rsvp)?"":rv.dataset.rsvp,null); commit(); return; }
+    if(L.role==="tmod"){
+      var me=t.closest("[data-runend]"); if(me){ e.stopPropagation(); runMoveEnd(me.dataset.runend); return; }
+      var sk=t.closest("[data-runskip]"); if(sk){ e.stopPropagation(); runToggleSkip(sk.dataset.runskip); return; }
+    }
+  },true);
+  V.addEventListener("input",function(e){ if(e.target.id==="rsvpNote"){ setRsvp(e.target.dataset.rname,null,e.target.value); commitQuiet(); } });
+})();
+
 /* ---------- start ---------- */
 if(!sessionOf(L.tab)) L.tab="tt";
 if(!ROLES.some(function(r){return r.id===L.role;})) L.role="timer";
+if(!Array.isArray(L.roles)||!L.roles.length) L.roles=[L.role]; L.roles=L.roles.filter(function(r){return ROLES.some(function(x){return x.id===r;});}); if(L.roles.indexOf(L.role)<0) L.roles.push(L.role);
 renderAll(); wake(); save();
 var hashCode=""; try{ var hm=location.hash.match(/join=([A-Za-z0-9-]+)/); if(hm) hashCode=cleanCode(hm[1]); }catch(e){}
 var hashRole=""; try{ var hr=location.hash.match(/role=([a-z]+)/); if(hr&&ROLES.some(function(r){return r.id===hr[1];})) hashRole=hr[1]; }catch(e){}

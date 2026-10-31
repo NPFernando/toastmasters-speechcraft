@@ -18,6 +18,13 @@ A single HTML page for running Speechcraft meetings at **Dijital Team Colombo**.
 
 One **Meeting report** combines every role and can be saved as a PDF.
 
+### Real meetings change on the day
+
+- **One person, several roles:** tap **＋ Role** to hold more than one role on a device and switch with one tap. If the agenda lists you in several roles, the page offers to add them. Small panels keep your other jobs at hand: Ah-Counter buttons and the Grammarian's Word of the Day +1 for whoever is speaking, and the Timer's live bar.
+- **Who's coming:** members reply In person / Online / Can't make it, with a note such as "leaving at 8 pm". The Coordinator sees clashes ("can't make it — reassign") and reassigns role players and evaluators.
+- **Running order:** the Toastmaster can move an item to the end (e.g. a late keynote) or skip it; everyone's "Now" line follows.
+- **Hand-over:** role data is shared, so whoever takes over a role carries on. **📋 Copy report text** gives a WhatsApp-ready summary for the Timer, Ah-Counter, Grammarian and General Evaluator.
+
 ### Voting
 
 When the General Evaluator opens voting, a vote bar appears on every connected device: Best Prepared Speaker, Best Table Topics Speaker, Best Evaluator and Best Role Player, one vote per device per award. Results stay hidden until the Toastmaster taps **Reveal winners**, then they appear on every screen together.
