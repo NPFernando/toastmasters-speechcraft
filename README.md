@@ -4,12 +4,18 @@ A single HTML page for running Speechcraft meetings at **Dijital Team Colombo**.
 
 | Role | What it does |
 |---|---|
-| ⏱ **Timer** | Plan speakers, live counter with green / amber / red signal flashes, Table Topics, Prepared Speech and Round Robin limits, manual time entry, time totals |
+| 🗂 **Speechcraft Coordinator** | PIN-protected set-up: member list (remembered for every meeting), meeting details, role players and agenda; names fill in on every device; prints the agenda sheet |
+| 🎩 **Toastmaster of the Day** | Run-sheet with Now / Next, tap to move on, shows if the meeting is on time or behind; everyone sees a "Now:" line |
+| ⏱ **Timer** | Plan speakers, live counter with green / amber / red signal flashes, Table Topics, Prepared Speech, Round Robin, Evaluations and Role reports (Timer and Ah-Counter 1 min, Grammarian 2 min), manual time entry, time totals |
 | 🎤 **Table Topics Master** | Prepare topics, random pick, full-screen topic display, record who took each topic, remaining vs used topics |
 | 🔢 **Ah-Counter** | Tap counts of filler words (Um, Ah, Er, So, Like…) per speaker, editable word list |
 | 📝 **Grammarian** | Word of the Day, uses per speaker, great phrases and slips |
 
 One **Meeting report** combines every role and can be saved as a PDF.
+
+### Coordinator PIN
+
+The Coordinator area is locked with a 4–8 digit PIN. When it is first set, a one-time **recovery code** is shown: keep it with the coordinator handover notes. To hand over, share the PIN or unlock and use **Change PIN**. This is a lock against casual changes; because everything runs in the browser without a server, it isn't strong security.
 
 ## Use it
 

@@ -226,6 +226,58 @@ tr.queued:not(.nextup) .btn.go{background:transparent;color:var(--g);border-colo
 .notes li span{flex:1}
 .big1{font-size:18px;padding:12px 18px}
 
+/* coordinator & toastmaster */
+.rp{display:grid;gap:6px}
+.rprow{display:grid;grid-template-columns:200px 1fr;gap:10px;align-items:start;border-bottom:1px solid var(--line);padding:6px 0}
+.rpl{font-weight:600;padding-top:8px}
+.agrow{display:grid;grid-template-columns:135px 200px 1fr 200px 34px;gap:6px;align-items:start;border-bottom:1px solid var(--line);padding:6px 0}
+.agtext{min-height:38px}
+.agview{display:grid;grid-template-columns:80px 1fr;gap:2px 10px;border-bottom:1px solid var(--line);padding:6px 0}
+.agview .muted{grid-column:2}
+.agline{display:none;border:1px solid var(--line);background:var(--card);border-radius:10px;padding:8px 12px;margin-bottom:10px;font-size:14px}
+.agline.on{display:block}
+.bigclock{font-size:30px;font-weight:800;font-variant-numeric:tabular-nums;margin-right:8px}
+.nowtxt{font-size:20px} .nowtxt .tm,.nexttxt .tm{color:var(--muted);font-weight:700;margin-right:4px}
+.nowact{font-size:17px;margin-top:6px}
+.agx2{margin-top:6px;padding:6px 10px;border-left:3px solid var(--brand);background:var(--bg);border-radius:6px;font-size:14px}
+.runlist li{cursor:pointer;align-items:flex-start}
+.runlist li .n{width:70px;text-align:left}
+.runlist li.done{opacity:.55}
+.runlist li.cur{background:var(--run-bg);border-radius:8px}
+#report .agdoc{font-size:12.5px}
+#report .aghead{display:grid;grid-template-columns:110px 1fr;align-items:center;text-align:center}
+#report .aghead img{max-height:80px}
+#report .agt1{font-size:20px;font-weight:800;letter-spacing:3px}
+#report .agt2{font-size:17px;font-weight:700;color:#1f3a5f}
+#report .agt3{font-size:13px;letter-spacing:1px;margin-top:6px}
+#report .agmeta{margin:10px 0}
+#report .aggrid{display:grid;grid-template-columns:200px 1fr;gap:12px;align-items:start}
+#report .agbox{border:1px solid #999;padding:8px;margin-bottom:10px}
+#report .agbox b{display:block;color:#1f3a5f;margin-bottom:4px}
+#report .agrp{margin-bottom:8px} #report .agrpn{color:#1f3a5f;font-weight:700}
+#report .agtab{table-layout:fixed;width:100%}
+#report .agtab th:nth-child(1){width:62px} #report .agtab th:nth-child(2){width:110px}
+#report .agtab td{vertical-align:top;word-wrap:break-word}
+#report .agtab td:first-child{white-space:nowrap}
+#report .agx2{border-left:3px solid #1f3a5f;background:#f4f6f9;font-size:12px}
+#report .agnext{margin-top:10px;font-weight:700}
+@media print{
+  #report .agdoc{font-size:10px;line-height:1.3}
+  #report .agdoc .aghead img{max-height:62px}
+  #report .agdoc .agt1{font-size:16px} #report .agdoc .agt2{font-size:14px} #report .agdoc .agt3{font-size:11px;margin-top:3px}
+  #report .agdoc .agmeta{margin:6px 0}
+  #report .agdoc .aggrid{grid-template-columns:165px 1fr;gap:8px}
+  #report .agdoc .agbox{padding:5px 6px;margin-bottom:6px}
+  #report .agdoc .agrp{margin-bottom:4px}
+  #report .agdoc .agtab th,#report .agdoc .agtab td{padding:2px 5px}
+  #report .agdoc .agx2{margin-top:3px;padding:3px 6px;font-size:9.5px}
+}
+@media (max-width:640px){
+  .rprow{grid-template-columns:1fr} .rpl{padding-top:0}
+  .agrow{grid-template-columns:96px 1fr 34px} .agrow .agtext{grid-column:1 / -1} .agrow .agx{grid-column:1 / 3}
+  #report .aggrid{grid-template-columns:1fr}
+}
+
 /* modals, toast, stage */
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-start;justify-content:center;overflow:auto;padding:24px 12px;z-index:50}
 .modal.on{display:flex}
@@ -350,6 +402,7 @@ details.guide td:first-child{font-weight:600;width:190px}
   </div>
 
   <nav class="roles" id="roles"></nav>
+  <div id="agendaLine" class="agline"></div>
   <div id="live"></div>
   <div id="nowStrip"></div>
   <main id="view"></main>
@@ -360,6 +413,8 @@ details.guide td:first-child{font-weight:600;width:190px}
       <tr><td>Pick your role</td><td>When you open the page, choose your role (Timer, Table Topics Master, Ah-Counter or Grammarian), type your name, then host or join the meeting. Your device then shows only your role. Use <b>Change role</b> at the top if you need to switch.</td></tr>
       <tr><td>QR codes</td><td>After starting a meeting, a QR code appears: others scan it with their phone camera to open the page with the code filled in. <b>📱 Open on phone</b> (next to your role) shows a QR code that opens <i>your</i> role on your phone in the same meeting, with all the data.</td></tr>
       <tr><td>Connect devices</td><td>One person (usually the Timer) taps <b>Not connected → Host meeting</b> and reads out the 6-character code. Everyone else opens the page, picks their role and types the code (or opens the host's invite link, which fills the code in). Everything then syncs live. Needs internet; the link between devices is encrypted. If someone's connection drops, they keep working and catch up automatically.</td></tr>
+      <tr><td>Speechcraft Coordinator</td><td>Protected by a PIN (4–8 digits). Set once; a one-time <b>recovery code</b> is shown for when the PIN is forgotten. Hand the PIN to the next coordinator, or unlock and use <b>Change PIN</b>. Add members (remembered for every meeting), enter the meeting details, pick role players and edit the agenda. Names fill in on every device and the Timer's lists. <b>📄 Print agenda</b> makes the agenda sheet.</td></tr>
+      <tr><td>Toastmaster of the Day</td><td>Shows the agenda with <b>Now</b> and <b>Next</b>. Tap <b>Start the meeting</b>, then <b>Next ▶</b> as you go (or tap any item). It shows whether the meeting is on time or running behind, and everyone connected sees a small "Now:" line.</td></tr>
       <tr><td>Timer: plan speakers</td><td>Type names and press <b>+ Add to list</b> (several at once with commas). Press <b>▶ Start next: Name</b> when they stand up. Rename, reorder ↑ ↓ or remove ✕ any time.</td></tr>
       <tr><td>Timer: timing</td><td>Type a name (optional) and press <b>Start speaker</b>. Add or fix the name in the live bar while they speak. Press <b>Stop</b> when done. The live bar flashes <b>SHOW GREEN / AMBER / RED</b> at each signal. If someone is still running when you start another, the page asks first.</td></tr>
       <tr><td>Timer: fix or add a time</td><td><b>✎ Add time manually</b> for anyone you forgot. Click a finished time to correct it (m:ss). Finished speakers can't be restarted; ✕ removes them (with Undo).</td></tr>
@@ -376,6 +431,7 @@ details.guide td:first-child{font-weight:600;width:190px}
 <div id="welcome" role="dialog" aria-modal="true" aria-label="Get started"><div class="wbox" id="wbox"></div></div>
 <div id="toast" role="status"><span id="toastMsg"></span><button id="toastUndo">Undo</button></div>
 <datalist id="roster"></datalist>
+<datalist id="memberlist"></datalist>
 
 <div id="qrModal" class="modal" role="dialog" aria-modal="true" aria-label="Open on another device"><div class="mbox" id="qrBox" style="text-align:center"></div></div>
 <div id="connModal" class="modal" role="dialog" aria-modal="true" aria-label="Connect devices"><div class="mbox" id="connBox"></div></div>
@@ -423,11 +479,11 @@ ${Be}`;q.test(K)&&($(N),N=setTimeout(J,fs))},ye=()=>{k.iceGatheringState==="comp
 var GROUP="Dijital Team Colombo";
 var NS=(function(){ try{ var a=new URLSearchParams(location.search).get("as"); return a?"."+a.replace(/[^a-z0-9]/gi,""):""; }catch(e){ return ""; } })();
 var KEY="speechcraftMeeting.v2"+NS, LKEY="speechcraftMeeting.local"+NS, OLDKEY="speechcraftTimerLog.v1", OLDNAMES="speechcraftTimerLog.names";
-var SESSIONS=[{id:"tt",name:"Table Topics",type:"std"},{id:"ps",name:"Prepared Speech",type:"std"},{id:"rr",name:"Round Robin",type:"rr"}];
-var ROLES=[{id:"timer",name:"Timer",icon:"⏱"},{id:"ttm",name:"Table Topics Master",icon:"🎤"},{id:"ah",name:"Ah-Counter",icon:"🔢"},{id:"gram",name:"Grammarian",icon:"📝"}];
+var SESSIONS=[{id:"tt",name:"Table Topics",type:"std"},{id:"ps",name:"Prepared Speech",type:"std"},{id:"rr",name:"Round Robin",type:"rr"},{id:"ev",name:"Evaluations",type:"std"},{id:"rep",name:"Role reports",type:"rep"}];
+var ROLES=[{id:"coord",name:"Speechcraft Coordinator",icon:"🗂"},{id:"tmod",name:"Toastmaster of the Day",icon:"🎩"},{id:"timer",name:"Timer",icon:"⏱"},{id:"ttm",name:"Table Topics Master",icon:"🎤"},{id:"ah",name:"Ah-Counter",icon:"🔢"},{id:"gram",name:"Grammarian",icon:"📝"}];
 var FILLERS=["Um","Ah","Er","So","Like","And","You know","Repeat"];
-var COLLS=[["rows","tt"],["rows","ps"],["rows","rr"],["topics"],["ahRows"],["gramRows"]];
-var MEETING_LWW=["meta","cur","gram"], KEEP_LWW=["limits","fill"];
+var COLLS=[["rows","tt"],["rows","ps"],["rows","rr"],["rows","ev"],["rows","rep"],["topics"],["ahRows"],["gramRows"]];
+var MEETING_LWW=["meta","cur","gram","agenda","run"], KEEP_LWW=["limits","fill","members","pin"];
 
 /* ---------- helpers ---------- */
 function now(){ return Date.now(); }
@@ -461,9 +517,10 @@ function lsSet(k,v){ try{ localStorage.setItem(k,v); return true; }catch(e){ ret
 function blank(){
   return { v:2, mid:uid(), midU:now(),
     meta:{week:"",date:todayISO(),u:0},
-    people:{timer:"",ttm:"",ah:"",gram:""}, peopleU:{timer:0,ttm:0,ah:0,gram:0},
-    limits:{tt:{g:60,a:90,r:120},ps:{g:240,a:300,r:360},rr:{b:20},u:0},
-    rows:{tt:[],ps:[],rr:[]}, topics:[], cur:{id:null,u:0},
+    people:{coord:"",tmod:"",timer:"",ttm:"",ah:"",gram:""}, peopleU:{coord:0,tmod:0,timer:0,ttm:0,ah:0,gram:0},
+    limits:{tt:{g:60,a:90,r:120},ps:{g:240,a:300,r:360},rr:{b:20},ev:{g:90,a:105,r:120},rep:{g:30,a:45,r:60},u:0},
+    members:{list:[],u:0}, pin:{hash:"",rhash:"",salt:"",u:0}, agenda:defaultAgenda(), run:{cur:null,started:{},u:0},
+    rows:{tt:[],ps:[],rr:[],ev:[],rep:[]}, topics:[], cur:{id:null,u:0},
     fill:{words:FILLERS.slice(),u:0}, ahRows:[],
     gram:{wotd:"",meaning:"",u:0}, gramRows:[],
     dead:{}, names:[] };
@@ -476,7 +533,12 @@ function normalize(st){
     fill:Object.assign(b.fill, st.fill||{}), ahRows:[], gram:Object.assign(b.gram, st.gram||{}), gramRows:[],
     dead:(st.dead&&typeof st.dead==="object")?st.dead:{}, names:Array.isArray(st.names)?st.names.filter(function(n){return typeof n==="string";}):[] };
   if(!Array.isArray(o.fill.words)) o.fill.words=FILLERS.slice();
-  ["tt","ps","rr"].forEach(function(k){ o.rows[k]=Array.isArray(st.rows&&st.rows[k])?st.rows[k]:[]; });
+  SESSIONS.forEach(function(s){ var k=s.id; o.rows[k]=Array.isArray(st.rows&&st.rows[k])?st.rows[k]:[]; });
+  ["ev","rep"].forEach(function(k){ if(!o.limits[k]) o.limits[k]=blank().limits[k]; });
+  o.members=(st.members&&Array.isArray(st.members.list))?{list:st.members.list.filter(function(m){return m&&m.name;}),u:+st.members.u||0}:b.members;
+  o.pin=Object.assign(b.pin, st.pin||{});
+  o.agenda=Object.assign(b.agenda, st.agenda||{}); if(!Array.isArray(o.agenda.items)) o.agenda.items=defaultItems(); if(!o.agenda.assign||typeof o.agenda.assign!=="object") o.agenda.assign={};
+  o.run=Object.assign(b.run, st.run||{}); if(!o.run.started||typeof o.run.started!=="object") o.run.started={};
   o.topics=Array.isArray(st.topics)?st.topics:[]; o.ahRows=Array.isArray(st.ahRows)?st.ahRows:[]; o.gramRows=Array.isArray(st.gramRows)?st.gramRows:[];
   COLLS.forEach(function(p){
     var arr=getColl(o,p).filter(function(x){return x&&typeof x==="object"&&x.id;});
@@ -516,13 +578,13 @@ function addName(st,name){
 }
 function remember(name){ if(addName(S,name)){ save(); NET.push(); renderRoster(); } }
 function renderRoster(){
-  var all=S.names.slice();
-  SESSIONS.forEach(function(s){ S.rows[s.id].forEach(function(r){ if(r.name&&r.name.trim()) all.push(r.name.trim()); }); });
+  var all=memberNames().concat(S.names);
+  SESSIONS.forEach(function(s){ S.rows[s.id].forEach(function(r){ if(r.name&&r.name.trim()&&!r.ak) all.push(r.name.trim()); }); });
   var seen={}, list=[];
   all.forEach(function(n){ var k=n.toLowerCase(); if(!seen[k]){ seen[k]=1; list.push(n); } });
-  list.sort(function(a,b){return a.localeCompare(b);});
   document.getElementById("roster").innerHTML=list.map(function(n){return '<option value="'+esc(n)+'">';}).join("");
 }
+function renderMemberList(){ var el=document.getElementById("memberlist"); if(el) el.innerHTML=memberNames().map(function(n){return '<option value="'+esc(n)+'">';}).join(""); }
 
 /* ---------- merge (for live sync and restore) ---------- */
 function mergeColl(a,b,dead){
@@ -559,13 +621,14 @@ function mergeInto(A,B,mode){
 function sessionOf(id){ for(var i=0;i<SESSIONS.length;i++) if(SESSIONS[i].id===id) return SESSIONS[i]; }
 function elapsed(row,t){ if(row.manual!=null) return row.manual; if(row.start==null) return null; return Math.round(((row.end!=null?row.end:t)-row.start)/1000); }
 function rowState(row){ if(row.start!=null&&row.end==null&&row.manual==null) return "running"; if(row.manual!=null||row.end!=null) return "done"; return "idle"; }
-function signal(sid,sec){ if(sec==null) return ""; var L2=S.limits[sid]; if(sid==="rr") return sec<=L2.b?"sg":"sr"; if(sec>=L2.r) return "sr"; if(sec>=L2.a) return "sa"; if(sec>=L2.g) return "sg"; return ""; }
+function limOf(sid,row){ return (row&&row.lim)||S.limits[sid]; }
+function signal(sid,sec,row){ if(sec==null) return ""; var L2=limOf(sid,row); if(sid==="rr") return sec<=L2.b?"sg":"sr"; if(sec>=L2.r) return "sr"; if(sec>=L2.a) return "sa"; if(sec>=L2.g) return "sg"; return ""; }
 function signalName(c){ return c==="sg"?"Green":c==="sa"?"Amber":c==="sr"?"Red":"No signal yet"; }
 function status(sid,row,t){
   var st=rowState(row), sec=elapsed(row,t);
   if(st==="idle") return {text:"",cls:""};
   if(st==="running") return {text:"⏱ Running "+fmt(sec),cls:"st-run"};
-  var L2=S.limits[sid];
+  var L2=limOf(sid,row);
   if(sid==="rr") return sec<=L2.b?{text:"Within time",cls:"st-q",ok:true}:{text:"Overtime (+"+fmt(sec-L2.b)+")",cls:"st-o"};
   if(sec<L2.g) return {text:"Under time (−"+fmt(L2.g-sec)+")",cls:"st-u"};
   if(sec<=L2.r) return {text:"Qualified",cls:"st-q",ok:true};
@@ -586,7 +649,7 @@ function okToStart(){
   var t=now(); run.forEach(function(x){ x.r.end=t; tick(x.r); });
   return true;
 }
-function nextSignalText(sid,sec){ var L2=S.limits[sid];
+function nextSignalText(sid,sec,row){ var L2=limOf(sid,row);
   if(sid==="rr") return sec<=L2.b?"bell in "+fmt(L2.b-sec):"over by "+fmt(sec-L2.b);
   if(sec<L2.g) return "green in "+fmt(L2.g-sec); if(sec<L2.a) return "amber in "+fmt(L2.a-sec); if(sec<L2.r) return "red in "+fmt(L2.r-sec); return "over by "+fmt(sec-L2.r); }
 function bannerText(sid,sg){ if(sid==="rr") return sg==="sr"?"🔔 TIME UP":""; return sg==="sg"?"SHOW GREEN":sg==="sa"?"SHOW AMBER":sg==="sr"?"SHOW RED":""; }
@@ -635,11 +698,14 @@ function renderAll(){
   renderMeta(); renderRoles(); renderRoster();
   renderLive(); renderNow();
   var v=document.getElementById("view");
-  if(L.role==="timer") v.innerHTML=timerHTML();
+  if(L.role==="coord") v.innerHTML=coordHTML();
+  else if(L.role==="tmod") v.innerHTML=tmodHTML();
+  else if(L.role==="timer") v.innerHTML=timerHTML();
   else if(L.role==="ttm") v.innerHTML=ttmHTML();
   else if(L.role==="ah") v.innerHTML=ahHTML();
   else v.innerHTML=gramHTML();
   if(document.getElementById("stage").classList.contains("on")) renderStage();
+  renderAgendaLine(); renderMemberList();
   renderConnBtn();
 }
 function renderLiveOnly(){ renderNow(); }
@@ -669,7 +735,7 @@ function renderNow(){
   if(L.role==="timer"){ el.classList.remove("on"); el.innerHTML=""; return; }
   var run=runningList(), t=now(), h="";
   run.forEach(function(x){
-    var sec=elapsed(x.r,t), sg=signal(x.sid,sec);
+    var sec=elapsed(x.r,t), sg=signal(x.sid,sec,x.r);
     var add = (L.role==="ah"||L.role==="gram") ? '<button class="btn sm" data-now-add="'+esc(displayName(x.r,x.i))+'">+ Add / select</button>' : '';
     h+='<div class="nowitem '+sg+'" data-sid="'+x.sid+'" data-id="'+x.r.id+'"><div class="clock" data-live="clock">'+fmt(sec)+'</div>'+
        '<div class="nm">🎙 '+esc(displayName(x.r,x.i))+'<span>Speaking now · '+x.s.name+'</span></div><span class="pill '+(sg||"sn")+'" data-live="pill">'+signalName(sg)+'</span>'+add+'</div>';
@@ -680,6 +746,7 @@ function renderNow(){
 /* ---------- Timer view ---------- */
 function limitsHTML(s){
   var L2=S.limits[s.id];
+  if(s.type==="rep") return '<div class="limits"><span class="saved" style="align-self:center">Each report has its own time: Timer and Ah-Counter 1 min (green 0:30 · amber 0:45 · red 1:00), Grammarian 2 min (green 1:00 · amber 1:30 · red 2:00). The Coordinator\'s role players fill this list in.</span></div>';
   if(s.type==="rr") return '<div class="limits"><div class="lim"><span>🔔</span><span>Bell</span><input data-lim="b" value="'+fmt(L2.b)+'"></div><span class="saved" style="align-self:center">Within time up to the bell, Overtime after it.</span></div>';
   return '<div class="limits">'+
     '<div class="lim"><i style="background:var(--g)"></i><span>Green</span><input data-lim="g" value="'+fmt(L2.g)+'"></div>'+
@@ -713,7 +780,7 @@ function timerHTML(){
   if(!rows.length) h+='<tr><td colspan="6" class="empty">No speakers yet. Plan ahead with <b>+ Add to list</b> (e.g. <i>Nimal, Kasun, Amali</i>), or press <b>Start speaker</b> when someone begins.</td></tr>';
   var nx=firstQueued(s.id);
   rows.forEach(function(r,i){
-    var st=rowState(r), sec=elapsed(r,t), sg=signal(s.id,sec), stx=status(s.id,r,t), isNext=st==="idle"&&r===nx;
+    var st=rowState(r), sec=elapsed(r,t), sg=signal(s.id,sec,r), stx=status(s.id,r,t), isNext=st==="idle"&&r===nx;
     if(st==="idle"&&r.manual==null) stx={text:isNext?"Next up":"Waiting",cls:"st-queue"};
     var ctl= st==="running"?'<button class="btn stop sm" data-act="stop">■ Stop</button>': st==="done"?'<span class="donetag">✓ Done</span>':'<button class="btn go sm" data-act="start">▶ Start</button>';
     var timeCell= st==="running"?'<div class="timebox '+sg+'" data-live="time">'+fmt(sec)+'</div>'
@@ -737,15 +804,15 @@ function renderLive(){
   var t=now(), h="", focusedId=null, a=document.activeElement;
   if(a&&a.dataset&&a.dataset.edit==="livename"){ focusedId=a.closest(".liveitem").dataset.id; }
   runningList().forEach(function(x){
-    var sec=elapsed(x.r,t), sg=signal(x.sid,sec);
+    var sec=elapsed(x.r,t), sg=signal(x.sid,sec,x.r);
     h+='<div class="liveitem '+sg+'" data-sid="'+x.sid+'" data-id="'+x.r.id+'"><div class="clock" data-live="clock">'+fmt(sec)+'</div>'+
-      '<div class="who"><input class="livename" data-edit="livename" list="roster" autocomplete="off" value="'+esc(x.r.name)+'" placeholder="Speaker '+(x.i+1)+' – type name"><span>'+x.s.name+' · <span data-live="next">'+nextSignalText(x.sid,sec)+'</span></span></div>'+
+      '<div class="who"><input class="livename" data-edit="livename" list="roster" autocomplete="off" value="'+esc(x.r.name)+'" placeholder="Speaker '+(x.i+1)+' – type name"><span>'+x.s.name+' · <span data-live="next">'+nextSignalText(x.sid,sec,x.r)+'</span></span></div>'+
       '<span class="sigbanner" data-live="banner">'+bannerText(x.sid,sg)+'</span><span class="pill '+(sg||"sn")+'" data-live="pill">'+signalName(sg)+'</span>'+
       '<button class="btn stop" data-act="livestop">■ Stop</button></div>';
   });
   if(focusedId && el.querySelector('.liveitem[data-id="'+focusedId+'"]') && h.indexOf('data-id="'+focusedId+'"')>=0) return; // don't disturb typing
   el.innerHTML=h; el.classList.toggle("on",!!h);
-  el.querySelectorAll(".liveitem").forEach(function(it){ var r=findRow(it.dataset.sid,it.dataset.id); if(r&&lastSig[r.id]===undefined) lastSig[r.id]=signal(it.dataset.sid,elapsed(r,t)); });
+  el.querySelectorAll(".liveitem").forEach(function(it){ var r=findRow(it.dataset.sid,it.dataset.id); if(r&&lastSig[r.id]===undefined) lastSig[r.id]=signal(it.dataset.sid,elapsed(r,t),r); });
 }
 function flashItem(it){ it.classList.remove("flash"); void it.offsetWidth; it.classList.add("flash"); clearTimeout(it._ft); it._ft=setTimeout(function(){ it.classList.remove("flash"); },3200); }
 
@@ -867,14 +934,259 @@ function addCounterSpeaker(kind,name){
   if(kind==="ah") L.ahSel=ex.id; else L.gramSel=ex.id; saveL(); remember(name); commit();
 }
 
+/* ---------- agenda, role players, coordinator, toastmaster run-sheet ---------- */
+var AROLES=[
+  {k:"president",n:"President"},{k:"tmod",n:"Toastmaster of the Day"},{k:"ge",n:"General Evaluator"},
+  {k:"ttm",n:"Table Topics Master"},{k:"rrm",n:"Round Robin Master"},{k:"keynote",n:"Keynote Speaker"},
+  {k:"timer",n:"Timer"},{k:"ah",n:"Ah-Counter"},{k:"gram",n:"Grammarian"},
+  {k:"speakers",n:"Prepared Speakers",multi:true},{k:"sevals",n:"Speech Evaluators",multi:true},{k:"ttevals",n:"Table Topic Evaluators",multi:true},
+  {k:"coord",n:"Speechcraft Coordinator"}
+];
+var XTRAS=[{k:"",n:"—"},{k:"speakers",n:"List prepared speakers"},{k:"evals",n:"List reports & evaluators"},{k:"keynote",n:"Keynote speaker & topic"},{k:"ttevals",n:"List Table Topic evaluators"}];
+var CLUB_MISSION="We provide a supportive and positive learning experience in which members are empowered to develop communication and leadership skills, resulting in greater self-confidence and personal growth.";
+function defaultItems(){
+  return [
+    ["17:30","president","Call the meeting to order. National Anthem. Introduce the Toastmaster of the Day and hand over the session.",""],
+    ["17:40","tmod","Introduction. Invite the General Evaluator to introduce the team.",""],
+    ["17:45","ge","Introduce the Timer (1 min), Ah-Counter (1 min) and Grammarian (2 min). Hand over to the Toastmaster.",""],
+    ["17:50","tmod","Introduce the Round Robin Master.",""],
+    ["17:52","rrm","Explain and run the Round Robin session. Return control to the Toastmaster.",""],
+    ["18:00","keynote","KEYNOTE PRESENTATION — the Toastmaster introduces the keynote speaker.","keynote"],
+    ["18:40","tmod","Prepared Speech Session — introduce the speech objectives and the speakers.","speakers"],
+    ["18:45","tmod","Introduce the Table Topics Master and hand over the session.",""],
+    ["18:47","ttm","Table Topics Session — explain the session and introduce the evaluators (2 min × 3). Return control to the Toastmaster.","ttevals"],
+    ["18:55","tmod","Introduce the General Evaluator and hand over the session.",""],
+    ["18:57","ge","Evaluation Session — call for reports and evaluations. General comments on the meeting. Return control to the Toastmaster.","evals"],
+    ["19:15","tmod","Final remarks and return control to the President.",""],
+    ["19:20","president","Closing remarks and adjourn the meeting.",""],
+    ["19:30","coord","Discussion with participants on meeting remarks. Call for role players for the next meeting.",""]
+  ].map(function(x,i){ return {id:"d"+(i+1),time:x[0],role:x[1],text:x[2],x:x[3],ord:i+1}; });
+}
+function defaultAgenda(){ return {title:"Dijital Team Batch 4",no:"",venue:"",next:"",ktopic:"",korg:"",assign:{},items:defaultItems(),u:0}; }
+function arole(k){ return AROLES.find(function(a){return a.k===k;}); }
+function assigned(k){ var v=S.agenda.assign[k]; return Array.isArray(v)?v.filter(Boolean):(v?String(v):""); }
+function asList(k){ var v=assigned(k); return Array.isArray(v)?v:(v?[v]:[]); }
+function hm2min(t){ var m=String(t||"").match(/^(\d{1,2}):(\d{2})/); return m?(+m[1])*60+(+m[2]):null; }
+function fmtHM(t){ var m=hm2min(t); if(m==null) return ""; var h=Math.floor(m/60), mm=m%60; return ((h+11)%12+1)+":"+String(mm).padStart(2,"0")+(h<12?" am":" pm"); }
+function itemsSorted(){ return S.agenda.items.slice().sort(function(a,b){ return (hm2min(a.time)||0)-(hm2min(b.time)||0) || a.ord-b.ord; }); }
+function extraText(x){
+  if(x==="speakers"){ var sp=asList("speakers"); return sp.length?"Speakers: "+sp.join(", "):""; }
+  if(x==="keynote"){ var k=assigned("keynote"); return k?(k+(S.agenda.korg?" ("+S.agenda.korg+")":"")+(S.agenda.ktopic?" — "+S.agenda.ktopic:"")):""; }
+  if(x==="ttevals"){ var tv=asList("ttevals"); return tv.length?"Evaluators: "+tv.join(", "):""; }
+  if(x==="evals"){
+    var p=[]; ["timer","ah","gram"].forEach(function(k){ if(assigned(k)) p.push(arole(k).n+" – "+assigned(k)); });
+    var se=asList("sevals"), te=asList("ttevals");
+    if(se.length) p.push("Prepared speech evaluations – "+se.join(", "));
+    if(te.length) p.push("Table Topic evaluations – "+te.join(", "));
+    return p.join("\n");
+  }
+  return "";
+}
+function whoFor(role){ var v=asList(role); return v.join(", "); }
+
+/* push the agenda's names out to every role and the Timer's queues */
+var DEVICE_ROLE_FROM_AGENDA={coord:"coord",tmod:"tmod",timer:"timer",ttm:"ttm",ah:"ah",gram:"gram"};
+function applyAgenda(){
+  Object.keys(DEVICE_ROLE_FROM_AGENDA).forEach(function(k){
+    var nm=assigned(k); if(nm && S.people[k]!==nm){ S.people[k]=nm; S.peopleU[k]=Math.max(now(),(S.peopleU[k]||0)+1); }
+  });
+  var want={ps:[],ev:[],rep:[]};
+  asList("speakers").forEach(function(n){ want.ps.push({ak:"ps:"+n.toLowerCase(),name:n}); });
+  asList("sevals").forEach(function(n){ want.ev.push({ak:"ev:s:"+n.toLowerCase(),name:n+" – speech evaluation"}); });
+  asList("ttevals").forEach(function(n){ want.ev.push({ak:"ev:t:"+n.toLowerCase(),name:n+" – Table Topics evaluation"}); });
+  [["timer","Timer's report",{g:30,a:45,r:60}],["ah","Ah-Counter's report",{g:30,a:45,r:60}],["gram","Grammarian's report",{g:60,a:90,r:120}]].forEach(function(x){
+    var n=assigned(x[0]); if(n) want.rep.push({ak:"rep:"+x[0],name:n+" – "+x[1],lim:x[2]});
+  });
+  Object.keys(want).forEach(function(sid){
+    var keys={}; want[sid].forEach(function(w){ keys[w.ak]=w; });
+    /* drop planned rows that are no longer on the agenda (only if never timed) */
+    S.rows[sid].slice().forEach(function(r){ if(r.ak && !keys[r.ak] && rowState(r)==="idle" && r.manual==null){ S.rows[sid]=S.rows[sid].filter(function(x){return x!==r;}); S.dead[r.id]=Math.max(now(),(r.u||0)+1); } });
+    want[sid].forEach(function(w){
+      var ex=S.rows[sid].find(function(r){return r.ak===w.ak;});
+      if(ex){ if(rowState(ex)==="idle" && ex.name!==w.name){ ex.name=w.name; if(w.lim) ex.lim=w.lim; tick(ex); } return; }
+      var r=newRow(sid,w.name); r.ak=w.ak; if(w.lim) r.lim=w.lim; S.rows[sid].push(r);
+    });
+  });
+}
+
+/* ---------- coordinator PIN ---------- */
+var coordRecovery=null;
+function sha(s){
+  if(!(window.crypto&&crypto.subtle)) return Promise.reject(new Error("This browser can't check PINs here. Open the page from the website link."));
+  return crypto.subtle.digest("SHA-256",new TextEncoder().encode(s)).then(function(b){ return Array.from(new Uint8Array(b)).map(function(x){return x.toString(16).padStart(2,"0");}).join(""); });
+}
+function coordUnlocked(){ return !!(S.pin.hash && L.coordOK===S.pin.hash); }
+function setPin(pin){
+  var salt=uid(), rec=(makeCode()+makeCode()).slice(0,8);
+  return Promise.all([sha("pin|"+salt+"|"+pin),sha("rec|"+salt+"|"+rec)]).then(function(h){
+    S.pin={hash:h[0],rhash:h[1],salt:salt,u:Math.max(now(),(S.pin.u||0)+1)};
+    L.coordOK=h[0]; saveL(); coordRecovery=rec; commit();
+  }).catch(function(e){ alert(e.message||e); });
+}
+function tryUnlock(val,isRec){
+  val=isRec?cleanCode(val):String(val||"").trim();
+  return sha((isRec?"rec|":"pin|")+S.pin.salt+"|"+val).then(function(h){
+    if(h===(isRec?S.pin.rhash:S.pin.hash)){ L.coordOK=S.pin.hash; saveL(); if(isRec) L.coordForcePin=true; renderAll(); }
+    else { alert(isRec?"That recovery code doesn't match.":"Wrong PIN."); }
+  }).catch(function(e){ alert(e.message||e); });
+}
+
+/* ---------- coordinator view ---------- */
+function memberNames(){ return S.members.list.map(function(m){return m.name;}); }
+function coordHTML(){
+  var h='<section class="card">';
+  if(!S.pin.hash){
+    h+='<h2 class="sec" style="margin-top:0">🔒 Set a coordinator PIN</h2><p class="muted" style="margin-top:0">Only someone with this PIN can change the agenda, role players and member list. If the coordinator changes, hand over the PIN or set a new one here.</p>'+
+       '<div class="row"><input class="t" id="pin1" type="password" inputmode="numeric" placeholder="New PIN (4–8 digits)" maxlength="8" style="max-width:220px"><input class="t" id="pin2" type="password" inputmode="numeric" placeholder="Repeat PIN" maxlength="8" style="max-width:220px"><button class="btn primary" id="pinSet">Set PIN</button></div></section>';
+    return h;
+  }
+  if(!coordUnlocked()){
+    h+='<h2 class="sec" style="margin-top:0">🔒 Coordinator area is locked</h2><p class="muted" style="margin-top:0">Enter the coordinator PIN to edit the agenda, role players and members.</p>'+
+       '<div class="row"><input class="t" id="pinIn" type="password" inputmode="numeric" placeholder="PIN" maxlength="8" style="max-width:200px"><button class="btn primary" id="pinUnlock">Unlock</button></div>'+
+       '<details style="margin-top:12px"><summary class="saved" style="cursor:pointer">Forgot the PIN? Use the recovery code</summary><div class="row" style="margin-top:8px"><input class="t" id="recIn" placeholder="Recovery code (8 characters)" maxlength="10" style="max-width:240px;text-transform:uppercase;letter-spacing:2px"><button class="btn" id="recUnlock">Unlock</button></div></details>'+
+       '</section>'+agendaPreviewHTML();
+    return h;
+  }
+  if(coordRecovery){
+    h+='<div class="selcard" style="border-color:var(--a)"><b>Write down this recovery code</b><div class="code" style="font-size:30px">'+coordRecovery.slice(0,4)+'-'+coordRecovery.slice(4)+'</div><div class="saved">It unlocks the coordinator area if the PIN is forgotten. It is shown only once. Take a screenshot or keep it with the coordinator handover notes.</div><div style="text-align:right;margin-top:8px"><button class="btn" id="recDone">I\'ve saved it</button></div></div>';
+  }
+  if(L.coordForcePin){
+    h+='<div class="selcard" style="border-color:var(--a)"><b>Set a new PIN</b><div class="saved" style="margin:4px 0 8px">You unlocked with the recovery code. Choose a new PIN now.</div><div class="row"><input class="t" id="pin1" type="password" inputmode="numeric" placeholder="New PIN" maxlength="8" style="max-width:200px"><input class="t" id="pin2" type="password" inputmode="numeric" placeholder="Repeat PIN" maxlength="8" style="max-width:200px"><button class="btn primary" id="pinSet">Save new PIN</button></div></div>';
+  }
+  var A=S.agenda;
+  h+='<div class="row" style="justify-content:space-between"><h2 class="sec" style="margin:0">🗂 Meeting set-up</h2><div class="row"><button class="btn" id="agPrint">📄 Print agenda</button><button class="btn" id="pinChange">Change PIN</button><button class="btn" id="coordLock">🔒 Lock</button></div></div>';
+  if(!NET.room) h+='<div class="note" style="margin-bottom:8px">Tip: start a meeting (top of the page) and share its code or QR in your group chat before the meeting. Everyone who joins gets this agenda and their names automatically.</div>';
+  h+='<div class="meta" style="margin-top:10px">'+
+     '<label class="f">Program title<input class="t" data-ag="title" value="'+esc(A.title)+'"></label>'+
+     '<label class="f">Meeting no<input class="t" data-ag="no" value="'+esc(A.no)+'" placeholder="e.g. 05"></label>'+
+     '<label class="f">Venue<input class="t" data-ag="venue" value="'+esc(A.venue)+'" placeholder="e.g. Level 12 East Tower WTC"></label>'+
+     '<label class="f">Next meeting date<input class="t" type="date" data-ag="next" value="'+esc(A.next)+'"></label></div>';
+  /* members */
+  var ms=memberNames();
+  h+='<h2 class="sec">👥 Members <span class="cnt">('+ms.length+') · remembered for every meeting</span></h2><div class="chips">'+
+     (ms.length?S.members.list.map(function(m){ return '<span class="chip word">'+esc(m.name)+'<button data-mdel="'+esc(m.id)+'" title="Remove member">✕</button></span>'; }).join(""):'<span class="muted">No members yet.</span>')+
+     '</div><div class="row" style="margin-top:8px"><input class="t" id="memIn" placeholder="Add names, separated by commas (e.g. SC Upeksha Perera, SC Afraa Faleel)"><button class="btn primary" id="memAdd">+ Add members</button></div>';
+  /* role players */
+  h+='<h2 class="sec">🎭 Role players</h2><div class="rp">';
+  AROLES.forEach(function(a){
+    if(a.multi){
+      var v=asList(a.k);
+      h+='<div class="rprow"><span class="rpl">'+a.n+'</span><div class="rpv"><div class="chips">'+v.map(function(n,i){ return '<span class="chip word">'+esc(n)+'<button data-rpdel="'+a.k+'" data-i="'+i+'">✕</button></span>'; }).join("")+'</div>'+
+         '<div class="row" style="margin-top:4px"><input class="t" data-rpadd-in="'+a.k+'" list="memberlist" autocomplete="off" placeholder="Add a name"><button class="btn sm" data-rpadd="'+a.k+'">+ Add</button></div></div></div>';
+    } else {
+      h+='<div class="rprow"><span class="rpl">'+a.n+'</span><div class="rpv"><input class="t" data-rp="'+a.k+'" list="memberlist" autocomplete="off" value="'+esc(assigned(a.k))+'" placeholder="Pick a member or type a guest\'s name"></div></div>';
+    }
+  });
+  h+='<div class="rprow"><span class="rpl">Keynote topic</span><div class="rpv row"><input class="t" data-ag="ktopic" value="'+esc(A.ktopic)+'" placeholder="e.g. Effective use of Humor"><input class="t" data-ag="korg" value="'+esc(A.korg)+'" placeholder="Club / organisation (optional)"></div></div></div>';
+  h+='<div class="note">Role players fill in automatically on every device: names for each role, the Timer\'s Prepared Speech, Evaluations and Role reports lists, and the report header.</div>';
+  /* agenda items */
+  h+='<h2 class="sec">📋 Agenda</h2><div class="agedit">';
+  itemsSorted().forEach(function(it){
+    h+='<div class="agrow" data-iid="'+it.id+'"><input class="t agtime" type="time" data-it="time" value="'+esc(it.time)+'">'+
+       '<select class="t agrole" data-it="role">'+AROLES.filter(function(a){return !a.multi;}).map(function(a){ return '<option value="'+a.k+'"'+(it.role===a.k?' selected':'')+'>'+a.n+'</option>'; }).join("")+'</select>'+
+       '<textarea class="t agtext" data-it="text" rows="2">'+esc(it.text)+'</textarea>'+
+       '<select class="t agx" data-it="x" title="Add names automatically">'+XTRAS.map(function(x){ return '<option value="'+x.k+'"'+((it.x||"")===x.k?' selected':'')+'>'+x.n+'</option>'; }).join("")+'</select>'+
+       '<button class="iconbtn" data-itdel title="Remove item">✕</button></div>';
+  });
+  h+='</div><div class="row" style="margin-top:8px"><button class="btn" id="itAdd">+ Add agenda item</button><button class="linkbtn" id="itReset">Reset to the standard agenda</button></div>';
+  h+='</section>';
+  return h;
+}
+function agendaPreviewHTML(){
+  var A=S.agenda, h='<section class="card" style="margin-top:12px"><h2 class="sec" style="margin-top:0">📋 Agenda'+(A.no?' · No '+esc(A.no):'')+'</h2>';
+  itemsSorted().forEach(function(it){ var who=whoFor(it.role); h+='<div class="agview"><b>'+fmtHM(it.time)+'</b><span>'+arole(it.role).n+(who?' · '+esc(who):'')+'</span><div class="muted">'+esc(it.text)+(extraText(it.x)?'<br>'+esc(extraText(it.x)).replace(/\n/g,'<br>'):'')+'</div></div>'; });
+  return h+'<div class="row" style="margin-top:8px"><button class="btn" id="agPrint">📄 Print agenda</button></div></section>';
+}
+
+/* ---------- printable agenda (same layout as the club's agenda sheet) ---------- */
+function buildAgendaDoc(){
+  var A=S.agenda, tm=document.querySelector(".logo img").src;
+  var h='<div class="agdoc"><div class="aghead"><img src="'+tm+'" alt="Toastmasters International"><div><div class="agt1">SPEECHCRAFT PROGRAM</div><div class="agt2">'+esc(A.title||GROUP)+'</div><div class="agt3">Agenda for Speechcraft Program'+(A.no?' - No '+esc(A.no):'')+'</div></div></div>';
+  h+='<div class="agmeta"><b>Date:</b> '+esc(fmtDate(S.meta.date)||"—")+(A.venue?'<br><b>Venue:</b> '+esc(A.venue):'')+(S.meta.week?'<br><b>Week:</b> '+esc(S.meta.week):'')+'</div>';
+  h+='<div class="aggrid"><div><div class="agbox"><b>Club Mission</b><div>'+CLUB_MISSION+'</div></div><div class="agbox"><b class="rpt">Role Players</b>';
+  AROLES.forEach(function(a){ var v=asList(a.k); if(!v.length) return; h+='<div class="agrp"><div class="agrpn">'+a.n+'</div>'+v.map(function(n){return '<div>'+esc(n)+'</div>';}).join("")+'</div>'; });
+  h+='</div></div><table class="agtab"><thead><tr><th>Time</th><th>Role Player</th><th>Activity</th></tr></thead><tbody>';
+  var last="";
+  itemsSorted().forEach(function(it){
+    var t=fmtHM(it.time); var x=extraText(it.x);
+    h+='<tr><td>'+(t!==last?t:'')+'</td><td>'+arole(it.role).n+'</td><td>'+esc(it.text)+(x?'<div class="agx2">'+esc(x).replace(/\n/g,'<br>')+'</div>':'')+'</td></tr>';
+    last=t;
+  });
+  h+='</tbody></table></div>';
+  if(A.next) h+='<div class="agnext">Next meeting: '+esc(fmtDate(A.next))+'</div>';
+  h+='</div>';
+  document.getElementById("report").innerHTML=h;
+}
+function openAgendaPrint(){
+  buildAgendaDoc();
+  document.getElementById("repPick").innerHTML='<b style="font-size:14px">Agenda'+(S.agenda.no?' – No '+esc(S.agenda.no):'')+'</b>';
+  document.getElementById("reportWrap").classList.add("on"); document.getElementById("reportWrap").dataset.kind="agenda";
+}
+
+/* ---------- Toastmaster of the Day: run-sheet ---------- */
+function curItem(){ var its=itemsSorted(); var i=its.findIndex(function(x){return x.id===S.run.cur;}); return {its:its,i:i,cur:i>=0?its[i]:null,next:i>=0?its[i+1]:its[0]}; }
+function minutesNow(){ var d=new Date(); return d.getHours()*60+d.getMinutes()+d.getSeconds()/60; }
+function scheduleStatus(){
+  var c=curItem(); if(!c.cur) return null;
+  var st=S.run.started[c.cur.id], plan=hm2min(c.cur.time);
+  var late = (st!=null&&plan!=null) ? Math.round(((function(){ var d=new Date(st); return d.getHours()*60+d.getMinutes()+d.getSeconds()/60; })())-plan) : 0;
+  var overdue = c.next ? Math.round(minutesNow()-hm2min(c.next.time)) : 0;
+  var behind=Math.max(late, overdue>0?overdue:-999);
+  var txt, cls;
+  if(Math.abs(late)>120 || overdue>180){ return {txt:"Times not checked (meeting isn't running at the agenda times)",cls:"muted",c:c}; }
+  if(behind>=2){ txt="⏰ Running "+behind+" min behind"; cls="st-o"; }
+  else if(late<=-2){ txt="Running "+(-late)+" min ahead"; cls="st-q"; }
+  else { txt="✓ On time"; cls="st-q"; }
+  return {txt:txt,cls:cls,c:c};
+}
+function itemCard(it,big){
+  if(!it) return '<div class="muted">End of agenda.</div>';
+  var who=whoFor(it.role), x=extraText(it.x);
+  return '<div class="'+(big?'nowtxt':'nexttxt')+'"><span class="tm">'+fmtHM(it.time)+'</span> <b>'+arole(it.role).n+'</b>'+(who?' · '+esc(who):'')+'</div><div class="'+(big?'nowact':'muted')+'">'+esc(it.text)+'</div>'+(x?'<div class="agx2">'+esc(x).replace(/\n/g,'<br>')+'</div>':'');
+}
+function tmodHTML(){
+  var c=curItem(), ss=scheduleStatus();
+  var h='<section class="card"><div class="row" style="justify-content:space-between"><div><span class="bigclock" id="tmClock">'+new Date().toLocaleTimeString("en-AU",{hour:"numeric",minute:"2-digit"})+'</span>'+(ss?' <span class="status '+ss.cls+'" id="tmSched">'+ss.txt+'</span>':'')+'</div>'+
+        '<button class="btn" id="agPrint">📄 Agenda</button></div>';
+  if(!c.cur){
+    h+='<div class="curtopic" style="margin-top:12px"><div class="lbl">First item</div>'+itemCard(c.its[0],true)+'<div class="row" style="margin-top:12px"><button class="btn go big1" id="runStart">▶ Start the meeting</button></div></div>';
+  } else {
+    h+='<div class="curtopic" style="margin-top:12px"><div class="lbl">Now'+(S.run.started[c.cur.id]?' · started '+new Date(S.run.started[c.cur.id]).toLocaleTimeString("en-AU",{hour:"numeric",minute:"2-digit"}):'')+'</div>'+itemCard(c.cur,true)+'</div>';
+    h+='<div class="wcard"><div class="lbl saved">NEXT</div>'+itemCard(c.next,false)+'</div>';
+    h+='<div class="row"><button class="btn" id="runPrev">◀ Back</button><button class="btn go big1" id="runNext"'+(c.next?'':' disabled')+'>Next ▶</button>'+(c.next?'':'<button class="btn" id="runEnd">Finish</button>')+'</div>';
+  }
+  h+='<h2 class="sec">Full agenda</h2><ul class="tlist runlist">';
+  c.its.forEach(function(it,i){
+    var cls=c.i>=0&&i<c.i?"done":i===c.i?"cur":"";
+    h+='<li data-run="'+it.id+'" class="'+cls+'"><span class="n">'+fmtHM(it.time)+'</span><span style="flex:1"><b>'+arole(it.role).n+'</b>'+(whoFor(it.role)?' · '+esc(whoFor(it.role)):'')+'<br><span class="muted">'+esc(it.text)+'</span></span>'+(cls==="done"?'<span class="donetag">✓</span>':'')+'</li>';
+  });
+  h+='</ul><div class="note">Tap any item to jump to it. Everyone connected sees what\'s happening now.</div></section>';
+  return h;
+}
+function runGo(id){ S.run.cur=id; if(id && !S.run.started[id]) S.run.started[id]=now(); tick(S.run); commit(); }
+/* compact "Now" line for every role */
+function renderAgendaLine(){
+  var el=document.getElementById("agendaLine"); if(!el) return;
+  var ss=scheduleStatus();
+  if(!ss||L.role==="tmod"){ el.classList.remove("on"); el.innerHTML=""; return; }
+  var who=whoFor(ss.c.cur.role);
+  el.innerHTML='📋 <b>Now:</b> '+arole(ss.c.cur.role).n+(who?' ('+esc(who)+')':'')+(ss.c.next?' · <span class="muted">Next '+fmtHM(ss.c.next.time)+' '+arole(ss.c.next.role).n+'</span>':'')+' · <span class="'+ss.cls+'">'+ss.txt+'</span>';
+  el.classList.add("on");
+}
+setInterval(function(){
+  renderAgendaLine();
+  var c=document.getElementById("tmClock"); if(c) c.textContent=new Date().toLocaleTimeString("en-AU",{hour:"numeric",minute:"2-digit"});
+  var s=document.getElementById("tmSched"), ss=scheduleStatus(); if(s&&ss){ s.textContent=ss.txt; s.className="status "+ss.cls; }
+},15000);
+
 /* ---------- live tick ---------- */
 setInterval(function(){
   var t=now();
   document.querySelectorAll("#live .liveitem").forEach(function(it){
     var sid=it.dataset.sid, r=findRow(sid,it.dataset.id); if(!r||rowState(r)!=="running") return;
-    var sec=elapsed(r,t), sg=signal(sid,sec);
+    var sec=elapsed(r,t), sg=signal(sid,sec,r);
     it.querySelector('[data-live="clock"]').textContent=fmt(sec);
-    it.querySelector('[data-live="next"]').textContent=nextSignalText(sid,sec);
+    it.querySelector('[data-live="next"]').textContent=nextSignalText(sid,sec,r);
     var pill=it.querySelector('[data-live="pill"]'); pill.className="pill "+(sg||"sn"); pill.textContent=signalName(sg);
     it.classList.remove("sg","sa","sr"); if(sg) it.classList.add(sg);
     it.querySelector('[data-live="banner"]').textContent=bannerText(sid,sg);
@@ -883,7 +1195,7 @@ setInterval(function(){
   });
   document.querySelectorAll("#nowStrip .nowitem").forEach(function(it){
     var sid=it.dataset.sid, r=findRow(sid,it.dataset.id); if(!r||rowState(r)!=="running") return;
-    var sec=elapsed(r,t), sg=signal(sid,sec);
+    var sec=elapsed(r,t), sg=signal(sid,sec,r);
     it.querySelector('[data-live="clock"]').textContent=fmt(sec);
     var pill=it.querySelector('[data-live="pill"]'); pill.className="pill "+(sg||"sn"); pill.textContent=signalName(sg);
     it.classList.remove("sg","sa","sr"); if(sg) it.classList.add(sg);
@@ -894,7 +1206,7 @@ setInterval(function(){
     document.querySelectorAll("#view tr[data-id]").forEach(function(tr){
       var r=findRow(sid,tr.dataset.id); if(!r||rowState(r)!=="running") return;
       var sec=elapsed(r,t), tb=tr.querySelector('[data-live="time"]'), st=tr.querySelector('[data-live="status"]');
-      if(tb){ tb.textContent=fmt(sec); tb.className="timebox "+signal(sid,sec); }
+      if(tb){ tb.textContent=fmt(sec); tb.className="timebox "+signal(sid,sec,r); }
       if(st) st.textContent=status(sid,r,t).text;
     });
   }
@@ -1032,11 +1344,79 @@ document.getElementById("stageClose").addEventListener("click",closeStage);
 document.getElementById("stageRandom").addEventListener("click",function(){ randomTopic(); renderStage(); });
 document.addEventListener("fullscreenchange",function(){ if(!document.fullscreenElement) document.getElementById("stage").classList.remove("on"); });
 
+/* ---------- coordinator & toastmaster events ---------- */
+(function(){
+  var V=document.getElementById("view");
+  function agChanged(){ tick(S.agenda); }
+  V.addEventListener("click",function(e){
+    var t=e.target;
+    if(t.closest("#agPrint")){ openAgendaPrint(); return; }
+    if(L.role==="tmod"){
+      var c=curItem();
+      if(t.closest("#runStart")){ if(c.its[0]) runGo(c.its[0].id); return; }
+      if(t.closest("#runNext")){ if(c.next) runGo(c.next.id); return; }
+      if(t.closest("#runPrev")){ if(c.i>0) runGo(c.its[c.i-1].id); return; }
+      if(t.closest("#runEnd")){ S.run.cur=null; tick(S.run); commit(); return; }
+      var li=t.closest("[data-run]"); if(li){ runGo(li.dataset.run); return; }
+      return;
+    }
+    if(L.role!=="coord") return;
+    if(t.closest("#pinSet")){
+      var a=document.getElementById("pin1").value.trim(), b=document.getElementById("pin2").value.trim();
+      if(!/^\d{4,8}$/.test(a)){ alert("Use 4 to 8 digits for the PIN."); return; }
+      if(a!==b){ alert("The two PINs don't match."); return; }
+      L.coordForcePin=false; saveL(); setPin(a); return;
+    }
+    if(t.closest("#pinUnlock")){ tryUnlock(document.getElementById("pinIn").value,false); return; }
+    if(t.closest("#recUnlock")){ tryUnlock(document.getElementById("recIn").value,true); return; }
+    if(t.closest("#recDone")){ coordRecovery=null; renderAll(); return; }
+    if(t.closest("#coordLock")){ L.coordOK=null; saveL(); renderAll(); return; }
+    if(t.closest("#pinChange")){ L.coordForcePin=true; saveL(); renderAll(); var p=document.getElementById("pin1"); if(p) p.focus(); return; }
+    if(!coordUnlocked()) return;
+    if(t.closest("#memAdd")){
+      var inp=document.getElementById("memIn"), names=inp.value.split(/[,;\n]+/).map(function(x){return x.trim();}).filter(Boolean), added=0;
+      names.forEach(function(n){ if(!S.members.list.some(function(m){return m.name.toLowerCase()===n.toLowerCase();})){ S.members.list.push({id:uid(),name:n}); added++; } });
+      if(added){ tick(S.members); commit(); } var again=document.getElementById("memIn"); if(again){ again.value=""; again.focus(); } return;
+    }
+    var md=t.closest("[data-mdel]"); if(md){ S.members.list=S.members.list.filter(function(m){return m.id!==md.dataset.mdel;}); tick(S.members); commit(); return; }
+    var ra=t.closest("[data-rpadd]"); if(ra){
+      var k=ra.dataset.rpadd, box=document.querySelector('[data-rpadd-in="'+k+'"]'), v=(box.value||"").trim(); if(!v) return;
+      var arr=asList(k); v.split(/[,;]+/).map(function(x){return x.trim();}).filter(Boolean).forEach(function(n){ if(arr.indexOf(n)<0) arr.push(n); });
+      S.agenda.assign[k]=arr; agChanged(); applyAgenda(); commit(); var b2=document.querySelector('[data-rpadd-in="'+k+'"]'); if(b2) b2.focus(); return;
+    }
+    var rd=t.closest("[data-rpdel]"); if(rd){ var k2=rd.dataset.rpdel, arr2=asList(k2); arr2.splice(+rd.dataset.i,1); S.agenda.assign[k2]=arr2; agChanged(); applyAgenda(); commit(); return; }
+    if(t.closest("[data-itdel]")){ var id=t.closest("[data-iid]").dataset.iid; S.agenda.items=S.agenda.items.filter(function(x){return x.id!==id;}); agChanged(); commit(); return; }
+    if(t.closest("#itAdd")){ var its=itemsSorted(), last=its[its.length-1]; var tm=last?last.time:"17:30"; S.agenda.items.push({id:uid(),time:tm,role:"tmod",text:"",x:"",ord:maxOrd(S.agenda.items)+1}); agChanged(); commit(); return; }
+    if(t.closest("#itReset")){ if(confirm("Replace the agenda items with the standard Speechcraft agenda? Role players and meeting details are kept.")){ S.agenda.items=defaultItems(); agChanged(); commit(); } return; }
+  });
+  V.addEventListener("input",function(e){
+    var t=e.target; if(L.role!=="coord"||!coordUnlocked()) return;
+    if(t.dataset.ag && t.tagName!=="SELECT" && t.type!=="date"){ S.agenda[t.dataset.ag]=t.value; agChanged(); commitQuiet(); return; }
+    if(t.dataset.it==="text"){ var it=S.agenda.items.find(function(x){return x.id===t.closest("[data-iid]").dataset.iid;}); if(it){ it.text=t.value; agChanged(); commitQuiet(); } return; }
+  });
+  V.addEventListener("change",function(e){
+    var t=e.target; if(L.role!=="coord"||!coordUnlocked()) return;
+    if(t.dataset.ag){ S.agenda[t.dataset.ag]=t.value; agChanged(); commitQuiet(); return; }
+    if(t.dataset.rp){ var v=t.value.trim(); if(v) S.agenda.assign[t.dataset.rp]=v; else delete S.agenda.assign[t.dataset.rp]; agChanged(); applyAgenda(); commit(); return; }
+    if(t.dataset.it && t.dataset.it!=="text"){ var it=S.agenda.items.find(function(x){return x.id===t.closest("[data-iid]").dataset.iid;}); if(it){ it[t.dataset.it]=t.value; agChanged(); commit(); } return; }
+    if(t.dataset.it==="text"){ softRender(); }
+  });
+  V.addEventListener("keydown",function(e){
+    if(e.key!=="Enter") return; var t=e.target;
+    if(t.id==="pinIn"){ e.preventDefault(); document.getElementById("pinUnlock").click(); }
+    else if(t.id==="recIn"){ e.preventDefault(); document.getElementById("recUnlock").click(); }
+    else if(t.id==="pin2"){ e.preventDefault(); document.getElementById("pinSet").click(); }
+    else if(t.id==="memIn"){ e.preventDefault(); document.getElementById("memAdd").click(); }
+    else if(t.dataset&&t.dataset.rpaddIn){ e.preventDefault(); document.querySelector('[data-rpadd="'+t.dataset.rpaddIn+'"]').click(); }
+  });
+})();
+
 /* ---------- new meeting, backup, restore ---------- */
 document.getElementById("newMeeting").addEventListener("click",function(){
-  if(!confirm("Start a new meeting?\n\nThis clears speakers, times, topics and counts"+(NET.mode?" on all connected devices":"")+". Names, time limits and word lists are kept.")) return;
-  var keep={people:S.people,peopleU:S.peopleU,limits:S.limits,fill:S.fill,names:S.names};
-  var n=blank(); n.people=keep.people; n.peopleU=keep.peopleU; n.limits=keep.limits; n.fill=keep.fill; n.names=keep.names;
+  if(!confirm("Start a new meeting?\n\nThis clears speakers, times, topics, counts and this week's role players"+(NET.mode?" on all connected devices":"")+". The member list, agenda layout, time limits and word lists are kept.")) return;
+  var keep={people:S.people,peopleU:S.peopleU,limits:S.limits,fill:S.fill,members:S.members,pin:S.pin,agenda:S.agenda};
+  var n=blank(); n.people=keep.people; n.peopleU=keep.peopleU; n.limits=keep.limits; n.fill=keep.fill; n.members=keep.members; n.pin=keep.pin;
+  n.agenda=clone(keep.agenda); n.agenda.assign={}; n.agenda.no=""; n.agenda.next=""; n.agenda.ktopic=""; n.agenda.korg=""; n.agenda.u=now();
   S=n; L.ahSel=null; L.gramSel=null; saveL(); lastSig={}; commit(); wake();
 });
 document.getElementById("backupBtn").addEventListener("click",function(){
@@ -1089,7 +1469,7 @@ function buildReport(){
     var totalDone=0,totalOk=0,script=[];
     SESSIONS.forEach(function(s){
       var L2=S.limits[s.id], rows=S.rows[s.id];
-      var lim=s.type==="rr"?"Bell at "+fmt(L2.b):"Green "+fmt(L2.g)+" · Amber "+fmt(L2.a)+" · Red "+fmt(L2.r);
+      var lim=s.type==="rr"?"Bell at "+fmt(L2.b):s.type==="rep"?"Timer & Ah-Counter 1 min · Grammarian 2 min":"Green "+fmt(L2.g)+" · Amber "+fmt(L2.a)+" · Red "+fmt(L2.r);
       var done=rows.filter(function(r){return rowState(r)!=="idle";}), ok=done.filter(function(r){return rowState(r)==="done"&&status(s.id,r,t).ok;}).length;
       var untimed=rows.filter(function(r){return rowState(r)==="idle";}).map(function(r){return displayName(r,rows.indexOf(r));});
       h+='<h3>'+s.name+'<small>'+lim+'</small></h3>';
@@ -1154,11 +1534,11 @@ function buildReport(){
 }
 document.getElementById("openReport").addEventListener("click",function(){
   if(anyRunning()&&!confirm("A speaker is still being timed. Open the report anyway? (They will show as 'Still running'.)")) return;
-  renderRepPick(); buildReport(); document.getElementById("reportWrap").classList.add("on");
+  renderRepPick(); buildReport(); document.getElementById("reportWrap").dataset.kind="report"; document.getElementById("reportWrap").classList.add("on");
 });
 document.getElementById("repPick").addEventListener("change",function(e){ var k=e.target.dataset.rep; if(!k) return; L.rep[k]=e.target.checked; saveL(); buildReport(); });
 document.getElementById("closeReport").addEventListener("click",function(){ document.getElementById("reportWrap").classList.remove("on"); });
-document.getElementById("printReport").addEventListener("click",function(){ var old=document.title; document.title="Speechcraft Report "+(S.meta.date||"")+(S.meta.week?" "+S.meta.week:""); window.print(); setTimeout(function(){document.title=old;},500); });
+document.getElementById("printReport").addEventListener("click",function(){ var old=document.title; if(document.getElementById("reportWrap").dataset.kind==="agenda"){ document.title="Speechcraft Agenda "+(S.agenda.no?"No "+S.agenda.no+" ":"")+(S.meta.date||""); window.print(); setTimeout(function(){document.title=old;},500); return; } document.title="Speechcraft Report "+(S.meta.date||"")+(S.meta.week?" "+S.meta.week:""); window.print(); setTimeout(function(){document.title=old;},500); });
 ["reportWrap","connModal"].forEach(function(id){ document.getElementById(id).addEventListener("click",function(e){ if(e.target.id===id) e.target.classList.remove("on"); }); });
 document.addEventListener("keydown",function(e){ if(e.key==="Escape"){ document.getElementById("reportWrap").classList.remove("on"); document.getElementById("connModal").classList.remove("on"); closeStage(); } });
 
@@ -1301,7 +1681,7 @@ document.getElementById("connBox").addEventListener("keydown",function(e){ if(e.
 
 /* ---------- welcome: pick role, then host / join ---------- */
 var W={step:"role",role:null,code:""};
-var ROLE_DESC={timer:"Times every speaker and shows the signals",ttm:"Runs Table Topics and calls the speakers",ah:"Counts filler words for each speaker",gram:"Word of the Day, great phrases and slips"};
+var ROLE_DESC={coord:"Sets up the agenda, role players and members (PIN)",tmod:"Runs the meeting: Now / Next, on time or behind",timer:"Times every speaker and shows the signals",ttm:"Runs Table Topics and calls the speakers",ah:"Counts filler words for each speaker",gram:"Word of the Day, great phrases and slips"};
 var SITE_URL="https://npfernando.github.io/toastmasters-speechcraft/";
 function baseUrl(){ return /^https?:/.test(location.protocol) ? location.origin+location.pathname : SITE_URL; }
 function inviteLink(code){ return baseUrl()+"#join="+fmtCode(code); }
