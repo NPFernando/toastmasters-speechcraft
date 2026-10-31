@@ -112,6 +112,13 @@ label.f,.f{display:flex;flex-direction:column;font-size:12px;color:var(--muted);
 /* now speaking strip (other roles) */
 #nowStrip{display:none;margin-bottom:12px;position:sticky;top:0;z-index:20;padding-top:6px;background:var(--bg)}
 #nowStrip.on{display:block}
+.mecard{display:block;text-align:center;padding:14px 16px 16px;border-width:3px}
+.mecard .mehead{display:flex;justify-content:space-between;align-items:center;gap:8px;font-weight:700;text-align:left}
+.mecard .meclock{font-variant-numeric:tabular-nums;font-size:clamp(64px,18vw,140px);font-weight:900;line-height:1.05;margin-top:6px}
+.mecard .mesig{font-size:24px;font-weight:900;text-transform:uppercase;letter-spacing:.06em}
+.mecard .mestat{font-size:18px;font-weight:700;margin-top:4px} .mecard .melim{font-size:13px;opacity:.75;margin-top:6px}
+#nowStrip .mecard.sg{background:var(--g);border-color:var(--g);color:#fff} #nowStrip .mecard.sa{background:var(--a);border-color:var(--a);color:#1d2330} #nowStrip .mecard.sr{background:var(--r);border-color:var(--r);color:#fff} #nowStrip .mecard.sn{background:var(--card);color:var(--ink)} #nowStrip .mecard .btn{background:transparent;color:inherit;border:1px solid currentColor}
+.mecard:fullscreen{display:flex;flex-direction:column;justify-content:center;border-radius:0} .mecard:fullscreen .meclock{font-size:30vw} .mecard:fullscreen .mesig{font-size:7vw} .mecard:fullscreen .mestat{font-size:4vw}
 .nowitem{display:flex;align-items:center;gap:12px;flex-wrap:wrap;border:2px solid var(--line);background:var(--card);border-radius:12px;padding:8px 12px;margin-bottom:6px}
 .nowitem .clock{font-variant-numeric:tabular-nums;font-size:28px;font-weight:800;min-width:84px}
 .nowitem .nm{flex:1;min-width:120px;font-weight:700}
@@ -830,13 +837,28 @@ function renderRoles(){
   document.getElementById("roles").innerHTML=roleTabsHTML()+'<div class="me">'+r.icon+' <b>'+r.name+'</b>'+(myName()?' · '+esc(myName()):'')+
     '<small>'+sub+'</small></div><button class="btn sm" data-open-phone title="Show a QR code to open your role on your phone">📱 Open on phone</button><button class="btn sm" data-change-role>Change role</button>';
 }
+/* the speaker's own live card: big clock and the Timer's signal colour on their device */
+function myNameKeys(){ var a=[myName(),L.me]; Object.keys(L.myNames||{}).forEach(function(k){ a.push(L.myNames[k]); }); return uniq(a.filter(function(n){return n&&String(n).trim();}).map(nkey)); }
+function limitsLine(sid,row){ var L2=limOf(sid,row); return sid==="rr"?"Bell at "+fmt(L2.b):"Green "+fmt(L2.g)+" · Amber "+fmt(L2.a)+" · Red "+fmt(L2.r); }
+function meStatus(sid,sec,row){ var L2=limOf(sid,row);
+  if(sid==="rr") return sec<=L2.b?"Keep going":"Time's up — finish now";
+  if(sec<L2.g) return "Keep going"; if(sec<L2.a) return "✓ You've qualified"; if(sec<L2.r) return "Start wrapping up"; return "Finish now — over time"; }
+function meCardHTML(x,sec,sg){
+  return '<div class="mecard nowitem '+(sg||"sn")+'" data-sid="'+x.sid+'" data-id="'+x.r.id+'" data-me="1"><div class="mehead"><span>🎙 You are speaking · '+esc(x.s.name)+'</span><button class="btn sm" data-mefull title="Fill the screen, e.g. phone on the lectern">⛶ Full screen</button></div>'+
+    '<div class="meclock" data-live="clock">'+fmt(sec)+'</div><div class="mesig" data-live="pill">'+signalName(sg)+'</div>'+
+    '<div class="mestat" data-live="mestat">'+esc(meStatus(x.sid,sec,x.r))+' · '+esc(nextSignalText(x.sid,sec,x.r))+'</div><div class="melim">'+esc(limitsLine(x.sid,x.r))+'</div></div>';
+}
+document.getElementById("nowStrip").addEventListener("click",function(e){ var b=e.target.closest("[data-mefull]"); if(!b) return; var c=b.closest(".mecard"); try{ if(document.fullscreenElement) document.exitFullscreen(); else if(c.requestFullscreen) c.requestFullscreen(); }catch(err){} });
 /* who is speaking now (from the Timer) — shown on the other roles */
 function renderNow(){
   var el=document.getElementById("nowStrip");
   if(myRoles().indexOf("timer")>=0){ el.classList.remove("on"); el.innerHTML=""; return; }
   var run=runningList(), t=now(), h="";
+  var fs=document.fullscreenElement; if(fs && el.contains(fs) && run.some(function(x){return x.r.id===fs.dataset.id;})) return;
+  var mine=myNameKeys();
   run.forEach(function(x){
     var sec=elapsed(x.r,t), sg=signal(x.sid,sec,x.r);
+    if(mine.indexOf(nkey(baseName(x.r.name)))>=0){ h+=meCardHTML(x,sec,sg); return; }
     var add = (L.role==="ah"||L.role==="gram"||L.role==="seval"||L.role==="tteval") ? '<button class="btn sm" data-now-add="'+esc(displayName(x.r,x.i))+'">+ Add / select</button>' : '';
     h+='<div class="nowitem '+sg+'" data-sid="'+x.sid+'" data-id="'+x.r.id+'"><div class="clock" data-live="clock">'+fmt(sec)+'</div>'+
        '<div class="nm">🎙 '+esc(displayName(x.r,x.i))+'<span>Speaking now · '+x.s.name+'</span></div><span class="pill '+(sg||"sn")+'" data-live="pill">'+signalName(sg)+'</span>'+add+'</div>';
@@ -1820,6 +1842,8 @@ setInterval(function(){
   document.querySelectorAll("#nowStrip .nowitem").forEach(function(it){
     var sid=it.dataset.sid, r=findRow(sid,it.dataset.id); if(!r||rowState(r)!=="running") return;
     var sec=elapsed(r,t), sg=signal(sid,sec,r);
+    if(it.dataset.me){ it.querySelector('[data-live="clock"]').textContent=fmt(sec); var ps=it.querySelector('[data-live="pill"]'); ps.textContent=signalName(sg); it.querySelector('[data-live="mestat"]').textContent=meStatus(sid,sec,r)+" · "+nextSignalText(sid,sec,r);
+      it.classList.remove("sg","sa","sr","sn"); it.classList.add(sg||"sn"); if(lastSig["me"+r.id]!==undefined && sg && sg!==lastSig["me"+r.id]) flashItem(it); lastSig["me"+r.id]=sg; return; }
     it.querySelector('[data-live="clock"]').textContent=fmt(sec);
     var pill=it.querySelector('[data-live="pill"]'); pill.className="pill "+(sg||"sn"); pill.textContent=signalName(sg);
     it.classList.remove("sg","sa","sr"); if(sg) it.classList.add(sg);
