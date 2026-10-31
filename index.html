@@ -268,18 +268,28 @@ tr.queued:not(.nextup) .btn.go{background:transparent;color:var(--g);border-colo
 #report .agtab td{vertical-align:top;word-wrap:break-word}
 #report .agtab td:first-child{white-space:nowrap}
 #report .agx2{border-left:3px solid #1f3a5f;background:#f4f6f9;font-size:12px}
-#report .agnext{margin-top:10px;font-weight:700}
+#report .agnext{margin-top:10px;font-weight:700} #report .aghd{display:block} #report .agsub{margin-top:5px} #report .agl{padding-left:10px} #report .agev{color:#555} #report .agmission{font-family:Georgia,"Times New Roman",serif}
 @media print{
-  #report .agdoc{font-size:10px;line-height:1.3}
-  #report .agdoc .aghead img{max-height:62px}
-  #report .agdoc .agt1{font-size:16px} #report .agdoc .agt2{font-size:14px} #report .agdoc .agt3{font-size:11px;margin-top:3px}
-  #report .agdoc .agmeta{margin:6px 0}
-  #report .agdoc .aggrid{grid-template-columns:165px 1fr;gap:8px}
-  #report .agdoc .agbox{padding:5px 6px;margin-bottom:6px}
-  #report .agdoc .agrp{margin-bottom:4px}
-  #report .agdoc .agtab th,#report .agdoc .agtab td{padding:2px 5px}
-  #report .agdoc .agx2{margin-top:3px;padding:3px 6px;font-size:9.5px}
+  #report .agdoc{font-size:11.5px;line-height:1.32}
+  #report .agdoc .aghead img{max-height:86px}
+  #report .agdoc .agt1{font-size:19px} #report .agdoc .agt2{font-size:16px} #report .agdoc .agt3{font-size:12px;margin-top:6px}
+  #report .agdoc .agmeta{margin:10px 0 12px}
+  #report .agdoc .aggrid{grid-template-columns:180px 1fr;gap:10px}
+  #report .agdoc .agbox{padding:6px 8px;margin-bottom:10px}
+  #report .agdoc .agrp{margin-bottom:7px}
+  #report .agdoc .agtab th,#report .agdoc .agtab td{padding:4px 6px}
+  #report .agdoc{zoom:var(--agz,1)}
 }
+/* measuring copy: the print sizes at A4 width, to shrink a long agenda onto one page */
+#report .agdoc.agmeas{position:absolute;left:-9999px;top:0;width:703px;visibility:hidden}
+#report .agdoc.agmeas{font-size:11.5px;line-height:1.32}
+#report .agdoc.agmeas .aghead img{max-height:86px}
+#report .agdoc.agmeas .agt1{font-size:19px} #report .agdoc.agmeas .agt2{font-size:16px} #report .agdoc.agmeas .agt3{font-size:12px;margin-top:6px}
+#report .agdoc.agmeas .agmeta{margin:10px 0 12px}
+#report .agdoc.agmeas .aggrid{grid-template-columns:180px 1fr;gap:10px}
+#report .agdoc.agmeas .agbox{padding:6px 8px;margin-bottom:10px}
+#report .agdoc.agmeas .agrp{margin-bottom:7px}
+#report .agdoc.agmeas .agtab th,#report .agdoc.agmeas .agtab td{padding:4px 6px}
 @media (max-width:640px){
   .rprow{grid-template-columns:1fr} .rpl{padding-top:0}
   .agrow{grid-template-columns:96px 1fr 34px} .agrow .agtext{grid-column:1 / -1} .agrow .agx{grid-column:1 / 3}
@@ -1228,28 +1238,62 @@ function agendaPreviewHTML(){
 }
 
 /* ---------- printable agenda (same layout as the club's agenda sheet) ---------- */
+function ordinal(n){ var v=n%100; return n+((v>10&&v<14)?"th":({1:"st",2:"nd",3:"rd"}[n%10]||"th")); }
+function isoDate(iso){ var p=String(iso||"").split("-"); return p.length===3?new Date(+p[0],+p[1]-1,+p[2]):null; }
+function agDateLong(iso){ var d=isoDate(iso); if(!d) return iso||""; return ordinal(d.getDate())+" "+d.toLocaleDateString("en-AU",{month:"long"})+" "+d.getFullYear()+" ("+d.toLocaleDateString("en-AU",{weekday:"long"})+")"; }
+function agDateShort(iso){ var d=isoDate(iso); if(!d) return iso||""; return ordinal(d.getDate())+" of "+d.toLocaleDateString("en-AU",{month:"long"}); }
+var AG_SIDE=[["president","President"],["saa","Sergeant at Arms"],["tmod","Toastmaster"],["ttm","Table Topic Master"],["keynote","Keynote Presenter"],["rrm","Round Robin Master"],["ge","General Evaluator"],["timer","Timer"],["ah","Ah-Counter"],["gram","Grammarian"],["speakers","Prepared Speakers"],["sevals","Speech Evaluator"],["ttevals","Table Topic Evaluator"],["coord","Speechcraft Coordinator"]];
+function agLines(arr){ return arr.map(function(x){ return '<div class="agl">'+x+'</div>'; }).join(""); }
+function agExtraHTML(x){
+  if(x==="speakers"){ var sp=uniq(asList("speakers").concat(S.speeches.filter(function(s){return s.type!=="tt";}).map(function(s){return s.name;}))); if(!sp.length) return "";
+    return '<div class="agsub">'+agLines(sp.map(function(n){ var t=speechTitle(n), e=evaluatorOf(n); return esc(n)+(t?' – “'+esc(t)+'”':'')+(e?' <span class="agev">· evaluator '+esc(e)+'</span>':''); }))+'</div>'; }
+  if(x==="keynote"){ var k=assigned("keynote"); if(!k) return ""; return '<div class="agsub">'+agLines([esc(k)+(S.agenda.korg?' ('+esc(S.agenda.korg)+')':'')].concat(S.agenda.ktopic?['<i>'+esc(S.agenda.ktopic)+'</i>']:[]))+'</div>'; }
+  if(x==="ttevals"){ var tv=asList("ttevals"); return tv.length?'<div class="agsub">'+agLines(tv.map(esc))+'</div>':""; }
+  if(x==="evals"){
+    var h="", rep=["timer","ah","gram"].filter(function(k){return assigned(k);}).map(function(k){ return esc(arole(k).n)+' – '+esc(assigned(k)); });
+    if(rep.length) h+='<div class="agsub"><div class="agh">Call for reports:</div>'+agLines(rep)+'</div>';
+    var pairs=(S.assigns||[]).filter(function(a){return a.evaluator;}), se=pairs.length?pairs.map(function(a){ return esc(a.evaluator)+' <span class="agev">(for '+esc(a.speaker)+')</span>'; }):asList("sevals").map(esc);
+    if(se.length) h+='<div class="agsub"><div class="agh">Prepared Speech evaluations –</div>'+agLines(se)+'</div>';
+    var te=asList("ttevals"); if(te.length) h+='<div class="agsub"><div class="agh">Table Topic speeches evaluations –</div>'+agLines(te.map(esc))+'</div>';
+    return h;
+  }
+  return "";
+}
+function agActivityHTML(it){
+  var txt=String(it.text||""), A=S.agenda;
+  if(it.role==="coord" && A.next){ var nd=agDateShort(A.next); txt=/next meeting\.?$/i.test(txt)?txt.replace(/next meeting\.?$/i,"next meeting on "+nd+"."):txt+" Next meeting: "+nd+"."; }
+  var i=txt.indexOf(" — "), h;
+  h = i>0 ? '<b class="aghd">'+esc(txt.slice(0,i))+'</b><div>'+esc(txt.slice(i+3).charAt(0).toUpperCase()+txt.slice(i+4))+'</div>' : esc(txt);
+  return h+agExtraHTML(it.x);
+}
 function buildAgendaDoc(){
   var A=S.agenda, tm=document.querySelector(".logo img").src;
   var h='<div class="agdoc"><div class="aghead"><img src="'+tm+'" alt="Toastmasters International"><div><div class="agt1">SPEECHCRAFT PROGRAM</div><div class="agt2">'+esc(A.title||GROUP)+'</div><div class="agt3">Agenda for Speechcraft Program'+(A.no?' - No '+esc(A.no):'')+'</div></div></div>';
-  h+='<div class="agmeta"><b>Date:</b> '+esc(fmtDate(S.meta.date)||"—")+(A.venue?'<br><b>Venue:</b> '+esc(A.venue):'')+(S.meta.week?'<br><b>Week:</b> '+esc(S.meta.week):'')+'</div>';
-  h+='<div class="aggrid"><div><div class="agbox"><b>Club Mission</b><div>'+CLUB_MISSION+'</div></div><div class="agbox"><b class="rpt">Role Players</b>';
-  AROLES.forEach(function(a){ var v=asList(a.k); if(!v.length) return; h+='<div class="agrp"><div class="agrpn">'+a.n+'</div>'+v.map(function(n){return '<div>'+esc(n)+'</div>';}).join("")+'</div>'; });
+  h+='<div class="agmeta"><b>Date:</b> '+esc(agDateLong(S.meta.date)||"—")+(A.venue?'<br><b>Venue:</b> '+esc(A.venue):'')+(S.meta.week?'<br><b>Week:</b> '+esc(S.meta.week):'')+'</div>';
+  h+='<div class="aggrid"><div><div class="agbox"><b>Club Mission</b><div class="agmission">'+CLUB_MISSION+'</div></div><div class="agbox"><b class="rpt">Role Players</b>';
+  AG_SIDE.forEach(function(a){ var v=asList(a[0]); if(!v.length) return; h+='<div class="agrp"><div class="agrpn">'+a[1]+'</div>'+v.map(function(n){return '<div>'+esc(n)+'</div>';}).join("")+'</div>'; });
   h+='</div></div><table class="agtab"><thead><tr><th>Time</th><th>Role Player</th><th>Activity</th></tr></thead><tbody>';
   var last="";
   itemsSorted().forEach(function(it){
-    var t=fmtHM(it.time); var x=extraText(it.x);
-    h+='<tr><td>'+(t!==last?t:'')+'</td><td>'+arole(it.role).n+'</td><td>'+esc(it.text)+(x?'<div class="agx2">'+esc(x).replace(/\n/g,'<br>')+'</div>':'')+'</td></tr>';
+    var t=fmtHM(it.time);
+    h+='<tr><td>'+(t!==last?t:'')+'</td><td>'+arole(it.role).n+'</td><td>'+agActivityHTML(it)+'</td></tr>';
     last=t;
   });
   h+='</tbody></table></div>';
-  if(A.next) h+='<div class="agnext">Next meeting: '+esc(fmtDate(A.next))+'</div>';
   h+='</div>';
   document.getElementById("report").innerHTML=h;
+}
+function fitAgenda(){
+  var doc=document.querySelector("#report .agdoc"); if(!doc) return;
+  var m=doc.cloneNode(true); m.classList.add("agmeas"); document.getElementById("report").appendChild(m);
+  var h=m.scrollHeight; m.remove();
+  var z=h>1015?Math.max(0.6,Math.floor(1015/h*100)/100):1; doc.style.setProperty("--agz",z); doc.dataset.fit=z;
 }
 function openAgendaPrint(){
   buildAgendaDoc();
   document.getElementById("repPick").innerHTML='<b style="font-size:14px">Agenda'+(S.agenda.no?' – No '+esc(S.agenda.no):'')+'</b>';
   document.getElementById("reportWrap").classList.add("on"); document.getElementById("reportWrap").dataset.kind="agenda";
+  fitAgenda();
 }
 
 /* ---------- Toastmaster of the Day: run-sheet ---------- */
