@@ -12,7 +12,8 @@ A single HTML page for running Speechcraft meetings at **Dijital Team Colombo**.
 | 🔢 **Ah-Counter** | Tap counts of filler words (Um, Ah, Er, So, Like…) per speaker, editable word list |
 | 📝 **Grammarian** | Word of the Day, uses per speaker, great phrases and slips |
 | 🔁 **Round Robin Master** | Question list, show the question full screen, tap each person to queue them on the Timer (20-second bell) |
-| 🗣 **Speech Evaluator** / 💬 **Table Topic Evaluator** | Commend · Recommend · Commend notes and quick ratings for each speaker, with their time shown |
+| 🎙 **Speaker** | Prepared speakers add their speech title, objectives and time limits (used by the Timer), see their result and assigned evaluator, and open their private feedback |
+| 🗣 **Speech Evaluator** / 💬 **Table Topic Evaluator** | "Your speakers" first (assigned by the Coordinator or "Assign to me"), with speech titles and objectives; Commend · Recommend · Commend + ratings kept as a private draft until **Submit** |
 | 🙋 **Member / Audience** | Check in, vote, send anonymous notes to speakers, open a printable personal feedback card |
 
 One **Meeting report** combines every role and can be saved as a PDF.
@@ -23,7 +24,7 @@ When the General Evaluator opens voting, a vote bar appears on every connected d
 
 ### Private feedback
 
-Evaluations and audience notes can only be read by the speaker they are for. Each speaker sets a **feedback PIN** once (Member / Audience → My feedback card). This creates a personal key: the public part is shared with the meeting and the private part is locked with the PIN (PBKDF2 + AES-GCM), so the speaker can open their card on any device. Evaluators' and members' devices encrypt feedback for that speaker (ECDH P-256 + AES-GCM) before it is synced, so every other device only holds unreadable data. The General Evaluator and the meeting report show only who evaluated whom. If a speaker hasn't set a PIN yet, feedback waits on the writer's device and is sent automatically once they do. The Coordinator can reset a forgotten PIN, but feedback encrypted for the old PIN can't be recovered.
+Evaluations and audience notes can only be read by the speaker they are for. Each speaker sets a **feedback PIN** once (Member / Audience → My feedback card). This creates a personal key: the public part is shared with the meeting and the private part is locked with the PIN (PBKDF2 + AES-GCM), so the speaker can open their card on any device. Evaluations stay as a draft on the evaluator's device until they tap **Submit**. Evaluators' and members' devices then encrypt feedback for that speaker (ECDH P-256 + AES-GCM) before it is synced, so every other device only holds unreadable data. The General Evaluator and the meeting report show only who evaluated whom. If a speaker hasn't set a PIN yet, feedback waits on the writer's device and is sent automatically once they do. The Coordinator can reset a forgotten PIN, but feedback encrypted for the old PIN can't be recovered.
 
 ### Coordinator PIN
 
