@@ -812,8 +812,8 @@ function renderRoles(){
   var team=ROLES.filter(function(x){return x.id!==L.role && S.people[x.id];}).map(function(x){return x.icon+" "+esc(S.people[x.id]);});
   var sub;
   if(NET.mode && NET.status==="on" && NET.peers.length){
-    var online=NET.peers.map(function(p){ var rl=(Array.isArray(p.roles)&&p.roles.length?p.roles:[p.role]).map(roleObj).filter(Boolean); return '<span class="onl">'+rl.map(function(r){return r.icon;}).join("")+" "+esc(p.name||(rl[0]?rl[0].name:"Device"))+(p.host?' <i>(host)</i>':'')+'</span>'; });
-    sub='<span class="dotg"></span><b>'+NET.peers.length+' online</b> · '+online.join(" · ");
+    var ppl=onlinePeople(), online=ppl.map(function(p){ var rl=p.roles.map(roleObj).filter(Boolean); return '<span class="onl">'+rl.map(function(r){return r.icon;}).join("")+" "+esc(p.name||(rl[0]?rl[0].name:"Device"))+(p.host?' <i>(host)</i>':'')+(p.devices>1?' <i>· '+p.devices+' devices</i>':'')+'</span>'; });
+    sub='<span class="dotg"></span><b>'+ppl.length+' online</b> · '+online.join(" · ");
   } else if(NET.mode){ sub='<span class="doty"></span>'+esc(NET.msg||"Connecting…"); }
   else sub=team.length?'Team: '+team.join(" · ")+' · <i>not connected</i>':'Your role on this device · not connected';
   document.getElementById("roles").innerHTML=roleTabsHTML()+'<div class="me">'+r.icon+' <b>'+r.name+'</b>'+(myName()?' · '+esc(myName()):'')+
@@ -2190,6 +2190,20 @@ function makeCode(){ var A="ABCDEFGHJKMNPQRSTUVWXYZ23456789", s="", r=new Uint8A
 function fmtCode(c){ return c.slice(0,3)+"-"+c.slice(3); }
 function cleanCode(s){ return String(s||"").toUpperCase().replace(/[^A-Z0-9]/g,""); }
 function setStatus(st,msg){ NET.status=st; NET.msg=msg||""; renderConnBtn(); renderRoles(); if(document.getElementById("connModal").classList.contains("on")) renderConnBox(); refreshWelcome(); }
+/* the same person on several devices (e.g. laptop + phone) counts once */
+function onlinePeople(){
+  var out=[], by={};
+  (NET.peers||[]).forEach(function(p){
+    var rl=Array.isArray(p.roles)&&p.roles.length?p.roles.slice():[p.role];
+    var k=String(p.name||"").trim()?"n|"+nkey(p.name):"r|"+rl.slice().sort().join(",");
+    var g=by[k]; if(!g){ g=by[k]={name:p.name||"",roles:[],host:false,me:false,devices:0}; out.push(g); }
+    rl.forEach(function(r){ if(g.roles.indexOf(r)<0) g.roles.push(r); });
+    g.host=g.host||!!p.host; g.me=g.me||!!p.me; g.devices++;
+  });
+  return out;
+}
+function devTag(g){ return g.devices>1?' <span class="saved">· '+g.devices+' devices</span>':''; }
+function peopleRoleNames(g){ return g.roles.map(roleName).join(" + "); }
 function refreshPeers(){
   var t=now(), list=[{role:L.role,roles:myRoles(),name:myName(),host:NET.mode==="host",me:true}];
   Object.keys(NET.info).forEach(function(id){ var p=NET.info[id]; if(t-p.last<20000) list.push(p); });
@@ -2275,7 +2289,7 @@ function renderConnBtn(){
   var b=document.getElementById("connBtn"), tx=document.getElementById("connTxt");
   b.className="conn"+(NET.status==="on"?" on":NET.status==="wait"?" wait":NET.status==="err"?" err":"");
   if(!NET.mode) tx.textContent="Not connected";
-  else if(NET.status==="on") tx.textContent=fmtCode(NET.code)+" · "+Math.max(NET.peers.length,1)+" online";
+  else if(NET.status==="on") tx.textContent=fmtCode(NET.code)+" · "+Math.max(onlinePeople().length,1)+" online";
   else tx.textContent=NET.status==="err"?"Connection problem":"Connecting "+fmtCode(NET.code)+"…";
 }
 function renderConnBox(){
@@ -2289,7 +2303,7 @@ function renderConnBox(){
     h+='<div class="saved">Share the code, or let people scan a QR code below with their phone camera.</div>';
     h+='<div class="code">'+fmtCode(NET.code)+'</div>';
     if(NET.status!=="on") h+='<div class="'+(NET.status==="err"?"connerr":"saved")+'">'+esc(NET.msg||"Connecting…")+'</div>';
-    if(NET.peers.length){ h+='<b>Connected devices</b><ul class="devlist">'+NET.peers.map(function(p){ return '<li>'+roleName(p.role)+(p.name?' — '+esc(p.name):'')+(p.me?' <span class="saved">(you)</span>':'')+(p.host?' <span class="saved">(started the meeting)</span>':'')+'</li>'; }).join("")+'</ul>'; }
+    if(NET.peers.length){ var ppl=onlinePeople(); h+='<b>Online: '+ppl.length+' '+(ppl.length===1?'person':'people')+' on '+NET.peers.length+' device'+(NET.peers.length===1?'':'s')+'</b><ul class="devlist">'+ppl.map(function(p){ return '<li>'+peopleRoleNames(p)+(p.name?' — '+esc(p.name):'')+devTag(p)+(p.me?' <span class="saved">(you)</span>':'')+(p.host?' <span class="saved">(started the meeting)</span>':'')+'</li>'; }).join("")+'</ul>'; }
     var rr=ROLES.find(function(x){return x.id===L.role;});
     h+='<div class="qrpair"><div><b>Others join</b>'+qrSvg(inviteLink(NET.code))+'<div class="saved">They scan, then pick their role</div></div>'+
        '<div><b>📱 My role on my phone</b>'+qrSvg(roleLink(NET.code,L.role))+'<div class="saved">Opens as '+rr.icon+' '+rr.name+' with the same data</div></div></div>';
@@ -2372,10 +2386,10 @@ function renderWelcome(){
          '<div class="wcard"><b class="t">Start a new meeting</b><div class="saved" style="margin:4px 0 10px">Usually the Timer. You get a code to share with the other roles.</div><button class="btn big1" id="wHost">Host meeting &amp; get code</button></div>'+
          '<div class="wfoot"><button class="linkbtn" id="wSolo">Continue without connecting</button><span class="saved">🔒 Encrypted direct connection · needs internet</span></div>';
     } else {
-      var on=NET.status==="on", n=Math.max(NET.peers.length,1);
+      var on=NET.status==="on", n=Math.max(onlinePeople().length,1);
       h+='<div class="wcard" style="text-align:center"><div class="saved">'+(NET.mode==="host"?"Your meeting code — share it with the other roles":"Meeting code")+'</div><div class="code">'+fmtCode(NET.code)+'</div>';
-      h+= on ? '<div class="ok">✓ '+(NET.mode==="host"?"Meeting open":"Connected")+' · '+n+' device'+(n===1?'':'s')+'</div>' : '<div class="'+(NET.status==="err"?"connerr":"saved")+'">'+esc(NET.msg||"Connecting…")+'</div>';
-      if(NET.peers.length>1) h+='<ul class="devlist" style="text-align:left">'+NET.peers.map(function(p){ return '<li>'+roleName(p.role)+(p.name?' — '+esc(p.name):'')+(p.host?' <span class="saved">(host)</span>':'')+'</li>'; }).join("")+'</ul>';
+      h+= on ? '<div class="ok">✓ '+(NET.mode==="host"?"Meeting open":"Connected")+' · '+n+' '+(n===1?'person':'people')+' online</div>' : '<div class="'+(NET.status==="err"?"connerr":"saved")+'">'+esc(NET.msg||"Connecting…")+'</div>';
+      if(NET.peers.length>1) h+='<ul class="devlist" style="text-align:left">'+onlinePeople().map(function(p){ return '<li>'+peopleRoleNames(p)+(p.name?' — '+esc(p.name):'')+devTag(p)+(p.host?' <span class="saved">(host)</span>':'')+'</li>'; }).join("")+'</ul>';
       if(NET.mode==="host"){
         var link=inviteLink(NET.code);
         h+='<div class="qrwrap">'+qrSvg(link)+'<div class="saved">Others scan this with their phone camera to join</div></div>';
