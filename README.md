@@ -13,16 +13,19 @@ One **Meeting report** combines every role and can be saved as a PDF.
 
 ## Use it
 
-- **Online:** open the GitHub Pages link for this repo (if enabled) on any phone or laptop.
-- **Offline:** download `index.html` and open it in Chrome, Edge or Safari. No install or login.
+Open **https://npfernando.github.io/toastmasters-speechcraft/** on any phone or laptop (or download `index.html` and open it offline in Chrome, Edge or Safari). No install or login.
 
-## Connect the roles (live sync)
+## Getting started at a meeting
 
-1. Everyone opens the page and taps their role.
-2. One person (usually the Timer) taps **Not connected → Host meeting** and reads out the 6-character code.
-3. Everyone else taps **Join** and types the code.
+1. **Pick your role.** The page opens on a welcome screen: choose Timer, Table Topics Master, Ah-Counter or Grammarian and type your name. Your device then shows only your role (use **Change role** at the top to switch).
+2. **Host or join.** One person (usually the Timer) taps **Host meeting & get code** and shares the 6-character code, or taps **Copy invite link** and sends the link in WhatsApp. Everyone else types the code and taps **Join** (the invite link fills the code in for them).
+3. **Continue.** Once it shows **✓ Connected**, tap **Continue**. Next time the device opens straight into its role and reconnects to the same meeting.
 
-Devices then sync live: when the Table Topics Master calls a speaker, they appear in the Timer's list; the Ah-Counter and Grammarian see who is speaking now.
+You can also tap **Continue without connecting** to use a role on its own.
+
+## How the live sync works
+
+Once connected, devices sync live: when the Table Topics Master calls a speaker, they appear in the Timer's list; the Ah-Counter and Grammarian see who is speaking now.
 
 - Devices connect directly to each other over WebRTC, which is always encrypted. The free public [PeerJS](https://peerjs.com/) service only matches devices by code; meeting data doesn't pass through it.
 - Each device keeps its own copy, so if the internet drops everyone keeps working and catches up on reconnect.

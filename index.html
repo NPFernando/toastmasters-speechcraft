@@ -64,7 +64,34 @@ header.top{display:flex;flex-wrap:wrap;align-items:center;gap:10px;justify-conte
 .meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin-bottom:12px}
 label.f,.f{display:flex;flex-direction:column;font-size:12px;color:var(--muted);gap:4px}
 .fixedval{font-size:15px;font-weight:700;color:var(--ink);padding:7px 0}
-.roles{display:flex;gap:6px;overflow-x:auto;margin-bottom:12px;padding-bottom:2px}
+.roles{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;border:1px solid var(--line);background:var(--card);border-radius:12px;padding:10px 14px}
+.roles .me{font-size:17px;flex:1;min-width:200px}
+.roles .me small{display:block;font-size:12px;color:var(--muted)}
+.roles .team{font-size:12px;color:var(--muted)}
+#welcome{position:fixed;inset:0;z-index:80;background:var(--bg);overflow:auto;display:none;padding:20px 14px}
+#welcome.on{display:block}
+.wbox{max-width:660px;margin:0 auto}
+.wlogos{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.wlogos img{max-height:64px;max-width:160px}
+.wlogos img.co{border-radius:6px}
+.wbox h2{margin:4px 0 2px;font-size:24px}
+.wbox .lead{color:var(--muted);margin:0 0 16px}
+.steps{display:flex;gap:8px;margin-bottom:14px;font-size:12px;color:var(--muted)}
+.steps span.on{color:var(--ink);font-weight:700}
+.rolegrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.rolecard{border:2px solid var(--line);background:var(--card);border-radius:14px;padding:16px;cursor:pointer;text-align:left}
+.rolecard:hover{border-color:var(--muted)}
+.rolecard.active{border-color:var(--brand);box-shadow:0 0 0 3px color-mix(in srgb, var(--brand) 25%, transparent)}
+.rolecard .ic{font-size:30px}
+.rolecard b{display:block;font-size:17px;margin-top:4px}
+.rolecard span{font-size:13px;color:var(--muted)}
+.rolecard .taken{display:block;margin-top:4px;font-size:12px;color:var(--run)}
+.wcard{border:1px solid var(--line);background:var(--card);border-radius:14px;padding:16px;margin-bottom:10px}
+.wcard b.t{font-size:16px}
+.wfoot{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:14px;flex-wrap:wrap}
+.linkbtn{border:none;background:none;color:var(--muted);text-decoration:underline;cursor:pointer;padding:6px 0}
+.ok{color:var(--g);font-weight:700}
+@media (max-width:520px){ .rolegrid{grid-template-columns:1fr} .rolecard{padding:12px 14px;display:flex;gap:12px;align-items:center} .rolecard b{margin-top:0} }
 .role{flex:0 0 auto;border:1px solid var(--line);background:var(--card);border-radius:10px;padding:9px 14px;cursor:pointer;font-weight:600;color:var(--muted);white-space:nowrap}
 .role.active{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
 .role .who{font-weight:400;font-size:12px;opacity:.85;margin-left:4px}
@@ -263,7 +290,7 @@ details.guide td:first-child{font-weight:600;width:190px}
   .meta .f:first-child{grid-column:1 / -1;flex-direction:row;align-items:baseline;gap:8px}
   .meta .f:first-child .fixedval{padding:0}
   .meta label.f:last-child{grid-column:1 / -1}
-  .role{padding:8px 12px}
+  .roles{padding:8px 10px} .roles .me{font-size:15px}
   #report{padding:16px} #report .mgrid{grid-template-columns:1fr}
   .code{font-size:32px}
 }
@@ -318,8 +345,8 @@ details.guide td:first-child{font-weight:600;width:190px}
   <details class="guide card">
     <summary>How to use</summary>
     <table>
-      <tr><td>Pick your role</td><td>Tap your role at the top (Timer, Table Topics Master, Ah-Counter or Grammarian) and type your name. Each device remembers its role.</td></tr>
-      <tr><td>Connect devices</td><td>One person (usually the Timer) taps <b>Not connected → Host meeting</b> and reads out the 6-character code. Everyone else opens this same file, taps <b>Join</b> and types the code. Everything then syncs live. Needs internet; the link between devices is encrypted. If someone's connection drops, they keep working and catch up automatically.</td></tr>
+      <tr><td>Pick your role</td><td>When you open the page, choose your role (Timer, Table Topics Master, Ah-Counter or Grammarian), type your name, then host or join the meeting. Your device then shows only your role. Use <b>Change role</b> at the top if you need to switch.</td></tr>
+      <tr><td>Connect devices</td><td>One person (usually the Timer) taps <b>Not connected → Host meeting</b> and reads out the 6-character code. Everyone else opens the page, picks their role and types the code (or opens the host's invite link, which fills the code in). Everything then syncs live. Needs internet; the link between devices is encrypted. If someone's connection drops, they keep working and catch up automatically.</td></tr>
       <tr><td>Timer: plan speakers</td><td>Type names and press <b>+ Add to list</b> (several at once with commas). Press <b>▶ Start next: Name</b> when they stand up. Rename, reorder ↑ ↓ or remove ✕ any time.</td></tr>
       <tr><td>Timer: timing</td><td>Type a name (optional) and press <b>Start speaker</b>. Add or fix the name in the live bar while they speak. Press <b>Stop</b> when done. The live bar flashes <b>SHOW GREEN / AMBER / RED</b> at each signal. If someone is still running when you start another, the page asks first.</td></tr>
       <tr><td>Timer: fix or add a time</td><td><b>✎ Add time manually</b> for anyone you forgot. Click a finished time to correct it (m:ss). Finished speakers can't be restarted; ✕ removes them (with Undo).</td></tr>
@@ -333,6 +360,7 @@ details.guide td:first-child{font-weight:600;width:190px}
   </details>
 </div>
 
+<div id="welcome" role="dialog" aria-modal="true" aria-label="Get started"><div class="wbox" id="wbox"></div></div>
 <div id="toast" role="status"><span id="toastMsg"></span><button id="toastUndo">Undo</button></div>
 <datalist id="roster"></datalist>
 
@@ -603,10 +631,10 @@ function renderMeta(){
   document.getElementById("myNameLbl").textContent="Your name ("+r.name+")";
 }
 function renderRoles(){
-  document.getElementById("roles").innerHTML=ROLES.map(function(r){
-    var who=S.people[r.id];
-    return '<button class="role'+(L.role===r.id?' active':'')+'" data-role="'+r.id+'">'+r.icon+' '+r.name+(who?'<span class="who">· '+esc(who)+'</span>':'')+'</button>';
-  }).join("");
+  var r=ROLES.find(function(x){return x.id===L.role;});
+  var team=ROLES.filter(function(x){return x.id!==L.role && S.people[x.id];}).map(function(x){return x.icon+" "+esc(S.people[x.id]);});
+  document.getElementById("roles").innerHTML='<div class="me">'+r.icon+' <b>'+r.name+'</b>'+(S.people[L.role]?' · '+esc(S.people[L.role]):'')+
+    '<small>'+(team.length?'Team: '+team.join(" · "):'Your role on this device')+'</small></div><button class="btn sm" data-change-role>Change role</button>';
 }
 /* who is speaking now (from the Timer) — shown on the other roles */
 function renderNow(){
@@ -847,7 +875,7 @@ setInterval(function(){
 
 /* ---------- events ---------- */
 document.getElementById("roles").addEventListener("click",function(e){
-  var b=e.target.closest("[data-role]"); if(!b) return; L.role=b.dataset.role; saveL(); NET.hello(); renderAll(); window.scrollTo(0,0);
+  if(e.target.closest("[data-change-role]")) openWelcome("role");
 });
 document.getElementById("mWeek").addEventListener("change",function(){ S.meta.week=this.value; tick(S.meta); commitQuiet(); });
 document.getElementById("mDate").addEventListener("change",function(){ S.meta.date=this.value; tick(S.meta); commitQuiet(); });
@@ -1121,7 +1149,7 @@ function makeCode(){ var A="ABCDEFGHJKMNPQRSTUVWXYZ23456789", s="", r=new Uint8A
 function fmtCode(c){ return c.slice(0,3)+"-"+c.slice(3); }
 function cleanCode(s){ return String(s||"").toUpperCase().replace(/[^A-Z0-9]/g,""); }
 function send(c,m){ try{ if(c.open) c.send(m); }catch(e){} }
-function setStatus(st,msg){ NET.status=st; NET.msg=msg||""; renderConnBtn(); if(document.getElementById("connModal").classList.contains("on")) renderConnBox(); }
+function setStatus(st,msg){ NET.status=st; NET.msg=msg||""; renderConnBtn(); if(document.getElementById("connModal").classList.contains("on")) renderConnBox(); refreshWelcome(); }
 function retryLater(fn,ms){ clearTimeout(NET.retry); NET.retry=setTimeout(fn,ms||3000); }
 function stopNet(keep){
   clearTimeout(NET.retry); NET.conns.forEach(function(c){ try{c.close();}catch(e){} }); NET.conns=[]; NET.peers=[];
@@ -1182,11 +1210,11 @@ function sendPeers(){
   if(NET.mode!=="host") return;
   var list=[{role:L.role,name:S.people[L.role]||"",host:true}].concat(NET.conns.filter(function(c){return c.open;}).map(function(c){ return c._info||{role:"?",name:""}; }));
   NET.peers=list; NET.conns.forEach(function(c){ send(c,{t:"peers",list:list}); });
-  renderConnBtn(); if(document.getElementById("connModal").classList.contains("on")) renderConnBox();
+  renderConnBtn(); if(document.getElementById("connModal").classList.contains("on")) renderConnBox(); refreshWelcome();
 }
 function onMsg(c,m){
   if(!m||typeof m!=="object") return;
-  if(m.t==="peers"&&Array.isArray(m.list)){ NET.peers=m.list.slice(0,30); renderConnBtn(); if(document.getElementById("connModal").classList.contains("on")) renderConnBox(); return; }
+  if(m.t==="peers"&&Array.isArray(m.list)){ NET.peers=m.list.slice(0,30); renderConnBtn(); if(document.getElementById("connModal").classList.contains("on")) renderConnBox(); refreshWelcome(); if(!NET.mode) return; renderRoles(); return; }
   if(m.t==="hello"||m.t==="who"){ c._info={role:String(m.role||"").slice(0,10),name:String(m.name||"").slice(0,60)}; if(NET.mode==="host") sendPeers(); }
   if(m.state&&typeof m.state==="object"){
     var remote; try{ remote=normalize(clone(m.state)); }catch(e){ return; }
@@ -1232,7 +1260,8 @@ function renderConnBox(){
     h+='<div class="code">'+fmtCode(NET.code)+'</div>';
     if(NET.status!=="on") h+='<div class="'+(NET.status==="err"?"connerr":"saved")+'">'+esc(NET.msg||"Connecting…")+'</div>';
     if(NET.peers.length){ h+='<b>Connected devices</b><ul class="devlist">'+NET.peers.map(function(p){ return '<li>'+roleName(p.role)+(p.name?' — '+esc(p.name):'')+(p.host?' <span class="saved">(host)</span>':'')+'</li>'; }).join("")+'</ul>'; }
-    h+='<div class="row" style="justify-content:space-between;margin-top:10px">'+(NET.mode==="host"?'<button class="btn" id="copyCode">Copy code</button>':'<span></span>')+'<button class="btn" id="leaveBtn">'+(NET.mode==="host"?"Stop hosting":"Disconnect")+'</button></div>';
+    if(NET.mode==="host"&&inviteLink(NET.code)) h+='<div class="saved" style="word-break:break-all">Invite link: '+esc(inviteLink(NET.code))+'</div>';
+    h+='<div class="row" style="justify-content:space-between;margin-top:10px">'+(NET.mode==="host"?'<span class="row"><button class="btn" id="copyCode">Copy code</button>'+(inviteLink(NET.code)?'<button class="btn" id="copyLink">Copy invite link</button>':'')+'</span>':'<span></span>')+'<button class="btn" id="leaveBtn">'+(NET.mode==="host"?"Stop hosting":"Disconnect")+'</button></div>';
   }
   h+='<div class="note">🔒 Devices connect directly to each other and the link is encrypted (WebRTC). A free public service only matches devices by code; your meeting data doesn\'t pass through it. Needs internet on every device. If a strict office network blocks it, use the same Wi-Fi or a phone hotspot. If the host closes the page, the others keep working and reconnect when the host is back.</div>'+
      '<div style="text-align:right;margin-top:10px"><button class="btn" id="connClose">Close</button></div>';
@@ -1245,15 +1274,90 @@ document.getElementById("connBox").addEventListener("click",function(e){
   else if(t.closest("#joinBtn")){ var c=cleanCode(document.getElementById("joinCode").value); if(c.length!==6){ alert("The code has 6 letters/numbers, e.g. K7Q-M4P."); return; } startJoin(c); renderConnBox(); }
   else if(t.closest("#leaveBtn")){ if(confirm(NET.mode==="host"?"Stop hosting? Other devices will be disconnected (they keep their data).":"Disconnect from this meeting? You keep your data.")){ stopNet(false); renderConnBox(); } }
   else if(t.closest("#copyCode")){ try{ navigator.clipboard.writeText(fmtCode(NET.code)); t.textContent="Copied"; }catch(err){} }
+  else if(t.closest("#copyLink")){ try{ navigator.clipboard.writeText(inviteLink(NET.code)); t.textContent="Link copied"; }catch(err){} }
   else if(t.closest("#connClose")) document.getElementById("connModal").classList.remove("on");
 });
 document.getElementById("connBox").addEventListener("keydown",function(e){ if(e.key==="Enter"&&e.target.id==="joinCode"){ e.preventDefault(); document.getElementById("joinBtn").click(); } });
+
+/* ---------- welcome: pick role, then host / join ---------- */
+var W={step:"role",role:null,code:""};
+var ROLE_DESC={timer:"Times every speaker and shows the signals",ttm:"Runs Table Topics and calls the speakers",ah:"Counts filler words for each speaker",gram:"Word of the Day, great phrases and slips"};
+function inviteLink(code){ if(!/^https?:/.test(location.protocol)) return ""; return location.origin+location.pathname+"#join="+fmtCode(code); }
+function openWelcome(step){ W.step=step||"role"; W.role=L.setup?L.role:null; document.getElementById("welcome").classList.add("on"); renderWelcome(); }
+function closeWelcome(){ L.setup=true; saveL(); document.getElementById("welcome").classList.remove("on"); renderAll(); window.scrollTo(0,0); }
+function refreshWelcome(){ if(document.getElementById("welcome").classList.contains("on") && W.step==="connect") renderWelcome(); }
+function renderWelcome(){
+  var tm=document.querySelector(".logo img").src, co=document.querySelector(".logo.co img").src;
+  var h='<div class="wlogos"><img src="'+tm+'" alt="Toastmasters International"><img class="co" src="'+co+'" alt="Dijital Team"></div>'+
+        '<h2>Speechcraft Meeting Roles</h2><p class="lead">Dijital Team Colombo'+(S.meta.week?' · '+esc(S.meta.week):'')+'</p>'+
+        '<div class="steps"><span class="'+(W.step==="role"?"on":"")+'">① Your role</span><span>›</span><span class="'+(W.step==="connect"?"on":"")+'">② Join the meeting</span></div>';
+  if(W.step==="role"){
+    h+='<div class="rolegrid">'+ROLES.map(function(r){
+      var other=S.people[r.id] && r.id!==L.role ? S.people[r.id] : "";
+      return '<button class="rolecard'+(W.role===r.id?' active':'')+'" data-wrole="'+r.id+'"><span class="ic">'+r.icon+'</span><div><b>'+r.name+'</b><span>'+ROLE_DESC[r.id]+'</span>'+(other&&NET.mode?'<span class="taken">Taken by '+esc(other)+'</span>':'')+'</div></button>';
+    }).join("")+'</div>';
+    h+='<label class="f">Your name<input class="t" id="wName" list="roster" autocomplete="off" placeholder="Type your name" value="'+esc(W.role?(S.people[W.role]||""):"")+'"></label>';
+    h+='<div class="wfoot"><span class="saved">'+(W.role?'':'Choose your role to continue')+'</span><button class="btn primary big1" id="wNext"'+(W.role?'':' disabled')+'>Next →</button></div>';
+  } else {
+    var r=ROLES.find(function(x){return x.id===L.role;});
+    h+='<div class="wcard" style="display:flex;justify-content:space-between;align-items:center;gap:10px"><div>'+r.icon+' <b>'+r.name+'</b>'+(S.people[L.role]?' · '+esc(S.people[L.role]):'')+'</div><button class="linkbtn" id="wBack">Change</button></div>';
+    if(!NET.mode){
+      h+='<div class="wcard"><b class="t">Join a meeting</b><div class="saved" style="margin:4px 0 10px">Type the meeting code from the host.</div>'+
+         '<div class="row"><input class="t" id="wCode" placeholder="e.g. K7Q-M4P" maxlength="9" autocomplete="off" value="'+esc(W.code?fmtCode(W.code):"")+'" style="text-transform:uppercase;letter-spacing:3px;font-weight:800;font-size:20px"><button class="btn primary big1" id="wJoin">Join</button></div></div>'+
+         '<div class="wcard"><b class="t">Start a new meeting</b><div class="saved" style="margin:4px 0 10px">Usually the Timer. You get a code to share with the other roles.</div><button class="btn big1" id="wHost">Host meeting &amp; get code</button></div>'+
+         '<div class="wfoot"><button class="linkbtn" id="wSolo">Continue without connecting</button><span class="saved">🔒 Encrypted direct connection · needs internet</span></div>';
+    } else {
+      var on=NET.status==="on", n=Math.max(NET.peers.length,1);
+      h+='<div class="wcard" style="text-align:center"><div class="saved">'+(NET.mode==="host"?"Your meeting code — share it with the other roles":"Meeting code")+'</div><div class="code">'+fmtCode(NET.code)+'</div>';
+      h+= on ? '<div class="ok">✓ '+(NET.mode==="host"?"Meeting open":"Connected")+' · '+n+' device'+(n===1?'':'s')+'</div>' : '<div class="'+(NET.status==="err"?"connerr":"saved")+'">'+esc(NET.msg||"Connecting…")+'</div>';
+      if(NET.peers.length>1) h+='<ul class="devlist" style="text-align:left">'+NET.peers.map(function(p){ return '<li>'+roleName(p.role)+(p.name?' — '+esc(p.name):'')+(p.host?' <span class="saved">(host)</span>':'')+'</li>'; }).join("")+'</ul>';
+      if(NET.mode==="host"){
+        var link=inviteLink(NET.code);
+        h+='<div class="row" style="justify-content:center;margin-top:10px"><button class="btn" id="wCopyCode">Copy code</button>'+(link?'<button class="btn" id="wCopyLink">Copy invite link</button>':'')+'</div>';
+        if(link) h+='<div class="saved" style="margin-top:6px;word-break:break-all">'+esc(link)+'</div>';
+      }
+      h+='</div><div class="wfoot"><button class="linkbtn" id="wLeave">'+(NET.mode==="host"?"Cancel this meeting":"Use a different code")+'</button><button class="btn primary big1" id="wDone"'+(on||NET.mode==="host"?'':' disabled')+'>Continue →</button></div>';
+    }
+  }
+  document.getElementById("wbox").innerHTML=h;
+}
+var wbox=document.getElementById("wbox");
+wbox.addEventListener("click",function(e){
+  var t=e.target, rc=t.closest("[data-wrole]");
+  if(rc){ W.role=rc.dataset.wrole; renderWelcome(); var n=document.getElementById("wName"); if(n){ n.focus(); } return; }
+  if(t.closest("#wNext")){
+    var nm=(document.getElementById("wName").value||"").trim();
+    L.role=W.role; saveL();
+    if(nm!==(S.people[L.role]||"")){ S.people[L.role]=nm; S.peopleU[L.role]=Math.max(now(),(S.peopleU[L.role]||0)+1); commitQuiet(); }
+    NET.hello();
+    if(NET.mode && NET.status==="on"){ closeWelcome(); return; }
+    W.step="connect"; renderWelcome(); var c=document.getElementById("wCode"); if(c&&!W.code) c.focus(); return;
+  }
+  if(t.closest("#wBack")){ W.step="role"; renderWelcome(); return; }
+  if(t.closest("#wJoin")){ var code=cleanCode(document.getElementById("wCode").value); if(code.length!==6){ alert("The meeting code has 6 letters/numbers, e.g. K7Q-M4P."); return; } W.code=code; startJoin(code); renderWelcome(); return; }
+  if(t.closest("#wHost")){ startHost(makeCode()); renderWelcome(); return; }
+  if(t.closest("#wSolo")){ closeWelcome(); return; }
+  if(t.closest("#wDone")){ closeWelcome(); return; }
+  if(t.closest("#wLeave")){ stopNet(false); W.code=""; W.step="connect"; document.getElementById("welcome").classList.add("on"); renderWelcome(); return; }
+  if(t.closest("#wCopyCode")){ try{ navigator.clipboard.writeText(fmtCode(NET.code)); t.textContent="Copied ✓"; }catch(err){} return; }
+  if(t.closest("#wCopyLink")){ try{ navigator.clipboard.writeText(inviteLink(NET.code)); t.textContent="Link copied ✓"; }catch(err){} return; }
+});
+wbox.addEventListener("keydown",function(e){
+  if(e.key!=="Enter") return;
+  if(e.target.id==="wCode"){ e.preventDefault(); document.getElementById("wJoin").click(); }
+  if(e.target.id==="wName"){ e.preventDefault(); var b=document.getElementById("wNext"); if(b&&!b.disabled) b.click(); }
+});
 
 /* ---------- start ---------- */
 if(!sessionOf(L.tab)) L.tab="tt";
 if(!ROLES.some(function(r){return r.id===L.role;})) L.role="timer";
 renderAll(); wake(); save();
-if(L.conn&&L.conn.code){ if(L.conn.mode==="host") startHost(L.conn.code); else startJoin(L.conn.code); }
+var hashCode=""; try{ var hm=location.hash.match(/join=([A-Za-z0-9-]+)/); if(hm) hashCode=cleanCode(hm[1]); }catch(e){}
+if(hashCode.length===6){ try{ history.replaceState(null,"",location.pathname+location.search); }catch(e){} }
+var resumeCode = L.conn&&L.conn.code;
+if(hashCode.length===6 && !(resumeCode===hashCode)){ W.code=hashCode; openWelcome(L.setup?"connect":"role"); W.code=hashCode; renderWelcome(); }
+else if(resumeCode){ if(L.conn.mode==="host") startHost(L.conn.code); else startJoin(L.conn.code); if(!L.setup) openWelcome("role"); }
+else if(!L.setup) openWelcome("role");
 window.addEventListener("beforeunload",function(){ try{ if(NET.peer) NET.peer.destroy(); }catch(e){} });
 })();
 </script>
