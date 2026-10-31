@@ -51,6 +51,7 @@ input.t:focus,textarea.t:focus,select.t:focus{outline:2px solid var(--brand);out
 /* header */
 header.top{display:flex;flex-wrap:wrap;align-items:center;gap:10px;justify-content:space-between;margin-bottom:12px}
 .brand{display:flex;align-items:center;gap:14px;flex:1 1 100%}
+.morewrap{position:relative;display:inline-block} .moremenu{display:none;position:absolute;right:0;top:calc(100% + 6px);min-width:250px;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.18);padding:6px;z-index:40} .moremenu.on{display:grid;gap:2px} .mi{display:block;text-align:left;background:transparent;border:0;border-radius:8px;padding:9px 12px;font:inherit;font-weight:700;color:var(--ink);cursor:pointer} .mi:hover,.mi:focus{background:var(--chip)} .mi small{display:block;font-weight:400;color:var(--muted);font-size:12px}
 .brand h1{flex:1;min-width:0;cursor:pointer} .abtgrid{display:grid;gap:8px;margin-top:8px} .abtrow{display:flex;justify-content:space-between;align-items:center;gap:12px;border:1px solid var(--line);border-radius:10px;padding:10px 12px} .abtrow.danger{border-color:var(--r)} .abtrow .btn{flex:0 0 auto}
 .logo{height:56px;display:flex;align-items:center}
 .logo img{max-height:56px;max-width:170px;display:block;object-fit:contain}
@@ -84,7 +85,7 @@ label.f,.f{display:flex;flex-direction:column;font-size:12px;color:var(--muted);
 .steps span.on{color:var(--ink);font-weight:700}
 .rolegrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
 .rolecard{border:2px solid var(--line);background:var(--card);border-radius:14px;padding:16px;cursor:pointer;text-align:left}
-.rolecard:hover{border-color:var(--muted)} .chklist{display:grid;gap:6px;margin-top:6px} .chk{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer} .chk input{width:20px;height:20px;margin:0;flex:0 0 auto} .chk.on{background:var(--g-bg);border-color:var(--g)} .chk.on span{text-decoration:line-through;opacity:.75} .ritems{display:grid;gap:4px} .ritem{font-size:14px} .ritem b{display:inline-block;min-width:68px} .glist{display:grid;gap:6px;margin-top:8px} .grow{display:flex;justify-content:space-between;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;padding:8px 12px} .grow.on{border-color:var(--g)} details.mission{margin-top:8px} .rolecard .today{display:none;color:var(--a);font-weight:700;font-size:12px;margin-top:2px} .rolecard.mine .today{display:block} .rolecard.mine{border-color:var(--a)}
+.rolecard:hover{border-color:var(--muted)} .rgh{font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin:14px 0 6px} #wGrid .rgh:first-child{margin-top:4px} .chklist{display:grid;gap:6px;margin-top:6px} .chk{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer} .chk input{width:20px;height:20px;margin:0;flex:0 0 auto} .chk.on{background:var(--g-bg);border-color:var(--g)} .chk.on span{text-decoration:line-through;opacity:.75} .ritems{display:grid;gap:4px} .ritem{font-size:14px} .ritem b{display:inline-block;min-width:68px} .glist{display:grid;gap:6px;margin-top:8px} .grow{display:flex;justify-content:space-between;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;padding:8px 12px} .grow.on{border-color:var(--g)} details.mission{margin-top:8px} .rolecard .today{display:none;color:var(--a);font-weight:700;font-size:12px;margin-top:2px} .rolecard.mine .today{display:block} .rolecard.mine{border-color:var(--a)}
 .rolecard.active{border-color:var(--brand);box-shadow:0 0 0 3px color-mix(in srgb, var(--brand) 25%, transparent)}
 .rolecard .ic{font-size:30px}
 .rolecard b{display:block;font-size:17px;margin-top:4px}
@@ -423,13 +424,16 @@ details.guide td:first-child{font-weight:600;width:190px}
     </div>
     <div class="hbtns">
       <span class="saved" id="saved"></span>
-      <button class="btn ghost" id="homeBtn" title="Back to the start screen: choose your role and meeting">🏠 Home</button>
-      <button class="btn ghost" id="aboutBtn" title="About this app, help and clean-up">ℹ️ About</button>
       <button class="conn" id="connBtn" title="Connect devices"><i></i><span id="connTxt">Not connected</span></button>
-      <button class="btn ghost" id="backupBtn" title="Download a backup file of everything">⤓ Save backup</button>
-      <button class="btn ghost" id="restoreBtn" title="Load a backup file">⤒ Restore</button>
+      <button class="btn ghost" id="homeBtn" title="Back to the start screen: choose your role and meeting">🏠 Home</button>
+      <span class="morewrap"><button class="btn ghost" id="moreBtn" aria-haspopup="true" aria-expanded="false" title="More options">⋯ More</button>
+        <span class="moremenu" id="moreMenu" role="menu">
+          <button class="mi" id="backupBtn" role="menuitem">⤓ Save backup<small>Download everything as a file</small></button>
+          <button class="mi" id="restoreBtn" role="menuitem">⤒ Restore<small>Load a backup or meeting record</small></button>
+          <button class="mi" id="newMeeting" role="menuitem">🆕 New meeting<small>Clear this meeting; keep members and settings</small></button>
+          <button class="mi" id="aboutBtn" role="menuitem">ℹ️ About &amp; clean up<small>Help, version, reset this device</small></button>
+        </span></span>
       <input type="file" id="restoreFile" accept=".json,application/json" style="display:none">
-      <button class="btn ghost" id="newMeeting" title="Clear this meeting and start a new one">New meeting</button>
       <button class="btn primary" id="openReport">Meeting report</button>
     </div>
   </header>
@@ -483,6 +487,7 @@ details.guide td:first-child{font-weight:600;width:190px}
   </details>
 </div>
 
+<div id="waModal" class="modal" role="dialog" aria-modal="true" aria-label="Role list for WhatsApp"><div class="mbox" id="waBox"></div></div>
 <div id="aboutModal" class="modal" role="dialog" aria-modal="true" aria-label="About"><div class="mbox" id="aboutBox"></div></div>
 <div id="welcome" role="dialog" aria-modal="true" aria-label="Get started"><div class="wbox" id="wbox"></div></div>
 <div id="voteBar" class="votebar"></div>
@@ -1156,7 +1161,7 @@ function coordHTML(){
     h+='<div class="selcard" style="border-color:var(--a)"><b>Set a new PIN</b><div class="saved" style="margin:4px 0 8px">You unlocked with the recovery code. Choose a new PIN now.</div><div class="row"><input class="t" id="pin1" type="password" inputmode="numeric" placeholder="New PIN" maxlength="8" style="max-width:200px"><input class="t" id="pin2" type="password" inputmode="numeric" placeholder="Repeat PIN" maxlength="8" style="max-width:200px"><button class="btn primary" id="pinSet">Save new PIN</button></div></div>';
   }
   var A=S.agenda;
-  h+='<div class="row" style="justify-content:space-between"><h2 class="sec" style="margin:0">🗂 Meeting set-up</h2><div class="row"><button class="btn" id="agPrint">📄 Print agenda</button><button class="btn" id="pinChange">Change PIN</button><button class="btn" id="coordLock">🔒 Lock</button></div></div>';
+  h+='<div class="row" style="justify-content:space-between"><h2 class="sec" style="margin:0">🗂 Meeting set-up</h2><div class="row"><button class="btn" id="agPrint">📄 Print agenda</button><button class="btn" id="waRoles">💬 Role list for WhatsApp</button><button class="btn" id="pinChange">Change PIN</button><button class="btn" id="coordLock">🔒 Lock</button></div></div>';
   if(!NET.room) h+='<div class="note" style="margin-bottom:8px">Tip: start a meeting (top of the page) and share its code or QR in your group chat before the meeting. Everyone who joins gets this agenda and their names automatically.</div>';
   h+='<div class="meta" style="margin-top:10px">'+
      '<label class="f">Program title<input class="t" data-ag="title" value="'+esc(A.title)+'"></label>'+
@@ -1795,6 +1800,9 @@ function feedbackPinsHTML(){
   ["voteModal","winModal"].forEach(function(id){ document.getElementById(id).addEventListener("click",function(e){ if(e.target.id===id) e.target.classList.remove("on"); }); });
 })();
 
+/* vibrate the Timer's phone when the signal changes (silent: no sound) */
+var BUZZ={sg:[200],sa:[200,120,200],sr:[600,150,600]};
+function buzz(sg){ try{ if(myRoles().indexOf("timer")<0||!navigator.vibrate||!BUZZ[sg]) return; navigator.vibrate(BUZZ[sg]); window.__lastBuzz=sg; }catch(e){} }
 /* ---------- live tick ---------- */
 setInterval(function(){
   var t=now();
@@ -1806,7 +1814,7 @@ setInterval(function(){
     var pill=it.querySelector('[data-live="pill"]'); pill.className="pill "+(sg||"sn"); pill.textContent=signalName(sg);
     it.classList.remove("sg","sa","sr"); if(sg) it.classList.add(sg);
     it.querySelector('[data-live="banner"]').textContent=bannerText(sid,sg);
-    if(lastSig[r.id]!==undefined && sg && sg!==lastSig[r.id]) flashItem(it);
+    if(lastSig[r.id]!==undefined && sg && sg!==lastSig[r.id]){ flashItem(it); buzz(sg); }
     lastSig[r.id]=sg;
   });
   document.querySelectorAll("#nowStrip .nowitem").forEach(function(it){
@@ -2376,6 +2384,20 @@ function refreshWelcome(){
   }
   if(document.getElementById("qrModal").classList.contains("on")) renderPhoneQR();
 }
+var ROLE_GROUPS=[["Running the meeting",["coord","president","tmod","ge","saa"]],["Timing & reports",["timer","ttm","rrm","ah","gram"]],["Speakers & evaluators",["speaker","seval","tteval"]],["Audience",["member"]]];
+function roleCardHTML(r,today){
+  var other=S.people[r.id] && r.id!==L.role ? S.people[r.id] : "";
+  return '<button class="rolecard'+(W.role===r.id?' active':'')+(today.indexOf(r.id)>=0?' mine':'')+'" data-wrole="'+r.id+'"><span class="ic">'+r.icon+'</span><div><b>'+r.name+'</b><span>'+ROLE_DESC[r.id]+'</span><span class="today">⭐ Your role today</span>'+(other&&NET.mode?'<span class="taken">Taken by '+esc(other)+'</span>':'')+'</div></button>';
+}
+function roleGridHTML(today){
+  var h='';
+  if(today.length) h+='<div class="rgh">⭐ Your roles today</div><div class="rolegrid">'+today.map(function(id){return roleCardHTML(roleObj(id),today);}).join("")+'</div>';
+  ROLE_GROUPS.forEach(function(g){
+    var ids=g[1].filter(function(id){return today.indexOf(id)<0;}); if(!ids.length) return;
+    h+='<div class="rgh">'+(today.length?'Other roles · ':'')+esc(g[0])+'</div><div class="rolegrid">'+ids.map(function(id){return roleCardHTML(roleObj(id),today);}).join("")+'</div>';
+  });
+  return h;
+}
 function wTodayText(t){ return t.length?'⭐ On today\'s agenda: '+t.map(function(r){return roleObj(r).name;}).join(", ")+'. Pick one; you can add the others later.':'Choose your role'; }
 function renderWelcome(){
   var tm=document.querySelector(".logo img").src, co=document.querySelector(".logo.co img").src;
@@ -2387,10 +2409,7 @@ function renderWelcome(){
     var today=agendaRolesFor(nmv);
     h+='<label class="f" style="margin-bottom:10px">Your name<input class="t" id="wName" list="roster" autocomplete="off" placeholder="Type your name" value="'+esc(nmv)+'"></label>';
     h+='<div class="saved" id="wToday" style="margin-bottom:6px">'+wTodayText(today)+'</div>';
-    h+='<div class="rolegrid">'+ROLES.map(function(r){
-      var other=S.people[r.id] && r.id!==L.role ? S.people[r.id] : "";
-      return '<button class="rolecard'+(W.role===r.id?' active':'')+(today.indexOf(r.id)>=0?' mine':'')+'" data-wrole="'+r.id+'"><span class="ic">'+r.icon+'</span><div><b>'+r.name+'</b><span>'+ROLE_DESC[r.id]+'</span><span class="today">⭐ Your role today</span>'+(other&&NET.mode?'<span class="taken">Taken by '+esc(other)+'</span>':'')+'</div></button>';
-    }).join("")+'</div>';
+    h+='<div id="wGrid">'+roleGridHTML(today)+'</div>';
     h+='<div class="wfoot"><span class="saved">'+(W.role?'':'Choose your role to continue')+'</span><button class="btn primary big1" id="wNext"'+(W.role?'':' disabled')+'>Next →</button></div>';
   } else {
     var r=ROLES.find(function(x){return x.id===L.role;});
@@ -2418,7 +2437,7 @@ function renderWelcome(){
 var wbox=document.getElementById("wbox");
 wbox.addEventListener("input",function(e){
   if(e.target.id!=="wName") return; W.name=e.target.value; var t=agendaRolesFor(W.name.trim());
-  wbox.querySelectorAll("[data-wrole]").forEach(function(b){ b.classList.toggle("mine",t.indexOf(b.dataset.wrole)>=0); });
+  var g=document.getElementById("wGrid"); if(g) g.innerHTML=roleGridHTML(t);
   var tt=document.getElementById("wToday"); if(tt) tt.innerHTML=wTodayText(t);
 });
 wbox.addEventListener("click",function(e){
@@ -2780,6 +2799,56 @@ function renderFin(){
   });
 })();
 
+/* ---------- role list message for the WhatsApp group ---------- */
+function ordinal(n){ var v=n%100; return n+((v>10&&v<14)?"th":({1:"st",2:"nd",3:"rd"}[n%10]||"th")); }
+function waDate(iso){ if(!iso) return ""; var p=iso.split("-"); if(p.length!==3) return iso; var d=new Date(+p[0],+p[1]-1,+p[2]); return d.toLocaleDateString("en-AU",{weekday:"long"})+" "+ordinal(d.getDate())+" "+d.toLocaleDateString("en-AU",{month:"long"}); }
+function waRolesText(){
+  var open="❓ open – any volunteers?", L2=[], one=function(k,label){ L2.push(label+" – "+(assigned(k)||S.people[k]||open)); };
+  var first=itemsSorted()[0];
+  L2.push("*"+GROUP+" – Speechcraft"+(S.meta.week?" "+S.meta.week:"")+"*");
+  L2.push("📅 "+(waDate(S.meta.date)||"Date to be confirmed")+(first&&first.time?" · "+fmtHM(first.time):""));
+  if(S.agenda.venue) L2.push("📍 "+S.agenda.venue);
+  L2.push(""); L2.push("*Role players*");
+  one("president","President"); if(assigned("saa")||S.people.saa) one("saa","Sergeant at Arms");
+  one("tmod","Toastmaster of the Day"); one("ge","General Evaluator");
+  one("timer","Timer"); one("ah","Ah-Counter"); one("gram","Grammarian");
+  one("ttm","Table Topics Master"); one("rrm","Round Robin Master");
+  var k=assigned("keynote"); if(k) L2.push("Keynote – "+k+(S.agenda.ktopic?" (“"+S.agenda.ktopic+"”)":""));
+  var sp=asList("speakers");
+  L2.push(""); L2.push("*Prepared speeches*");
+  if(sp.length) sp.forEach(function(n,i){ var t=speechTitle(n); L2.push("Speaker "+(i+1)+" – "+n+(t?" (“"+t+"”)":"")); L2.push("   Evaluator – "+(evaluatorOf(n)||open)); });
+  else L2.push("Speakers – "+open);
+  var tt=asList("ttevals"); L2.push(""); L2.push("Table Topics Evaluators – "+(tt.length?tt.join(", "):open));
+  L2.push(""); L2.push("Can't make it? Please reply so we can reassign your role. 🙏");
+  return L2.join("\n");
+}
+function openWa(){
+  var txt=waRolesText();
+  document.getElementById("waBox").innerHTML='<div class="finhead"><h2 class="sec" style="margin:0">💬 Role list for WhatsApp</h2><button class="btn ghost" id="waClose">Close</button></div>'+
+    '<div class="saved" style="margin:4px 0 8px">Written from the role players and agenda. Edit it here if you like, then copy or share it to the group. Open roles ask for volunteers.</div>'+
+    '<textarea class="t" id="waText" rows="16" style="font-size:14px;line-height:1.4">'+esc(txt)+'</textarea>'+
+    '<div class="row" style="margin-top:8px"><button class="btn primary" id="waCopy">📋 Copy</button>'+(navigator.share?'<button class="btn go" id="waShare">↗ Share to WhatsApp…</button>':'')+'</div>';
+  document.getElementById("waModal").classList.add("on");
+}
+(function(){
+  document.getElementById("view").addEventListener("click",function(e){ if(e.target.closest("#waRoles")&&L.role==="coord"&&coordUnlocked()) openWa(); });
+  var M=document.getElementById("waModal");
+  M.addEventListener("click",function(e){
+    var t=e.target;
+    if(t.id==="waModal"||t.closest("#waClose")){ M.classList.remove("on"); return; }
+    if(t.closest("#waCopy")){ copyText(document.getElementById("waText").value); return; }
+    if(t.closest("#waShare")){ try{ navigator.share({text:document.getElementById("waText").value}).catch(function(){}); }catch(err){} }
+  });
+})();
+/* ---------- ⋯ More menu ---------- */
+(function(){
+  var b=document.getElementById("moreBtn"), m=document.getElementById("moreMenu");
+  function setOpen(o){ if(o){ var r=b.getBoundingClientRect(), nar=window.innerWidth<640; m.style.position=nar?"fixed":""; m.style.left=nar?"12px":""; m.style.right=nar?"12px":""; m.style.top=nar?(r.bottom+6)+"px":""; } m.classList.toggle("on",o); b.setAttribute("aria-expanded",o?"true":"false"); }
+  b.addEventListener("click",function(e){ e.stopPropagation(); setOpen(!m.classList.contains("on")); });
+  m.addEventListener("click",function(){ setTimeout(function(){ setOpen(false); },0); });
+  document.addEventListener("click",function(e){ if(!e.target.closest(".morewrap")) setOpen(false); });
+  document.addEventListener("keydown",function(e){ if(e.key==="Escape") setOpen(false); });
+})();
 /* ---------- home, about and clean-up ---------- */
 var APP_VERSION="2.6 · November 2026";
 function aboutHTML(){
