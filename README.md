@@ -23,6 +23,11 @@ Open **https://npfernando.github.io/toastmasters-speechcraft/** on any phone or 
 
 You can also tap **Continue without connecting** to use a role on its own.
 
+### QR codes
+
+- **Others join:** after starting a meeting, a QR code appears. Others scan it with their phone camera; the page opens with the meeting code filled in and they pick their role.
+- **Your role on your phone:** tap **📱 Open on phone** next to your role. Scan the QR code with your phone and it opens the same role in the same meeting, with all the data, without any setup. Keep the first device open until the phone shows ✓ Connected.
+
 ## How the live sync works
 
 Once connected, devices sync live: when the Table Topics Master calls a speaker, they appear in the Timer's list; the Ah-Counter and Grammarian see who is speaking now.
@@ -40,5 +45,6 @@ Everything is saved in the browser on each device. Use **⤓ Save backup** after
 
 ## Credits
 
+- QR codes: [QR Code Generator](https://github.com/kazuhikoarase/qrcode-generator) 1.4.4 by Kazuhiko Arase, MIT License, embedded in the page. "QR Code" is a registered trademark of DENSO WAVE INCORPORATED.
 - Connection library: [Trystero](https://github.com/dmotz/trystero) 0.26.0 (Nostr strategy, includes @noble/secp256k1), MIT License, embedded in the page.
 - The Toastmasters International logo is used under the Toastmasters brand guidelines for club and Speechcraft materials. It is a trademark of Toastmasters International. The Dijital Team logo belongs to Dijital Team.
