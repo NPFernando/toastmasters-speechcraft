@@ -84,7 +84,7 @@ label.f,.f{display:flex;flex-direction:column;font-size:12px;color:var(--muted);
 .steps span.on{color:var(--ink);font-weight:700}
 .rolegrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
 .rolecard{border:2px solid var(--line);background:var(--card);border-radius:14px;padding:16px;cursor:pointer;text-align:left}
-.rolecard:hover{border-color:var(--muted)}
+.rolecard:hover{border-color:var(--muted)} .rolecard .today{display:none;color:var(--a);font-weight:700;font-size:12px;margin-top:2px} .rolecard.mine .today{display:block} .rolecard.mine{border-color:var(--a)}
 .rolecard.active{border-color:var(--brand);box-shadow:0 0 0 3px color-mix(in srgb, var(--brand) 25%, transparent)}
 .rolecard .ic{font-size:30px}
 .rolecard b{display:block;font-size:17px;margin-top:4px}
@@ -2360,7 +2360,7 @@ document.getElementById("qrBox").addEventListener("click",function(e){
   else if(t.closest("#qrClose")) document.getElementById("qrModal").classList.remove("on");
 });
 document.getElementById("qrModal").addEventListener("click",function(e){ if(e.target.id==="qrModal") e.target.classList.remove("on"); });
-function openWelcome(step){ W.step=step||"role"; W.role=L.setup?L.role:null; document.getElementById("welcome").classList.add("on"); renderWelcome(); }
+function openWelcome(step){ W.name=null; W.step=step||"role"; W.role=L.setup?L.role:null; document.getElementById("welcome").classList.add("on"); renderWelcome(); }
 function closeWelcome(){ L.setup=true; saveL(); document.getElementById("welcome").classList.remove("on"); renderAll(); window.scrollTo(0,0); }
 function refreshWelcome(){
   if(document.getElementById("welcome").classList.contains("on") && W.step==="connect"){
@@ -2369,17 +2369,21 @@ function refreshWelcome(){
   }
   if(document.getElementById("qrModal").classList.contains("on")) renderPhoneQR();
 }
+function wTodayText(t){ return t.length?'⭐ On today\'s agenda: '+t.map(function(r){return roleObj(r).name;}).join(", ")+'. Pick one; you can add the others later.':'Choose your role'; }
 function renderWelcome(){
   var tm=document.querySelector(".logo img").src, co=document.querySelector(".logo.co img").src;
   var h='<div class="wlogos"><img src="'+tm+'" alt="Toastmasters International"><img class="co" src="'+co+'" alt="Dijital Team"></div>'+
         '<h2>Speechcraft Meeting Roles</h2><p class="lead">Dijital Team Colombo'+(S.meta.week?' · '+esc(S.meta.week):'')+'</p>'+
         '<div class="steps"><span class="'+(W.step==="role"?"on":"")+'">① Your role</span><span>›</span><span class="'+(W.step==="connect"?"on":"")+'">② Join the meeting</span></div>';
   if(W.step==="role"){
+    var nmv=W.name!=null?W.name:(W.role?(MULTI_ROLES[W.role]?((L.myNames||{})[W.role]||L.me||""):(S.people[W.role]||L.me||"")):(L.me||""));
+    var today=agendaRolesFor(nmv);
+    h+='<label class="f" style="margin-bottom:10px">Your name<input class="t" id="wName" list="roster" autocomplete="off" placeholder="Type your name" value="'+esc(nmv)+'"></label>';
+    h+='<div class="saved" id="wToday" style="margin-bottom:6px">'+wTodayText(today)+'</div>';
     h+='<div class="rolegrid">'+ROLES.map(function(r){
       var other=S.people[r.id] && r.id!==L.role ? S.people[r.id] : "";
-      return '<button class="rolecard'+(W.role===r.id?' active':'')+'" data-wrole="'+r.id+'"><span class="ic">'+r.icon+'</span><div><b>'+r.name+'</b><span>'+ROLE_DESC[r.id]+'</span>'+(other&&NET.mode?'<span class="taken">Taken by '+esc(other)+'</span>':'')+'</div></button>';
+      return '<button class="rolecard'+(W.role===r.id?' active':'')+(today.indexOf(r.id)>=0?' mine':'')+'" data-wrole="'+r.id+'"><span class="ic">'+r.icon+'</span><div><b>'+r.name+'</b><span>'+ROLE_DESC[r.id]+'</span><span class="today">⭐ Your role today</span>'+(other&&NET.mode?'<span class="taken">Taken by '+esc(other)+'</span>':'')+'</div></button>';
     }).join("")+'</div>';
-    h+='<label class="f">Your name<input class="t" id="wName" list="roster" autocomplete="off" placeholder="Type your name" value="'+esc(W.role?(MULTI_ROLES[W.role]?((L.myNames||{})[W.role]||L.me||""):(S.people[W.role]||L.me||"")):(L.me||""))+'"></label>';
     h+='<div class="wfoot"><span class="saved">'+(W.role?'':'Choose your role to continue')+'</span><button class="btn primary big1" id="wNext"'+(W.role?'':' disabled')+'>Next →</button></div>';
   } else {
     var r=ROLES.find(function(x){return x.id===L.role;});
@@ -2405,9 +2409,14 @@ function renderWelcome(){
   document.getElementById("wbox").innerHTML=h;
 }
 var wbox=document.getElementById("wbox");
+wbox.addEventListener("input",function(e){
+  if(e.target.id!=="wName") return; W.name=e.target.value; var t=agendaRolesFor(W.name.trim());
+  wbox.querySelectorAll("[data-wrole]").forEach(function(b){ b.classList.toggle("mine",t.indexOf(b.dataset.wrole)>=0); });
+  var tt=document.getElementById("wToday"); if(tt) tt.innerHTML=wTodayText(t);
+});
 wbox.addEventListener("click",function(e){
   var t=e.target, rc=t.closest("[data-wrole]");
-  if(rc){ W.role=rc.dataset.wrole; renderWelcome(); var n=document.getElementById("wName"); if(n){ n.focus(); } return; }
+  if(rc){ var nf=document.getElementById("wName"); if(nf) W.name=nf.value; W.role=rc.dataset.wrole; renderWelcome(); var nb=document.getElementById("wNext"); if(nb) nb.focus({preventScroll:true}); return; }
   if(t.closest("#wNext")){
     var nm=(document.getElementById("wName").value||"").trim();
     if(W.add){ myRoles(); if(L.roles.indexOf(W.role)<0) L.roles.push(W.role); W.add=false; } else L.roles=[W.role];
