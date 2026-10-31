@@ -21,6 +21,10 @@ One **Meeting report** combines every role and can be saved as a PDF.
 
 When the General Evaluator opens voting, a vote bar appears on every connected device: Best Prepared Speaker, Best Table Topics Speaker, Best Evaluator and Best Role Player, one vote per device per award. Results stay hidden until the Toastmaster taps **Reveal winners**, then they appear on every screen together.
 
+### Private feedback
+
+Evaluations and audience notes can only be read by the speaker they are for. Each speaker sets a **feedback PIN** once (Member / Audience → My feedback card). This creates a personal key: the public part is shared with the meeting and the private part is locked with the PIN (PBKDF2 + AES-GCM), so the speaker can open their card on any device. Evaluators' and members' devices encrypt feedback for that speaker (ECDH P-256 + AES-GCM) before it is synced, so every other device only holds unreadable data. The General Evaluator and the meeting report show only who evaluated whom. If a speaker hasn't set a PIN yet, feedback waits on the writer's device and is sent automatically once they do. The Coordinator can reset a forgotten PIN, but feedback encrypted for the old PIN can't be recovered.
+
 ### Coordinator PIN
 
 The Coordinator area is locked with a 4–8 digit PIN. When it is first set, a one-time **recovery code** is shown: keep it with the coordinator handover notes. To hand over, share the PIN or unlock and use **Change PIN**. This is a lock against casual changes; because everything runs in the browser without a server, it isn't strong security.

@@ -432,7 +432,8 @@ details.guide td:first-child{font-weight:600;width:190px}
       <tr><td>Speechcraft Coordinator</td><td>Protected by a PIN (4–8 digits). Set once; a one-time <b>recovery code</b> is shown for when the PIN is forgotten. Hand the PIN to the next coordinator, or unlock and use <b>Change PIN</b>. Add members (remembered for every meeting), enter the meeting details, pick role players and edit the agenda. Names fill in on every device and the Timer's lists. <b>📄 Print agenda</b> makes the agenda sheet.</td></tr>
       <tr><td>Toastmaster of the Day</td><td>Shows the agenda with <b>Now</b> and <b>Next</b>. Tap <b>Start the meeting</b>, then <b>Next ▶</b> as you go (or tap any item). It shows whether the meeting is on time or running behind, and everyone connected sees a small "Now:" line.</td></tr>
       <tr><td>General Evaluator</td><td>Sees the Timer, Ah-Counter and Grammarian results live (<b>Call for reports</b>), which speakers have been evaluated, and writes notes on the meeting. Opens and closes voting.</td></tr>
-      <tr><td>Speech / Table Topic Evaluator</td><td>Type your name, tap a speaker and fill in <b>Commend · Recommend · Commend</b> plus three quick ratings. It saves as you type and appears on the speaker's feedback card.</td></tr>
+      <tr><td>Speech / Table Topic Evaluator</td><td>Type your name, tap a speaker and fill in <b>Commend · Recommend · Commend</b> plus three quick ratings. It's encrypted on your device so <b>only that speaker</b> can read it. If they haven't set a feedback PIN yet, it waits on your device and sends automatically when they do.</td></tr>
+      <tr><td>Private feedback</td><td>Each speaker sets a <b>feedback PIN</b> once (Member / Audience → My feedback card). Evaluations and audience notes are encrypted for that speaker before they leave the writer's phone; other devices only hold scrambled data, and the General Evaluator and report show only who evaluated whom. Forgot the PIN? The Coordinator can reset it, but older feedback can't be recovered.</td></tr>
       <tr><td>Voting</td><td>When the General Evaluator opens voting, a <b>🗳 Vote</b> bar appears on every device. Pick Best Prepared Speaker, Table Topics Speaker, Evaluator and Role Player (one vote per device per award). Results stay hidden until the Toastmaster taps <b>🏆 Reveal winners</b>, then they pop up on every screen.</td></tr>
       <tr><td>Round Robin Master</td><td>Add questions, tap <b>First question</b> / <b>Next question</b>, show it on screen, and tap each person as they answer: they're queued on the Timer's Round Robin list (20-second bell).</td></tr>
       <tr><td>Member / Audience</td><td>Check in when you arrive, vote, send an anonymous note to a speaker, and open <b>My feedback card</b>: your times, Ah count, grammar notes, evaluation, notes and awards on one printable page. The Coordinator sees attendance across all weeks.</td></tr>
@@ -544,7 +545,7 @@ function blank(){
     people:{coord:"",tmod:"",ge:"",rrm:"",timer:"",ttm:"",ah:"",gram:""}, peopleU:{coord:0,tmod:0,ge:0,rrm:0,timer:0,ttm:0,ah:0,gram:0},
     limits:{tt:{g:60,a:90,r:120},ps:{g:240,a:300,r:360},rr:{b:20},ev:{g:90,a:105,r:120},rep:{g:30,a:45,r:60},u:0},
     members:{list:[],u:0}, pin:{hash:"",rhash:"",salt:"",u:0}, agenda:defaultAgenda(), run:{cur:null,started:{},u:0},
-    evals:[], notes:[], votes:[], rrq:[], attend:[], vote:{state:"closed",u:0}, genotes:{good:"",improve:"",u:0}, rrcur:{id:null,u:0},
+    evals:[], notes:[], votes:[], rrq:[], attend:[], keys:[], vote:{state:"closed",u:0}, genotes:{good:"",improve:"",u:0}, rrcur:{id:null,u:0},
     rows:{tt:[],ps:[],rr:[],ev:[],rep:[]}, topics:[], cur:{id:null,u:0},
     fill:{words:FILLERS.slice(),u:0}, ahRows:[],
     gram:{wotd:"",meaning:"",u:0}, gramRows:[],
@@ -561,6 +562,9 @@ function normalize(st){
   SESSIONS.forEach(function(s){ var k=s.id; o.rows[k]=Array.isArray(st.rows&&st.rows[k])?st.rows[k]:[]; });
   ["ev","rep"].forEach(function(k){ if(!o.limits[k]) o.limits[k]=blank().limits[k]; });
   ["evals","notes","votes","rrq"].forEach(function(k){ o[k]=Array.isArray(st[k])?st[k]:[]; });
+  o.keys=Array.isArray(st.keys)?st.keys.filter(function(k){return k&&k.id;}).map(function(k){ k.u=+k.u||1; k.ord=+k.ord||1; return k; }):[];
+  o.evals.forEach(function(e){ if(e&&(e.c1!=null||e.r!=null||e.c2!=null||e.rate)){ if(e.done==null) e.done=!!(e.c1||e.r||e.c2); delete e.c1; delete e.r; delete e.c2; delete e.rate; } });
+  o.notes=o.notes.filter(function(n){ return n&&n.enc; });
   o.attend=Array.isArray(st.attend)?st.attend.filter(function(a){return a&&a.id&&a.name;}).map(function(a){ a.u=+a.u||1; a.ord=+a.ord||1; return a; }):[];
   o.vote=Object.assign(b.vote, st.vote||{}); o.genotes=Object.assign(b.genotes, st.genotes||{}); o.rrcur=Object.assign(b.rrcur, st.rrcur||{});
   o.members=(st.members&&Array.isArray(st.members.list))?{list:st.members.list.filter(function(m){return m&&m.name;}),u:+st.members.u||0}:b.members;
@@ -628,7 +632,7 @@ function meetingEmpty(st){ return !COLLS.some(function(p){return getColl(st,p).l
 function mergeInto(A,B,mode){
   var before=stable(A);
   B.names.forEach(function(n){ addName(A,n); });
-  A.attend=mergeColl(A.attend,B.attend,{});
+  A.attend=mergeColl(A.attend,B.attend,{}); A.keys=mergeColl(A.keys,B.keys,{});
   KEEP_LWW.forEach(function(k){ if((B[k].u||0)>(A[k].u||0)) A[k]=clone(B[k]); });
   Object.keys(A.people).forEach(function(k){ if((B.peopleU[k]||0)>(A.peopleU[k]||0)){ A.people[k]=B.people[k]; A.peopleU[k]=B.peopleU[k]; } });
   if(B.mid!==A.mid && mode==="keep"){ return stable(A)!==before; }
@@ -746,7 +750,7 @@ function renderAll(){
   renderMeta(); renderRoles(); renderRoster();
   renderLive(); renderNow();
   var v=document.getElementById("view");
-  if(L.role==="coord") v.innerHTML=coordHTML()+(coordUnlocked()?attendanceHTML():"");
+  if(L.role==="coord") v.innerHTML=coordHTML()+(coordUnlocked()?attendanceHTML()+feedbackPinsHTML():"");
   else if(L.role==="tmod") v.innerHTML=(S.vote.state!=="closed"?'<section class="card" style="margin-bottom:12px">'+voteControlHTML(false,true)+'</section>':'')+tmodHTML();
   else if(L.role==="ge") v.innerHTML=geHTML();
   else if(L.role==="seval"||L.role==="tteval") v.innerHTML=evalHTML();
@@ -757,7 +761,7 @@ function renderAll(){
   else if(L.role==="ah") v.innerHTML=ahHTML();
   else v.innerHTML=gramHTML();
   if(document.getElementById("stage").classList.contains("on")) renderStage();
-  renderAgendaLine(); renderMemberList(); renderVoteBar(); maybeShowWinners(false);
+  renderAgendaLine(); renderMemberList(); renderVoteBar(); maybeShowWinners(false); flushPending();
   if(document.getElementById("voteModal").classList.contains("on")) renderVoteModal();
   renderConnBtn();
 }
@@ -1291,10 +1295,11 @@ function evalHTML(){
   if(!me) h+='<div class="note" style="margin:0 0 10px">Type your name in <b>Your name</b> above, so each speaker knows who evaluated them.</div>';
   h+='<h2 class="sec" style="margin-top:0">'+(kind==="ps"?"Prepared speakers":"Table Topics speakers")+'</h2><div class="chips">';
   if(!list.length) h+='<span class="muted">'+(kind==="ps"?"The Coordinator's prepared speakers appear here.":"Speakers appear here as the Table Topics Master calls them.")+'</span>';
-  list.forEach(function(n){ var done=S.evals.some(function(e){return e.id===evId(kind,n,me);}); h+='<button class="chip'+(nkey(sel)===nkey(n)?' active':'')+'" data-evsel="'+esc(n)+'">'+(done?'✓ ':'')+esc(n)+'</button>'; });
+  list.forEach(function(n){ var dd=(L.evDrafts||{})[evId(kind,n,me)], done=!!(dd&&(dd.c1||dd.r||dd.c2))||S.evals.some(function(e){return e.id===evId(kind,n,me)&&e.done;}); h+='<button class="chip'+(nkey(sel)===nkey(n)?' active':'')+'" data-evsel="'+esc(n)+'">'+(done?'✓ ':'')+esc(n)+'</button>'; });
   h+='</div><div class="row" style="margin-top:8px"><input class="t" id="evAddIn" list="roster" autocomplete="off" placeholder="Someone else? Type a name"><button class="btn" id="evAdd">+ Add</button></div>';
   if(sel){
-    var e=S.evals.find(function(x){return x.id===evId(kind,sel,me);})||{c1:"",r:"",c2:"",rate:{}};
+    var e=(L.evDrafts||{})[evId(kind,sel,me)]||{c1:"",r:"",c2:"",rate:{}};
+    var other=!((L.evDrafts||{})[evId(kind,sel,me)]) && S.evals.some(function(x){return x.id===evId(kind,sel,me)&&x.done;});
     var tm=timesFor(sel).filter(function(x){ return kind==="ps"?x.s.id==="ps":x.s.id==="tt"; });
     h+='<div class="selcard"><div class="hd"><b>'+esc(sel)+'</b>'+(tm.length?'<span class="pill">⏱ '+fmt(tm[0].sec)+' · '+esc(tm[0].st.text)+'</span>':'')+'</div>'+
        evBox("c1","👍 Commend","What worked well? Be specific, e.g. a strong opening story, good eye contact.",e.c1)+
@@ -1302,7 +1307,7 @@ function evalHTML(){
        evBox("c2","🌟 Commend","An encouraging close: the overall impression and what to keep doing.",e.c2)+
        '<div class="rates">'+[["content","Content & structure"],["delivery","Voice & body language"],["confidence","Confidence"]].map(function(x){
          var v=(e.rate||{})[x[0]]||0; return '<div class="rate"><span>'+x[1]+'</span><div>'+[1,2,3,4,5].map(function(i){ return '<button class="star'+(i<=v?' on':'')+'" data-rate="'+x[0]+'" data-v="'+i+'">★</button>'; }).join("")+'</div></div>';
-       }).join("")+'</div><div class="saved">Saved as you type. The speaker sees this on their feedback card, and the General Evaluator can see it\'s done.</div></div>';
+       }).join("")+'</div>'+(other?'<div class="note">You already sent an evaluation for '+esc(sel)+' from another device. It\'s encrypted, so it can\'t be shown here. Writing here replaces it.</div>':'')+'<div class="saved" id="evState">'+evStateText(sel)+'</div></div>';
   }
   return h+'</section>';
 }
@@ -1331,8 +1336,8 @@ function geHTML(){
   h+='<h2 class="sec">🗣 Evaluations</h2><table class="sumtable"><thead><tr><th>Speaker</th><th>Type</th><th>Evaluated by</th></tr></thead><tbody>';
   var rows=preparedSpeakers().map(function(n){return [n,"ps"];}).concat(ttSpeakers().map(function(n){return [n,"tt"];}));
   if(!rows.length) h+='<tr><td colspan="3" class="muted">No speakers yet.</td></tr>';
-  rows.forEach(function(x){ var by=S.evals.filter(function(e){return e.kind===x[1]&&nkey(e.speaker)===nkey(x[0])&&(e.c1||e.r||e.c2);}).map(function(e){return e.by;}); h+='<tr><td>'+esc(x[0])+'</td><td>'+(x[1]==="ps"?"Prepared":"Table Topics")+'</td><td>'+(by.length?'<span class="ok">✓</span> '+esc(by.join(", ")):'<span class="muted">—</span>')+'</td></tr>'; });
-  h+='</tbody></table>';
+  rows.forEach(function(x){ var by=S.evals.filter(function(e){return e.kind===x[1]&&nkey(e.speaker)===nkey(x[0])&&e.done;}).map(function(e){return e.by+(e.pending?" (⏳ waiting for the speaker\'s PIN)":"");}); h+='<tr><td>'+esc(x[0])+'</td><td>'+(x[1]==="ps"?"Prepared":"Table Topics")+'</td><td>'+(by.length?'<span class="ok">✓</span> '+esc(by.join(", ")):'<span class="muted">—</span>')+'</td></tr>'; });
+  h+='</tbody></table><div class="note">🔒 Evaluations are encrypted: only each speaker can read their own.</div>';
   h+='<h2 class="sec">🧭 My notes on the meeting</h2><label class="f evbox"><b>What went well</b><textarea class="t" data-ge="good" rows="3" placeholder="e.g. started on time, warm welcome, clear introductions">'+esc(S.genotes.good)+'</textarea></label>'+
      '<label class="f evbox"><b>What could be better</b><textarea class="t" data-ge="improve" rows="3" placeholder="e.g. Table Topics ran over; speak closer to the microphone">'+esc(S.genotes.improve)+'</textarea></label>';
   return h+'</section>';
@@ -1417,11 +1422,18 @@ function memberHTML(){
      '<div class="saved" style="margin-top:6px">'+S.attend.filter(function(a){return a.mid===S.mid&&a.present;}).length+' checked in today</div>';
   h+='<h2 class="sec">🗳 Voting</h2><div>'+voteStateText()+'</div>'+(S.vote.state==="open"?'<button class="btn go big1" id="openVote" style="margin-top:8px">Vote now</button>':'')+(S.vote.state==="shown"?'<button class="btn" id="showWinners" style="margin-top:8px">Show winners</button>':'');
   var speakers=uniq(preparedSpeakers().concat(ttSpeakers()).concat(ms));
-  h+='<h2 class="sec">💌 Send a note to a speaker</h2><div class="saved" style="margin-bottom:6px">Anonymous. The speaker sees it on their feedback card.</div>'+
+  h+='<h2 class="sec">💌 Send a note to a speaker</h2><div class="saved" style="margin-bottom:6px">Anonymous and encrypted: only the speaker can read it, on their feedback card.</div>'+
      '<div class="row"><select class="t" id="noteTo" style="max-width:280px"><option value="">Choose a speaker…</option>'+speakers.map(function(n){return '<option>'+esc(n)+'</option>';}).join("")+'</select></div>'+
      '<textarea class="t" id="noteText" rows="2" style="margin-top:6px" placeholder="e.g. Loved your opening story! Try a slower pace at the end."></textarea><div class="row" style="margin-top:6px"><button class="btn primary" id="noteSend">Send note</button><span class="saved" id="noteMsg"></span></div>';
-  h+='<h2 class="sec">📄 My feedback card</h2><div class="saved" style="margin-bottom:6px">Your times, Ah count, grammar notes, evaluation, notes and awards on one page.</div><div class="row"><select class="t" id="cardName" style="max-width:280px">'+
-     '<option value="">Choose your name…</option>'+uniq(ms.concat(speakers)).map(function(n){return '<option'+(nkey(n)===nkey(me)?' selected':'')+'>'+esc(n)+'</option>';}).join("")+'</select><button class="btn" id="cardOpen">Open my card</button></div>';
+  var cn=L.cardName||"";
+  h+='<h2 class="sec">📄 My feedback card <span class="cnt">🔒 private</span></h2><div class="saved" style="margin-bottom:6px">Your times, Ah count, grammar notes, evaluations, notes and awards. Evaluations and notes are encrypted: only you can open them, with your own feedback PIN.</div>'+
+     '<div class="row"><select class="t" id="cardName" style="max-width:280px"><option value="">Choose your name…</option>'+uniq(ms.concat(speakers)).map(function(n){return '<option'+(nkey(n)===nkey(cn)?' selected':'')+'>'+esc(n)+'</option>';}).join("")+'</select></div>';
+  if(cn){
+    if(!cryptoOK()) h+='<div class="connerr">This browser can\'t do encryption here. Open the page from the website link.</div>';
+    else if(!keyRec(cn)) h+='<div class="selcard"><b>Create your feedback PIN</b><div class="saved" style="margin:4px 0 8px">4–8 digits. Only someone with this PIN can read your evaluations and notes, on any device. Keep it to yourself.</div><div class="row"><input class="t" id="fbPin1" type="password" inputmode="numeric" maxlength="8" placeholder="New PIN" style="max-width:160px"><input class="t" id="fbPin2" type="password" inputmode="numeric" maxlength="8" placeholder="Repeat PIN" style="max-width:160px"><button class="btn primary" id="fbCreate">Create PIN</button></div></div>';
+    else if(!hasPriv(cn)) h+='<div class="selcard"><b>Unlock your feedback</b><div class="row" style="margin-top:8px"><input class="t" id="fbPin" type="password" inputmode="numeric" maxlength="8" placeholder="Your feedback PIN" style="max-width:180px"><button class="btn primary" id="fbUnlock">Unlock</button></div><div class="saved" style="margin-top:6px">Forgot it? Ask the Coordinator to reset your PIN. Feedback sent for the old PIN can\'t be recovered.</div></div>';
+    else h+='<div class="row" style="margin-top:8px"><button class="btn primary" id="cardOpen">Open my card</button><button class="btn" id="fbLock" title="Remove your key from this device">🔒 Lock on this device</button></div>';
+  }
   return h+'</section>';
 }
 function buildCard(name){
@@ -1435,11 +1447,8 @@ function buildCard(name){
   h+='<h4>🔢 Ah-Counter</h4>'+(ah?'<div>'+S.fill.words.filter(function(w){return ah.c[w];}).map(function(w){return esc(w)+' ×'+ah.c[w];}).join(" · ")+' — total '+ahTotal(ah)+'</div>':'<div class="none">Not counted.</div>');
   var g=S.gramRows.find(function(r){return nkey(r.name)===nkey(name);});
   h+='<h4>📝 Grammarian</h4>'+(g?'<div>Word of the Day'+(S.gram.wotd?' (“'+esc(S.gram.wotd)+'”)':'')+': used '+(g.w||0)+'×</div>'+(g.good.length?'<div><b>Great phrases:</b> '+esc(g.good.join("; "))+'</div>':'')+(g.slips.length?'<div><b>To polish:</b> '+esc(g.slips.join("; "))+'</div>':''):'<div class="none">No notes.</div>');
-  var ev=S.evals.filter(function(e){return nkey(e.speaker)===nkey(name)&&(e.c1||e.r||e.c2);});
-  h+='<h4>🗣 Evaluation</h4>'+(ev.length?ev.map(function(e){ var rt=e.rate||{}; return '<div class="evcard"><div class="saved">'+(e.kind==="tt"?"Table Topics":"Prepared speech")+' · by '+esc(e.by)+'</div>'+(e.c1?'<div><b>Commend:</b> '+esc(e.c1)+'</div>':'')+(e.r?'<div><b>Recommend:</b> '+esc(e.r)+'</div>':'')+(e.c2?'<div><b>Commend:</b> '+esc(e.c2)+'</div>':'')+
-     ((rt.content||rt.delivery||rt.confidence)?'<div class="saved">Content '+(rt.content||"–")+'/5 · Voice & body '+(rt.delivery||"–")+'/5 · Confidence '+(rt.confidence||"–")+'/5</div>':'')+'</div>'; }).join(""):'<div class="none">No evaluation recorded.</div>');
-  var nt=S.notes.filter(function(n){return nkey(n.to)===nkey(name);});
-  h+='<h4>💌 Notes from the audience</h4>'+(nt.length?'<ul>'+nt.map(function(n){return '<li>'+esc(n.text)+'</li>';}).join("")+'</ul>':'<div class="none">No notes.</div>');
+  h+='<h4>🗣 Evaluation <span style="font-weight:400;font-size:12px;color:#666">🔒 private</span></h4><div id="cardEvals"><div class="none">Decrypting…</div></div>';
+  h+='<h4>💌 Notes from the audience <span style="font-weight:400;font-size:12px;color:#666">🔒 private</span></h4><div id="cardNotes"><div class="none">Decrypting…</div></div>';
   if(S.vote.state==="shown"){ var won=VCATS.filter(function(c){ return tally(c.k).winners.some(function(w){return nkey(w.name)===nkey(name);}); }).map(function(c){return c.n;}); if(won.length) h+='<h4>🏆 Awards</h4><div><b>'+esc(won.join(", "))+'</b></div>'; }
   var mids=uniq(S.attend.map(function(a){return a.mid;})), mine=S.attend.filter(function(a){return a.present&&nkey(a.name)===nkey(name);}).length;
   if(mids.length) h+='<h4>✅ Attendance</h4><div>Attended '+mine+' of '+mids.length+' recorded meeting'+(mids.length===1?'':'s')+'.</div>';
@@ -1447,6 +1456,17 @@ function buildCard(name){
   document.getElementById("report").innerHTML=h;
   document.getElementById("repPick").innerHTML='<b style="font-size:14px">Feedback card – '+esc(name)+'</b>';
   var w=document.getElementById("reportWrap"); w.dataset.kind="card"; w.dataset.card=name; w.classList.add("on");
+  if(!hasPriv(name)){ document.getElementById("cardEvals").innerHTML=document.getElementById("cardNotes").innerHTML='<div class="none">🔒 Locked — unlock with your feedback PIN.</div>'; return; }
+  var ev=S.evals.filter(function(e){return nkey(e.speaker)===nkey(name)&&e.enc&&e.done;}), nt=S.notes.filter(function(n){return nkey(n.to)===nkey(name)&&n.enc;});
+  var kx=keyRec(name).pub.x;
+  Promise.all(ev.map(function(e){ return e.enc.kx!==kx?Promise.resolve(null):decryptFor(name,e.enc).catch(function(){return null;}); })).then(function(list){
+    var html=list.map(function(x,i){ if(!x) return ''; var rt=x.rate||{}; return '<div class="evcard"><div class="saved">'+(x.kind==="tt"?"Table Topics":"Prepared speech")+' · by '+esc(ev[i].by||x.by||"Evaluator")+'</div>'+(x.c1?'<div><b>Commend:</b> '+esc(x.c1)+'</div>':'')+(x.r?'<div><b>Recommend:</b> '+esc(x.r)+'</div>':'')+(x.c2?'<div><b>Commend:</b> '+esc(x.c2)+'</div>':'')+((rt.content||rt.delivery||rt.confidence)?'<div class="saved">Content '+(rt.content||"–")+'/5 · Voice & body '+(rt.delivery||"–")+'/5 · Confidence '+(rt.confidence||"–")+'/5</div>':'')+'</div>'; }).join("");
+    var el=document.getElementById("cardEvals"); if(el) el.innerHTML=html||'<div class="none">No evaluation yet.</div>';
+  });
+  Promise.all(nt.map(function(n){ return n.enc.kx!==kx?Promise.resolve(null):decryptFor(name,n.enc).catch(function(){return null;}); })).then(function(list){
+    var items=list.filter(Boolean).map(function(x){return '<li>'+esc(x.text)+'</li>';}).join("");
+    var el=document.getElementById("cardNotes"); if(el) el.innerHTML=items?'<ul>'+items+'</ul>':'<div class="none">No notes.</div>';
+  });
 }
 
 /* ---------- attendance grid for the Coordinator ---------- */
@@ -1463,6 +1483,109 @@ function attendanceHTML(){
   return h+'</tbody></table></div></section>';
 }
 
+/* ---------- private feedback: evaluations and notes only the speaker can read ----------
+   Each speaker has an ECDH (P-256) key pair. The public key is shared with the meeting; the private
+   key is shared only in a form locked with the speaker's own feedback PIN (PBKDF2 → AES-GCM), so the
+   speaker can unlock it on any device. Evaluations and notes are encrypted to the speaker's public key
+   on the writer's device before they are synced, so every other device only holds unreadable data. */
+var PBKDF_ITER=250000, privCache={};
+function b64(buf){ var s="",b=new Uint8Array(buf); for(var i=0;i<b.length;i++) s+=String.fromCharCode(b[i]); return btoa(s); }
+function unb64(s){ var b=atob(s),u=new Uint8Array(b.length); for(var i=0;i<b.length;i++) u[i]=b.charCodeAt(i); return u; }
+function cryptoOK(){ return !!(window.crypto&&crypto.subtle); }
+function keyRec(name){ return S.keys.find(function(k){ return k.id==="k|"+nkey(name) && k.pub && k.pub.x; }); }
+function hasPriv(name){ var r=keyRec(name), p=(L.privKeys||{})[nkey(name)]; return !!(r&&p&&p.x===r.pub.x); }
+function pinKey(pin,salt){
+  return crypto.subtle.importKey("raw",new TextEncoder().encode(String(pin)),"PBKDF2",false,["deriveKey"]).then(function(base){
+    return crypto.subtle.deriveKey({name:"PBKDF2",salt:salt,iterations:PBKDF_ITER,hash:"SHA-256"},base,{name:"AES-GCM",length:256},false,["encrypt","decrypt"]);
+  });
+}
+function rememberPriv(name,jwk,x){ L.privKeys=L.privKeys||{}; L.privKeys[nkey(name)]={jwk:jwk,x:x}; saveL(); delete privCache[nkey(name)]; }
+function forgetPriv(name){ if(L.privKeys) delete L.privKeys[nkey(name)]; saveL(); delete privCache[nkey(name)]; }
+function createSpeakerKey(name,pin){
+  if(!cryptoOK()) return Promise.reject(new Error("This browser can't encrypt here. Open the page from the website link."));
+  var salt=crypto.getRandomValues(new Uint8Array(16)), iv=crypto.getRandomValues(new Uint8Array(12)), pubJwk, privJwk;
+  return crypto.subtle.generateKey({name:"ECDH",namedCurve:"P-256"},true,["deriveKey"])
+    .then(function(k){ return Promise.all([crypto.subtle.exportKey("jwk",k.publicKey),crypto.subtle.exportKey("jwk",k.privateKey)]); })
+    .then(function(j){ pubJwk={kty:j[0].kty,crv:j[0].crv,x:j[0].x,y:j[0].y}; privJwk=j[1]; return pinKey(pin,salt); })
+    .then(function(ak){ return crypto.subtle.encrypt({name:"AES-GCM",iv:iv},ak,new TextEncoder().encode(JSON.stringify(privJwk))); })
+    .then(function(ct){
+      var id="k|"+nkey(name), ex=S.keys.find(function(k){return k.id===id;});
+      var rec={id:id,name:name,pub:pubJwk,salt:b64(salt),iv:b64(iv),wrapped:b64(ct),ord:ex?ex.ord:S.keys.length+1,u:Math.max(now(),ex?(ex.u||0)+1:0)};
+      if(ex) Object.assign(ex,rec); else S.keys.push(rec);
+      rememberPriv(name,privJwk,pubJwk.x); commit(); flushPending(); return true;
+    });
+}
+function unlockSpeaker(name,pin){
+  var r=keyRec(name); if(!r) return Promise.reject(new Error("No feedback PIN set for "+name+"."));
+  return pinKey(pin,unb64(r.salt))
+    .then(function(ak){ return crypto.subtle.decrypt({name:"AES-GCM",iv:unb64(r.iv)},ak,unb64(r.wrapped)); })
+    .then(function(pt){ rememberPriv(name,JSON.parse(new TextDecoder().decode(pt)),r.pub.x); return true; },
+          function(){ throw new Error("Wrong PIN."); });
+}
+function privKey(name){
+  var k=nkey(name); if(privCache[k]) return privCache[k];
+  var p=(L.privKeys||{})[k]; if(!p) return Promise.reject(new Error("locked"));
+  privCache[k]=crypto.subtle.importKey("jwk",p.jwk,{name:"ECDH",namedCurve:"P-256"},false,["deriveKey"]);
+  return privCache[k];
+}
+function encryptFor(name,obj){
+  var r=keyRec(name); if(!r) return Promise.reject(new Error("no key"));
+  var iv=crypto.getRandomValues(new Uint8Array(12)), eph, epk;
+  return Promise.all([crypto.subtle.importKey("jwk",r.pub,{name:"ECDH",namedCurve:"P-256"},false,[]),crypto.subtle.generateKey({name:"ECDH",namedCurve:"P-256"},true,["deriveKey"])])
+    .then(function(a){ eph=a[1]; return Promise.all([crypto.subtle.deriveKey({name:"ECDH",public:a[0]},eph.privateKey,{name:"AES-GCM",length:256},false,["encrypt"]),crypto.subtle.exportKey("jwk",eph.publicKey)]); })
+    .then(function(a){ epk={kty:a[1].kty,crv:a[1].crv,x:a[1].x,y:a[1].y}; return crypto.subtle.encrypt({name:"AES-GCM",iv:iv},a[0],new TextEncoder().encode(JSON.stringify(obj))); })
+    .then(function(ct){ return {epk:epk,iv:b64(iv),ct:b64(ct),kx:r.pub.x}; });
+}
+function decryptFor(name,enc){
+  return Promise.all([privKey(name),crypto.subtle.importKey("jwk",enc.epk,{name:"ECDH",namedCurve:"P-256"},false,[])])
+    .then(function(a){ return crypto.subtle.deriveKey({name:"ECDH",public:a[1]},a[0],{name:"AES-GCM",length:256},false,["decrypt"]); })
+    .then(function(k){ return crypto.subtle.decrypt({name:"AES-GCM",iv:unb64(enc.iv)},k,unb64(enc.ct)); })
+    .then(function(pt){ return JSON.parse(new TextDecoder().decode(pt)); });
+}
+
+/* evaluator drafts live only on the evaluator's device until they can be sent encrypted */
+function evDraft(){ var kind=evKind(), sel=(L.evSel||{})[kind]; if(!sel) return null; var id=evId(kind,sel,myName()); L.evDrafts=L.evDrafts||{}; if(!L.evDrafts[id]) L.evDrafts[id]={kind:kind,speaker:sel,c1:"",r:"",c2:"",rate:{}}; return {id:id,d:L.evDrafts[id]}; }
+var pubTimers={};
+function publishSoon(id){ clearTimeout(pubTimers[id]); pubTimers[id]=setTimeout(function(){ publishDraft(id); },700); }
+function publishDraft(id){
+  var d=(L.evDrafts||{})[id]; if(!d) return Promise.resolve();
+  d.by=myName()||d.by||"Evaluator"; d.dirty=true; saveL();
+  var has=!!(d.c1||d.r||d.c2||(d.rate&&(d.rate.content||d.rate.delivery||d.rate.confidence)));
+  var rec=upsert(["evals"],id,{kind:d.kind,speaker:d.speaker});
+  rec.by=d.by; rec.kind=d.kind; rec.speaker=d.speaker; rec.done=has; delete rec.c1; delete rec.r; delete rec.c2; delete rec.rate;
+  if(!keyRec(d.speaker)){ rec.pending=has; rec.enc=null; tick(rec); commitQuiet(); return Promise.resolve(); }
+  return encryptFor(d.speaker,{c1:d.c1,r:d.r,c2:d.c2,rate:d.rate||{},kind:d.kind,by:d.by}).then(function(enc){
+    var r2=S.evals.find(function(x){return x.id===id;})||rec;
+    r2.enc=enc; r2.pending=false; r2.done=has; tick(r2); d.dirty=false; d.sentKx=enc.kx; saveL(); commitQuiet();
+    if(L.role==="seval"||L.role==="tteval"){ var st=document.getElementById("evState"); if(st) st.innerHTML=evStateText(d.speaker); }
+  }).catch(function(){});
+}
+function sendNote(to,text){
+  if(!keyRec(to)){ L.noteQueue=L.noteQueue||[]; L.noteQueue.push({to:to,text:text}); saveL(); return Promise.resolve(false); }
+  return encryptFor(to,{text:text}).then(function(enc){ S.notes.push({id:uid(),to:to,enc:enc,ord:maxOrd(S.notes)+1,u:now()}); commit(); return true; });
+}
+var flushing=false;
+function flushPending(){
+  if(flushing||!cryptoOK()) return; flushing=true;
+  var jobs=[];
+  Object.keys(L.evDrafts||{}).forEach(function(id){ var d=L.evDrafts[id], r=keyRec(d.speaker); if(r && (d.dirty || d.sentKx!==r.pub.x) && (d.c1||d.r||d.c2||d.dirty)) jobs.push(publishDraft(id)); });
+  var q=(L.noteQueue||[]).slice(), keep=[];
+  q.forEach(function(n){ if(keyRec(n.to)) jobs.push(sendNote(n.to,n.text)); else keep.push(n); });
+  if(q.length!==keep.length){ L.noteQueue=keep; saveL(); }
+  Promise.all(jobs).then(function(){ flushing=false; },function(){ flushing=false; });
+}
+setInterval(flushPending,5000);
+function evStateText(speaker){
+  return keyRec(speaker) ? '🔒 Encrypted — only <b>'+esc(speaker)+'</b> can read this. Saved as you type.'
+    : '⏳ <b>'+esc(speaker)+'</b> hasn\'t set up a feedback PIN yet. Your notes stay on this device and are sent, encrypted, as soon as they do.';
+}
+function feedbackPinsHTML(){
+  var ms=memberNames(); if(!ms.length) return "";
+  var h='<section class="card" style="margin-top:12px"><h2 class="sec" style="margin-top:0">🔒 Private feedback PINs <span class="cnt">speakers set these themselves in Member / Audience → My feedback card</span></h2><div class="chips">';
+  ms.forEach(function(n){ var k=keyRec(n); h+='<span class="chip word">'+(k?'🔒 ':'○ ')+esc(n)+(k?'<button data-keyreset="'+esc(n)+'" title="Reset this PIN">reset</button>':'')+'</span>'; });
+  return h+'</div><div class="note">Resetting a PIN lets the speaker set a new one, but feedback encrypted for the old PIN can no longer be read.</div></section>';
+}
+
 /* ---------- events for stage 2 ---------- */
 (function(){
   var V=document.getElementById("view");
@@ -1475,8 +1598,8 @@ function attendanceHTML(){
     var ck=t.closest("[data-checkin]"); if(ck){ var n=ck.dataset.checkin; setPresent(n,!present(n)); if(L.role==="member"&&!myName()) setMyName(n); return; }
     if(L.role==="seval"||L.role==="tteval"){
       var es=t.closest("[data-evsel]"); if(es){ L.evSel=L.evSel||{}; L.evSel[evKind()]=es.dataset.evsel; saveL(); renderAll(); return; }
-      if(t.closest("#evAdd")){ var v=(document.getElementById("evAddIn").value||"").trim(); if(v){ L.evSel=L.evSel||{}; L.evSel[evKind()]=v; saveL(); evRecord(); commit(); } return; }
-      var rb=t.closest("[data-rate]"); if(rb){ var r=evRecord(); if(!r) return; r.rate=r.rate||{}; r.rate[rb.dataset.rate]=(r.rate[rb.dataset.rate]===+rb.dataset.v)?0:+rb.dataset.v; r.by=myName()||r.by; tick(r); commit(); return; }
+      if(t.closest("#evAdd")){ var v=(document.getElementById("evAddIn").value||"").trim(); if(v){ L.evSel=L.evSel||{}; L.evSel[evKind()]=v; saveL(); renderAll(); } return; }
+      var rb=t.closest("[data-rate]"); if(rb){ var dr=evDraft(); if(!dr) return; dr.d.rate=dr.d.rate||{}; dr.d.rate[rb.dataset.rate]=(dr.d.rate[rb.dataset.rate]===+rb.dataset.v)?0:+rb.dataset.v; saveL(); publishDraft(dr.id); renderAll(); return; }
     }
     if(L.role==="rrm"){
       if(t.closest("#rrAdd")){ var ta=document.getElementById("rrInput"), o=maxOrd(S.rrq); ta.value.split(/\n+/).map(function(x){return x.trim();}).filter(Boolean).forEach(function(x){ S.rrq.push({id:uid(),text:x,used:false,ord:++o,u:now()}); }); ta.value=""; commit(); return; }
@@ -1491,18 +1614,21 @@ function attendanceHTML(){
       if(t.closest("#noteSend")){
         var to=document.getElementById("noteTo").value, tx=(document.getElementById("noteText").value||"").trim();
         if(!to||!tx){ alert("Choose a speaker and write a note."); return; }
-        S.notes.push({id:uid(),to:to,text:tx.slice(0,500),ord:maxOrd(S.notes)+1,u:now()}); commit();
-        var m=document.getElementById("noteMsg"); if(m) m.textContent="Sent ✓ (anonymous)"; return;
+        sendNote(to,tx.slice(0,500)).then(function(sent){ var m=document.getElementById("noteMsg"), ta=document.getElementById("noteText"); if(ta) ta.value=""; if(m) m.textContent=sent?"Sent ✓ (anonymous, encrypted)":"Saved ✓ — it will be delivered, encrypted, when "+to+" sets up their feedback PIN"; });
+        return;
       }
-      if(t.closest("#cardOpen")){ var cn=document.getElementById("cardName").value; if(!cn){ alert("Choose your name."); return; } buildCard(cn); return; }
+      if(t.closest("#cardOpen")){ if(L.cardName) buildCard(L.cardName); return; }
+      if(t.closest("#fbCreate")){ var a=document.getElementById("fbPin1").value.trim(), b=document.getElementById("fbPin2").value.trim(); if(!/^\d{4,8}$/.test(a)){ alert("Use 4 to 8 digits."); return; } if(a!==b){ alert("The two PINs don't match."); return; } t.disabled=true; createSpeakerKey(L.cardName,a).then(function(){ if(!myName()) setMyName(L.cardName); renderAll(); },function(err){ alert(err.message||err); renderAll(); }); return; }
+      if(t.closest("#fbUnlock")){ t.disabled=true; unlockSpeaker(L.cardName,document.getElementById("fbPin").value.trim()).then(function(){ renderAll(); buildCard(L.cardName); },function(err){ alert(err.message||err); renderAll(); }); return; }
+      if(t.closest("#fbLock")){ forgetPriv(L.cardName); renderAll(); return; }
     }
   });
   V.addEventListener("input",function(e){
     var t=e.target;
-    if(t.dataset.evf){ var r=evRecord(); if(!r) return; r[t.dataset.evf]=t.value; r.by=myName()||r.by; tick(r); commitQuiet(); return; }
+    if(t.dataset.evf){ var dr=evDraft(); if(!dr) return; dr.d[t.dataset.evf]=t.value; saveL(); publishSoon(dr.id); return; }
     if(t.dataset.ge){ S.genotes[t.dataset.ge]=t.value; tick(S.genotes); commitQuiet(); return; }
   });
-  V.addEventListener("change",function(e){ if(e.target.dataset.evf||e.target.dataset.ge) laterRender(); });
+  V.addEventListener("change",function(e){ if(e.target.id==="cardName"){ L.cardName=e.target.value; saveL(); renderAll(); return; } if(e.target.dataset.evf||e.target.dataset.ge) laterRender(); });
   document.getElementById("voteBox").addEventListener("click",function(e){
     var c=e.target.closest("[data-vcat]");
     if(c){ if(S.vote.state!=="open"){ renderVoteModal(); return; } var cat=c.dataset.vcat, v=upsert(["votes"],"v|"+cat+"|"+devId(),{cat:cat,choice:""}); v.choice=(nkey(v.choice)===nkey(c.dataset.vname))?"":c.dataset.vname; tick(v); commit(); renderVoteModal(); return; }
@@ -1714,6 +1840,7 @@ document.addEventListener("fullscreenchange",function(){ if(!document.fullscreen
       names.forEach(function(n){ if(!S.members.list.some(function(m){return m.name.toLowerCase()===n.toLowerCase();})){ S.members.list.push({id:uid(),name:n}); added++; } });
       if(added){ tick(S.members); commit(); } var again=document.getElementById("memIn"); if(again){ again.value=""; again.focus(); } return;
     }
+    var kr=t.closest("[data-keyreset]"); if(kr){ var nm=kr.dataset.keyreset; if(!confirm("Reset "+nm+"'s feedback PIN?\n\nThey can set a new one, but feedback encrypted for the old PIN can't be read any more.")) return; var rec=S.keys.find(function(k){return k.id==="k|"+nkey(nm);}); if(rec){ rec.pub=null; rec.wrapped=""; tick(rec); commit(); } return; }
     var md=t.closest("[data-mdel]"); if(md){ S.members.list=S.members.list.filter(function(m){return m.id!==md.dataset.mdel;}); tick(S.members); commit(); return; }
     var ra=t.closest("[data-rpadd]"); if(ra){
       var k=ra.dataset.rpadd, box=document.querySelector('[data-rpadd-in="'+k+'"]'), v=(box.value||"").trim(); if(!v) return;
@@ -1751,7 +1878,7 @@ document.addEventListener("fullscreenchange",function(){ if(!document.fullscreen
 document.getElementById("newMeeting").addEventListener("click",function(){
   if(!confirm("Start a new meeting?\n\nThis clears speakers, times, topics, counts and this week's role players"+(NET.mode?" on all connected devices":"")+". The member list, agenda layout, time limits and word lists are kept.")) return;
   var keep={people:S.people,peopleU:S.peopleU,limits:S.limits,fill:S.fill,members:S.members,pin:S.pin,agenda:S.agenda};
-  var n=blank(); n.people=keep.people; n.peopleU=keep.peopleU; n.limits=keep.limits; n.fill=keep.fill; n.members=keep.members; n.pin=keep.pin; n.attend=S.attend;
+  var n=blank(); n.people=keep.people; n.peopleU=keep.peopleU; n.limits=keep.limits; n.fill=keep.fill; n.members=keep.members; n.pin=keep.pin; n.attend=S.attend; n.keys=S.keys;
   n.agenda=clone(keep.agenda); n.agenda.assign={}; n.agenda.no=""; n.agenda.next=""; n.agenda.ktopic=""; n.agenda.korg=""; n.agenda.u=now();
   S=n; L.ahSel=null; L.gramSel=null; saveL(); lastSig={}; commit(); wake();
 });
@@ -1789,7 +1916,7 @@ function hasData(k){
   if(k==="timer") return SESSIONS.some(function(s){return S.rows[s.id].length;});
   if(k==="ttm") return S.topics.length>0; if(k==="ah") return S.ahRows.length>0;
   if(k==="rrm") return S.rrq.length>0;
-  if(k==="evals") return S.evals.some(function(e){return e.c1||e.r||e.c2;});
+  if(k==="evals") return S.evals.some(function(e){return e.done;});
   if(k==="ge") return !!(S.genotes.good||S.genotes.improve);
   if(k==="awards") return S.vote.state==="shown";
   if(k==="attend") return S.attend.some(function(a){return a.mid===S.mid&&a.present;});
@@ -1876,8 +2003,7 @@ function buildReport(){
   }
   if(inc("evals")){
     h+='<h4>🗣 Evaluations</h4>';
-    S.evals.filter(function(e){return e.c1||e.r||e.c2;}).forEach(function(e){ var rt=e.rate||{};
-      h+='<div class="evcard"><b>'+esc(e.speaker)+'</b> <span style="color:#666">('+(e.kind==="tt"?"Table Topics":"Prepared speech")+' · evaluated by '+esc(e.by)+')</span>'+(e.c1?'<div><b>Commend:</b> '+esc(e.c1)+'</div>':'')+(e.r?'<div><b>Recommend:</b> '+esc(e.r)+'</div>':'')+(e.c2?'<div><b>Commend:</b> '+esc(e.c2)+'</div>':'')+((rt.content||rt.delivery||rt.confidence)?'<div style="color:#666">Content '+(rt.content||"–")+'/5 · Voice & body '+(rt.delivery||"–")+'/5 · Confidence '+(rt.confidence||"–")+'/5</div>':'')+'</div>'; });
+    h+='<table><thead><tr><th>Speaker</th><th>Type</th><th>Evaluated by</th></tr></thead><tbody>'+S.evals.filter(function(e){return e.done;}).map(function(e){ return '<tr><td>'+esc(e.speaker)+'</td><td>'+(e.kind==="tt"?"Table Topics":"Prepared speech")+'</td><td>'+esc(e.by)+'</td></tr>'; }).join("")+'</tbody></table><div style="color:#666;margin-top:3px">🔒 Evaluation contents are private to each speaker (on their feedback card).</div>';
   }
   if(inc("ge")){ h+='<h4>🧭 General Evaluator</h4>'+(S.genotes.good?'<div><b>What went well:</b> '+esc(S.genotes.good)+'</div>':'')+(S.genotes.improve?'<div><b>What could be better:</b> '+esc(S.genotes.improve)+'</div>':''); }
   if(inc("awards")){ h+='<h4>🏆 Awards</h4><table><tbody>'+VCATS.map(function(c){ var tl=tally(c.k); return '<tr><td>'+c.n+'</td><td><b>'+esc(tl.winners.map(function(w){return w.name;}).join(" & ")||"—")+'</b></td><td class="c">'+(tl.winners.length?tl.winners[0].n+' votes':'')+'</td></tr>'; }).join("")+'</tbody></table><div style="color:#666;margin-top:3px">'+votersCount()+' devices voted.</div>'; }
