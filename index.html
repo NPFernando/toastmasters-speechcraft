@@ -310,6 +310,9 @@ tr.queued:not(.nextup) .btn.go{background:transparent;color:var(--g);border-colo
 .cmpb{border:1px solid var(--line);background:var(--chip);border-radius:10px;padding:8px 12px;font-size:15px;cursor:pointer}
 .cmpb:active{transform:scale(.96)}
 .badge{display:inline-block;font-size:11px;font-weight:700;border-radius:999px;padding:1px 7px;margin-left:4px;vertical-align:middle}
+.badge.ok{background:var(--g-bg);color:var(--g)} #finSheet{display:none;position:fixed;left:50%;bottom:14px;transform:translateX(-50%);width:min(560px,calc(100% - 24px));background:var(--card,#fff);border:2px solid var(--a,#d99a00);border-radius:14px;box-shadow:0 10px 32px rgba(0,0,0,.25);padding:12px 14px;z-index:45;max-height:70vh;overflow:auto}
+#finSheet.on{display:block} #finSheet.min{width:auto;border:0;padding:0;background:transparent;box-shadow:none;left:auto;right:14px;transform:none}
+#endCard td{text-align:left} .finhead{display:flex;justify-content:space-between;align-items:center;gap:8px} .finrow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line)} .finrow.done{opacity:.75} .finwarn{color:var(--a);font-size:13px;margin-top:2px}
 .badge.no{background:var(--r-bg);color:var(--r)} .badge.on{background:var(--a-bg);color:#8a6100}
 .pastebox{border:1px dashed var(--brand);border-radius:12px;padding:10px 12px;margin:10px 0}
 .pastebox summary{cursor:pointer}
@@ -480,6 +483,7 @@ details.guide td:first-child{font-weight:600;width:190px}
 
 <div id="welcome" role="dialog" aria-modal="true" aria-label="Get started"><div class="wbox" id="wbox"></div></div>
 <div id="voteBar" class="votebar"></div>
+<div id="finSheet"></div>
 <div id="voteModal" class="modal" role="dialog" aria-modal="true" aria-label="Vote"><div class="mbox" id="voteBox"></div></div>
 <div id="winModal" class="modal" role="dialog" aria-modal="true" aria-label="Winners"><div class="mbox" id="winBox"></div></div>
 <div id="toast" role="status"><span id="toastMsg"></span><button id="toastUndo">Undo</button></div>
@@ -535,8 +539,8 @@ var KEY="speechcraftMeeting.v2"+NS, LKEY="speechcraftMeeting.local"+NS, OLDKEY="
 var SESSIONS=[{id:"tt",name:"Table Topics",type:"std"},{id:"ps",name:"Prepared Speech",type:"std"},{id:"rr",name:"Round Robin",type:"rr"},{id:"ev",name:"Evaluations",type:"std"},{id:"rep",name:"Role reports",type:"rep"}];
 var ROLES=[{id:"coord",name:"Speechcraft Coordinator",icon:"🗂"},{id:"tmod",name:"Toastmaster of the Day",icon:"🎩"},{id:"ge",name:"General Evaluator",icon:"🧭"},{id:"timer",name:"Timer",icon:"⏱"},{id:"ttm",name:"Table Topics Master",icon:"🎤"},{id:"rrm",name:"Round Robin Master",icon:"🔁"},{id:"ah",name:"Ah-Counter",icon:"🔢"},{id:"gram",name:"Grammarian",icon:"📝"},{id:"speaker",name:"Speaker",icon:"🎙"},{id:"seval",name:"Speech Evaluator",icon:"🗣"},{id:"tteval",name:"Table Topic Evaluator",icon:"💬"},{id:"member",name:"Member / Audience",icon:"🙋"}];
 var FILLERS=["Um","Ah","Er","So","Like","And","You know","Repeat"];
-var COLLS=[["rows","tt"],["rows","ps"],["rows","rr"],["rows","ev"],["rows","rep"],["topics"],["ahRows"],["gramRows"],["evals"],["notes"],["votes"],["rrq"],["speeches"],["assigns"],["rsvp"]];
-var MEETING_LWW=["meta","cur","gram","agenda","run","vote","genotes","rrcur"], KEEP_LWW=["limits","fill","members","pin"];
+var COLLS=[["rows","tt"],["rows","ps"],["rows","rr"],["rows","ev"],["rows","rep"],["topics"],["ahRows"],["gramRows"],["evals"],["notes"],["votes"],["rrq"],["speeches"],["assigns"],["rsvp"],["fin"]];
+var MEETING_LWW=["meta","cur","gram","agenda","run","vote","genotes","rrcur","wrap"], KEEP_LWW=["limits","fill","members","pin"];
 
 /* ---------- helpers ---------- */
 function now(){ return Date.now(); }
@@ -573,7 +577,7 @@ function blank(){
     people:{coord:"",tmod:"",ge:"",rrm:"",timer:"",ttm:"",ah:"",gram:""}, peopleU:{coord:0,tmod:0,ge:0,rrm:0,timer:0,ttm:0,ah:0,gram:0},
     limits:{tt:{g:60,a:90,r:120},ps:{g:240,a:300,r:360},rr:{b:20},ev:{g:90,a:105,r:120},rep:{g:30,a:45,r:60},u:0},
     members:{list:[],u:0}, pin:{hash:"",rhash:"",salt:"",u:0}, agenda:defaultAgenda(), run:{cur:null,started:{},u:0},
-    evals:[], notes:[], votes:[], rrq:[], speeches:[], assigns:[], rsvp:[], attend:[], keys:[], vote:{state:"closed",u:0}, genotes:{good:"",improve:"",u:0}, rrcur:{id:null,u:0},
+    evals:[], notes:[], votes:[], rrq:[], speeches:[], assigns:[], rsvp:[], attend:[], keys:[], fin:[], wrap:{on:false,at:0,u:0}, vote:{state:"closed",u:0}, genotes:{good:"",improve:"",u:0}, rrcur:{id:null,u:0},
     rows:{tt:[],ps:[],rr:[],ev:[],rep:[]}, topics:[], cur:{id:null,u:0},
     fill:{words:FILLERS.slice(),u:0}, ahRows:[],
     gram:{wotd:"",meaning:"",u:0}, gramRows:[],
@@ -589,12 +593,12 @@ function normalize(st){
   if(!Array.isArray(o.fill.words)) o.fill.words=FILLERS.slice();
   SESSIONS.forEach(function(s){ var k=s.id; o.rows[k]=Array.isArray(st.rows&&st.rows[k])?st.rows[k]:[]; });
   ["ev","rep"].forEach(function(k){ if(!o.limits[k]) o.limits[k]=blank().limits[k]; });
-  ["evals","notes","votes","rrq","speeches","assigns","rsvp"].forEach(function(k){ o[k]=Array.isArray(st[k])?st[k]:[]; });
+  ["evals","notes","votes","rrq","speeches","assigns","rsvp","fin"].forEach(function(k){ o[k]=Array.isArray(st[k])?st[k]:[]; });
   o.keys=Array.isArray(st.keys)?st.keys.filter(function(k){return k&&k.id;}).map(function(k){ k.u=+k.u||1; k.ord=+k.ord||1; return k; }):[];
   o.evals.forEach(function(e){ if(e&&(e.c1!=null||e.r!=null||e.c2!=null||e.rate)){ if(e.done==null) e.done=!!(e.c1||e.r||e.c2); delete e.c1; delete e.r; delete e.c2; delete e.rate; } });
   o.notes=o.notes.filter(function(n){ return n&&n.enc; });
   o.attend=Array.isArray(st.attend)?st.attend.filter(function(a){return a&&a.id&&a.name;}).map(function(a){ a.u=+a.u||1; a.ord=+a.ord||1; return a; }):[];
-  o.vote=Object.assign(b.vote, st.vote||{}); o.genotes=Object.assign(b.genotes, st.genotes||{}); o.rrcur=Object.assign(b.rrcur, st.rrcur||{});
+  o.vote=Object.assign(b.vote, st.vote||{}); o.genotes=Object.assign(b.genotes, st.genotes||{}); o.rrcur=Object.assign(b.rrcur, st.rrcur||{}); o.wrap=Object.assign(b.wrap, st.wrap||{});
   o.members=(st.members&&Array.isArray(st.members.list))?{list:st.members.list.filter(function(m){return m&&m.name;}),u:+st.members.u||0}:b.members;
   o.pin=Object.assign(b.pin, st.pin||{});
   o.agenda=Object.assign(b.agenda, st.agenda||{}); if(!Array.isArray(o.agenda.items)) o.agenda.items=defaultItems(); if(!o.agenda.assign||typeof o.agenda.assign!=="object") o.agenda.assign={};
@@ -778,7 +782,7 @@ function renderAll(){
   renderMeta(); renderRoles(); renderRoster();
   renderLive(); renderNow();
   var v=document.getElementById("view");
-  if(L.role==="coord") v.innerHTML=(coordUnlocked()?availabilityHTML():"")+coordHTML()+(coordUnlocked()?attendanceHTML()+feedbackPinsHTML()+endMeetingHTML():"");
+  if(L.role==="coord"){ var cu=coordUnlocked(), won=cu&&S.wrap.on; v.innerHTML=(won?endMeetingHTML():"")+(cu?availabilityHTML():"")+coordHTML()+(cu?attendanceHTML()+feedbackPinsHTML()+(won?"":endMeetingHTML()):""); }
   else if(L.role==="tmod") v.innerHTML=(S.vote.state!=="closed"?'<section class="card" style="margin-bottom:12px">'+voteControlHTML(false,true)+'</section>':'')+tmodHTML();
   else if(L.role==="ge") v.innerHTML=geHTML();
   else if(L.role==="seval"||L.role==="tteval") v.innerHTML=evalHTML();
@@ -790,11 +794,11 @@ function renderAll(){
   else if(L.role==="ah") v.innerHTML=ahHTML();
   else v.innerHTML=gramHTML();
   if(document.getElementById("stage").classList.contains("on")) renderStage();
-  renderAgendaLine(); renderMemberList(); renderVoteBar(); maybeShowWinners(false); flushPending(); checkNewFeedback(); renderCompanion();
+  renderAgendaLine(); renderMemberList(); renderVoteBar(); renderFin(); maybeShowWinners(false); flushPending(); checkNewFeedback(); renderCompanion();
   if(document.getElementById("voteModal").classList.contains("on")) renderVoteModal();
   renderConnBtn();
 }
-function renderLiveOnly(){ renderNow(); renderCompanion(); renderAgendaLine(); renderVoteBar(); maybeShowWinners(false); renderConnBtn(); renderRoles(); if(document.getElementById("voteModal").classList.contains("on")) renderVoteModal(); }
+function renderLiveOnly(){ renderFin(); renderNow(); renderCompanion(); renderAgendaLine(); renderVoteBar(); maybeShowWinners(false); renderConnBtn(); renderRoles(); if(document.getElementById("voteModal").classList.contains("on")) renderVoteModal(); }
 function renderMeta(){
   var w=document.getElementById("mWeek"), d=document.getElementById("mDate"), n=document.getElementById("myName");
   if(document.activeElement!==w) w.value=S.meta.week||"";
@@ -2552,17 +2556,122 @@ function copyBtn(role){ return '<button class="btn sm" data-copyrep="'+role+'">�
   V.addEventListener("input",function(e){ if(e.target.id==="rsvpNote"){ setRsvp(e.target.dataset.rname,null,e.target.value); commitQuiet(); } });
 })();
 
-/* ---------- end of meeting: save / import the meeting record ---------- */
+/* ---------- finish the meeting: every role confirms it is done ---------- */
+var FIN_ROLES=["tmod","ge","timer","ttm","rrm","ah","gram","seval","tteval"];
+function finRoleName(r){ var o=roleObj(r); return o?o.name:r; }
+function finNameFor(r){ return MULTI_ROLES[r] ? ((L.myNames||{})[r]||L.me||"") : (S.people[r]||assigned(r)||""); }
+function finId(r,name){ return "f|"+r+"|"+(MULTI_ROLES[r]?nkey(name||devId()):""); }
+function finRec(r,name){ var id=finId(r,name); return S.fin.find(function(f){return f.id===id;}); }
+/* simple checks: things that are easy to forget before the meeting closes */
+function finChecks(r){
+  var w=[], me=nkey(finNameFor(r));
+  if(r==="timer"){
+    var run=runningList(); if(run.length) w.push(run.length+" timer"+(run.length>1?"s are":" is")+" still running.");
+    var all=0, noname=0; SESSIONS.forEach(function(s){ S.rows[s.id].forEach(function(x){ all++; if(!String(x.name||"").trim()) noname++; }); });
+    if(!all) w.push("No times recorded."); if(noname) w.push(noname+" timed entr"+(noname>1?"ies have":"y has")+" no name.");
+  } else if(r==="ttm"){
+    var used=S.topics.filter(function(t){return t.used;});
+    if(!used.length) w.push("No topics marked as used.");
+    var nn=used.filter(function(t){return !String(t.speaker||"").trim();}).length; if(nn) w.push(nn+" used topic"+(nn>1?"s have":" has")+" no speaker name.");
+  } else if(r==="ah"){
+    if(!S.ahRows.length) w.push("No counts recorded.");
+  } else if(r==="gram"){
+    if(!String(S.gram.wotd||"").trim()) w.push("Word of the Day isn't set.");
+    if(!S.gramRows.length) w.push("No speaker notes recorded.");
+  } else if(r==="rrm"){
+    if(!S.rrq.length) w.push("No Round Robin questions recorded.");
+  } else if(r==="ge"){
+    if(!String(S.genotes.good||"").trim()&&!String(S.genotes.improve||"").trim()) w.push("General evaluation notes are empty.");
+  } else if(r==="tmod"){
+    if(S.vote.state!=="shown") w.push("Voting results haven't been revealed yet.");
+  } else if(r==="seval"||r==="tteval"){
+    var kind=r==="tteval"?"tt":"ps", open=[];
+    Object.keys(L.evDrafts||{}).forEach(function(id){ var d=L.evDrafts[id]; if(d.kind===kind && !d.submitted && (d.c1||d.r||d.c2)) open.push(d.speaker); });
+    if(r==="seval") S.assigns.forEach(function(a){ if(nkey(a.evaluator)===me && me){ var sub=S.evals.some(function(e){ return e.kind==="ps" && nkey(e.speaker)===nkey(a.speaker) && e.done && nkey(e.by)===me; }); if(!sub && open.indexOf(a.speaker)<0) open.push(a.speaker); } });
+    open.forEach(function(sp){ w.push("Evaluation for "+sp+" not submitted."); });
+  }
+  return w;
+}
+/* the roles the Coordinator expects to hear from */
+function finExpected(){
+  var out=[], seen={};
+  var add=function(r,name){ var id=finId(r,name); if(seen[id]) return; seen[id]=1; out.push({r:r,name:name||"",id:id}); };
+  ["tmod","ge","timer","ttm","rrm","ah","gram"].forEach(function(r){ var n=assigned(r)||S.people[r]; if(n) add(r,n); });
+  asList("sevals").forEach(function(n){ add("seval",n); }); S.assigns.forEach(function(a){ if(a.evaluator) add("seval",a.evaluator); });
+  asList("ttevals").forEach(function(n){ add("tteval",n); });
+  (NET.peers||[]).forEach(function(p){ (Array.isArray(p.roles)&&p.roles.length?p.roles:[p.role]).forEach(function(r){ if(FIN_ROLES.indexOf(r)>=0) add(r,MULTI_ROLES[r]?p.name:(assigned(r)||S.people[r]||p.name)); }); });
+  S.fin.forEach(function(f){ add(f.role,f.name); });
+  return out;
+}
+function finOnline(r,name){
+  return (NET.peers||[]).some(function(p){ var rl=Array.isArray(p.roles)&&p.roles.length?p.roles:[p.role]; return rl.indexOf(r)>=0 && (!MULTI_ROLES[r] || nkey(p.name)===nkey(name)); });
+}
+function finStatusHTML(){
+  var ex=finExpected(), done=0;
+  var rows=ex.map(function(e){
+    var f=S.fin.find(function(x){return x.id===e.id;}), st;
+    if(f&&f.state==="done"){ done++; st='<span class="badge ok">✓ Complete</span>'+(f.issues&&f.issues.length?' <span class="saved">⚠ '+esc(f.issues.join(" "))+'</span>':''); }
+    else if(f&&f.state==="open") st='<span class="badge on">In progress</span>';
+    else if(finOnline(e.r,e.name)) st='<span class="badge on">Online · not opened yet</span>';
+    else st='<span class="badge no">Waiting · not connected</span>';
+    var o=roleObj(e.r);
+    return '<tr><td>'+(o?o.icon+' ':'')+esc(finRoleName(e.r))+'</td><td>'+esc(e.name||(f&&f.name)||"—")+'</td><td>'+st+'</td></tr>';
+  }).join("");
+  var all=ex.length&&done===ex.length;
+  return '<div class="row" style="justify-content:space-between;margin-top:6px"><b>'+(all?'✅ All roles complete':done+' of '+ex.length+' roles complete')+'</b><button class="btn ghost" id="finStop">Stop asking</button></div>'+
+    (ex.length?'<table class="sumtable" style="margin-top:6px"><tbody>'+rows+'</tbody></table>':'<div class="note">No role players yet. Roles appear here as devices connect.</div>')+
+    (all?'<div class="note" style="margin-top:6px">Everyone is done. Save the meeting record now.</div>':'');
+}
 function endMeetingHTML(){
-  return '<section class="card" style="margin-top:12px"><h2 class="sec" style="margin-top:0">🏁 End of meeting <span class="cnt">keep a copy of the final roles and results</span></h2>'+
-    '<div class="note" style="margin-top:0">After the meeting, save the meeting record. It holds the member list, role players, agenda, times, reports and votes (feedback stays encrypted). If a browser loses its data, import the file to bring everything back, on this device and every connected device.</div>'+
+  var on=S.wrap&&S.wrap.on;
+  return '<section class="card" id="endCard" style="margin-'+(on?'bottom':'top')+':12px'+(on?';border-color:var(--a)':'')+'"><h2 class="sec" style="margin-top:0">🏁 End of meeting <span class="cnt">confirm every role is done, then keep a copy</span></h2>'+
+    (on?finStatusHTML():'<div class="note" style="margin-top:0"><b>1.</b> Tap <b>Finish meeting</b>. Every role player gets a prompt to check their work, submit anything left and tap <b>Yes, done</b>. You see each role go from waiting to in progress to complete.</div><div class="row" style="margin-top:8px"><button class="btn primary" id="finStart">🏁 Finish meeting</button></div>')+
+    '<div class="note" style="margin-top:10px"><b>2.</b> Save the meeting record. It holds the member list, role players, agenda, times, reports and votes (feedback stays encrypted). If a browser loses its data, import the file to bring everything back, on this device and every connected device.</div>'+
     '<div class="row" style="margin-top:8px"><button class="btn go" id="endSave">⤓ Save meeting record</button><button class="btn ghost" id="endImport">⤒ Import meeting record</button></div></section>';
 }
+/* the prompt on each role player's device */
+function myFinRoles(){ return myRoles().filter(function(r){ return FIN_ROLES.indexOf(r)>=0; }); }
+function renderFin(){
+  var el=document.getElementById("finSheet"); if(!el) return;
+  var mine=S.wrap&&S.wrap.on?myFinRoles():[];
+  if(!mine.length){ el.className=""; el.innerHTML=""; return; }
+  var changed=false;
+  mine.forEach(function(r){ var n=finNameFor(r); if(!finRec(r,n)){ var f=upsert(["fin"],finId(r,n),{role:r,name:n,state:"open"}); f.role=r; f.name=n; f.state="open"; tick(f); changed=true; } });
+  if(changed) commitQuiet();
+  var pending=mine.filter(function(r){ var f=finRec(r,finNameFor(r)); return !(f&&f.state==="done"); });
+  if(L.finMin===S.wrap.at){ el.className="on min"; el.innerHTML='<button class="btn primary" id="finOpen">🏁 '+(pending.length?'Finish your role'+(pending.length>1?'s ('+pending.length+')':''):'Done ✓')+'</button>'; return; }
+  var h='<div class="finhead"><b>🏁 The Coordinator is finishing the meeting</b><button class="btn ghost" id="finHide">Later</button></div><div class="saved" style="margin:2px 0 8px">Check your role, submit anything left, then tap <b>Yes, done</b>. Your results go to the Coordinator.</div>';
+  mine.forEach(function(r){
+    var n=finNameFor(r), f=finRec(r,n), o=roleObj(r), w=finChecks(r), done=f&&f.state==="done";
+    h+='<div class="finrow'+(done?' done':'')+'"><div><b>'+(o?o.icon+' ':'')+esc(finRoleName(r))+'</b>'+(n?' · '+esc(n):'')+
+      (done?'<div class="saved">✓ Sent to the Coordinator'+(f.issues&&f.issues.length?' (with '+f.issues.length+' note'+(f.issues.length>1?'s':'')+')':'')+'</div>':
+       (w.length?'<div class="finwarn">'+w.map(function(x){return '⚠ '+esc(x);}).join('<br>')+'</div>':'<div class="saved">✓ Everything looks complete</div>'))+'</div>'+
+      (done?'<button class="btn ghost" data-finundo="'+r+'">Undo</button>':'<button class="btn go" data-findone="'+r+'">Yes, done</button>')+'</div>';
+  });
+  el.className="on"; el.innerHTML=h;
+}
 (function(){
-  document.getElementById("view").addEventListener("click",function(e){
+  var V=document.getElementById("view");
+  V.addEventListener("click",function(e){
     if(L.role!=="coord"||!coordUnlocked()) return;
     if(e.target.closest("#endSave")) document.getElementById("backupBtn").click();
     else if(e.target.closest("#endImport")) document.getElementById("restoreBtn").click();
+    else if(e.target.closest("#finStart")){ S.wrap.on=true; S.wrap.at=now(); tick(S.wrap); commit(); window.scrollTo(0,0); }
+    else if(e.target.closest("#finStop")){ if(!confirm("Stop asking roles to finish? Their prompts close; answers so far are kept.")) return; S.wrap.on=false; tick(S.wrap); commit(); }
+  });
+  var F=document.getElementById("finSheet");
+  F.addEventListener("click",function(e){
+    var t=e.target;
+    if(t.closest("#finHide")){ L.finMin=S.wrap.at; saveL(); renderFin(); return; }
+    if(t.closest("#finOpen")){ L.finMin=0; saveL(); renderFin(); return; }
+    var d=t.closest("[data-findone]");
+    if(d){ var r=d.dataset.findone, w=finChecks(r);
+      if(w.length && !confirm(finRoleName(r)+":\n\n• "+w.join("\n• ")+"\n\nSend as done anyway? The Coordinator will see these notes.")) return;
+      var n=finNameFor(r), f=upsert(["fin"],finId(r,n),{role:r,name:n}); f.role=r; f.name=n; f.state="done"; f.issues=w; f.at=now(); tick(f); commit();
+      if(myFinRoles().every(function(x){ var g=finRec(x,finNameFor(x)); return g&&g.state==="done"; })){ L.finMin=S.wrap.at; saveL(); renderFin(); showToastMsg("✓ Thanks! The Coordinator has your results."); }
+      return; }
+    var u=t.closest("[data-finundo]");
+    if(u){ var r2=u.dataset.finundo, n2=finNameFor(r2), g=finRec(r2,n2); if(g){ g.state="open"; g.issues=[]; tick(g); commit(); } }
   });
 })();
 
