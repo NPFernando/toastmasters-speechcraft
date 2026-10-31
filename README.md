@@ -5,6 +5,8 @@ A single HTML page for running Speechcraft meetings at **Dijital Team Colombo**.
 | Role | What it does |
 |---|---|
 | 🗂 **Speechcraft Coordinator** | PIN-protected set-up: member list (remembered for every meeting), meeting details, role players and agenda; names fill in on every device; prints the agenda sheet |
+| 🔔 **President** | Their agenda times; opening checklist (call to order, anthem, welcome, club mission, introduce the Toastmaster); announcements; guest list with "welcomed" ticks; closing checklist with the award winners |
+| 🛎 **Sergeant at Arms** | Before / as people arrive / after checklists (room, lectern, timing lights, badges, greeting, seating, packing up); adds guests to the shared guest list |
 | 🎩 **Toastmaster of the Day** | Run-sheet with Now / Next, tap to move on, shows if the meeting is on time or behind; everyone sees a "Now:" line |
 | 🧭 **General Evaluator** | Live Timer / Ah-Counter / Grammarian results for the call for reports, evaluation status, meeting notes, opens and closes voting |
 | ⏱ **Timer** | Plan speakers, live counter with green / amber / red signal flashes, Table Topics, Prepared Speech, Round Robin, Evaluations and Role reports (Timer and Ah-Counter 1 min, Grammarian 2 min), manual time entry, time totals |

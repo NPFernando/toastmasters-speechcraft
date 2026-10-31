@@ -84,7 +84,7 @@ label.f,.f{display:flex;flex-direction:column;font-size:12px;color:var(--muted);
 .steps span.on{color:var(--ink);font-weight:700}
 .rolegrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
 .rolecard{border:2px solid var(--line);background:var(--card);border-radius:14px;padding:16px;cursor:pointer;text-align:left}
-.rolecard:hover{border-color:var(--muted)} .rolecard .today{display:none;color:var(--a);font-weight:700;font-size:12px;margin-top:2px} .rolecard.mine .today{display:block} .rolecard.mine{border-color:var(--a)}
+.rolecard:hover{border-color:var(--muted)} .chklist{display:grid;gap:6px;margin-top:6px} .chk{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer} .chk input{width:20px;height:20px;margin:0;flex:0 0 auto} .chk.on{background:var(--g-bg);border-color:var(--g)} .chk.on span{text-decoration:line-through;opacity:.75} .ritems{display:grid;gap:4px} .ritem{font-size:14px} .ritem b{display:inline-block;min-width:68px} .glist{display:grid;gap:6px;margin-top:8px} .grow{display:flex;justify-content:space-between;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;padding:8px 12px} .grow.on{border-color:var(--g)} details.mission{margin-top:8px} .rolecard .today{display:none;color:var(--a);font-weight:700;font-size:12px;margin-top:2px} .rolecard.mine .today{display:block} .rolecard.mine{border-color:var(--a)}
 .rolecard.active{border-color:var(--brand);box-shadow:0 0 0 3px color-mix(in srgb, var(--brand) 25%, transparent)}
 .rolecard .ic{font-size:30px}
 .rolecard b{display:block;font-size:17px;margin-top:4px}
@@ -540,10 +540,10 @@ var GROUP="Dijital Team Colombo";
 var NS=(function(){ try{ var a=new URLSearchParams(location.search).get("as"); return a?"."+a.replace(/[^a-z0-9]/gi,""):""; }catch(e){ return ""; } })();
 var KEY="speechcraftMeeting.v2"+NS, LKEY="speechcraftMeeting.local"+NS, OLDKEY="speechcraftTimerLog.v1", OLDNAMES="speechcraftTimerLog.names";
 var SESSIONS=[{id:"tt",name:"Table Topics",type:"std"},{id:"ps",name:"Prepared Speech",type:"std"},{id:"rr",name:"Round Robin",type:"rr"},{id:"ev",name:"Evaluations",type:"std"},{id:"rep",name:"Role reports",type:"rep"}];
-var ROLES=[{id:"coord",name:"Speechcraft Coordinator",icon:"🗂"},{id:"tmod",name:"Toastmaster of the Day",icon:"🎩"},{id:"ge",name:"General Evaluator",icon:"🧭"},{id:"timer",name:"Timer",icon:"⏱"},{id:"ttm",name:"Table Topics Master",icon:"🎤"},{id:"rrm",name:"Round Robin Master",icon:"🔁"},{id:"ah",name:"Ah-Counter",icon:"🔢"},{id:"gram",name:"Grammarian",icon:"📝"},{id:"speaker",name:"Speaker",icon:"🎙"},{id:"seval",name:"Speech Evaluator",icon:"🗣"},{id:"tteval",name:"Table Topic Evaluator",icon:"💬"},{id:"member",name:"Member / Audience",icon:"🙋"}];
+var ROLES=[{id:"coord",name:"Speechcraft Coordinator",icon:"🗂"},{id:"president",name:"President",icon:"🔔"},{id:"tmod",name:"Toastmaster of the Day",icon:"🎩"},{id:"ge",name:"General Evaluator",icon:"🧭"},{id:"timer",name:"Timer",icon:"⏱"},{id:"ttm",name:"Table Topics Master",icon:"🎤"},{id:"rrm",name:"Round Robin Master",icon:"🔁"},{id:"ah",name:"Ah-Counter",icon:"🔢"},{id:"gram",name:"Grammarian",icon:"📝"},{id:"saa",name:"Sergeant at Arms",icon:"🛎"},{id:"speaker",name:"Speaker",icon:"🎙"},{id:"seval",name:"Speech Evaluator",icon:"🗣"},{id:"tteval",name:"Table Topic Evaluator",icon:"💬"},{id:"member",name:"Member / Audience",icon:"🙋"}];
 var FILLERS=["Um","Ah","Er","So","Like","And","You know","Repeat"];
-var COLLS=[["rows","tt"],["rows","ps"],["rows","rr"],["rows","ev"],["rows","rep"],["topics"],["ahRows"],["gramRows"],["evals"],["notes"],["votes"],["rrq"],["speeches"],["assigns"],["rsvp"],["fin"]];
-var MEETING_LWW=["meta","cur","gram","agenda","run","vote","genotes","rrcur","wrap"], KEEP_LWW=["limits","fill","members","pin"];
+var COLLS=[["rows","tt"],["rows","ps"],["rows","rr"],["rows","ev"],["rows","rep"],["topics"],["ahRows"],["gramRows"],["evals"],["notes"],["votes"],["rrq"],["speeches"],["assigns"],["rsvp"],["fin"],["guests"]];
+var MEETING_LWW=["meta","cur","gram","agenda","run","vote","genotes","rrcur","wrap","pres","saa"], KEEP_LWW=["limits","fill","members","pin"];
 
 /* ---------- helpers ---------- */
 function now(){ return Date.now(); }
@@ -577,10 +577,10 @@ function lsSet(k,v){ try{ localStorage.setItem(k,v); return true; }catch(e){ ret
 function blank(){
   return { v:2, mid:uid(), midU:now(),
     meta:{week:"",date:todayISO(),u:0},
-    people:{coord:"",tmod:"",ge:"",rrm:"",timer:"",ttm:"",ah:"",gram:""}, peopleU:{coord:0,tmod:0,ge:0,rrm:0,timer:0,ttm:0,ah:0,gram:0},
+    people:{coord:"",president:"",saa:"",tmod:"",ge:"",rrm:"",timer:"",ttm:"",ah:"",gram:""}, peopleU:{coord:0,president:0,saa:0,tmod:0,ge:0,rrm:0,timer:0,ttm:0,ah:0,gram:0},
     limits:{tt:{g:60,a:90,r:120},ps:{g:240,a:300,r:360},rr:{b:20},ev:{g:90,a:105,r:120},rep:{g:30,a:45,r:60},u:0},
     members:{list:[],u:0}, pin:{hash:"",rhash:"",salt:"",u:0}, agenda:defaultAgenda(), run:{cur:null,started:{},u:0},
-    evals:[], notes:[], votes:[], rrq:[], speeches:[], assigns:[], rsvp:[], attend:[], keys:[], fin:[], wrap:{on:false,at:0,u:0}, vote:{state:"closed",u:0}, genotes:{good:"",improve:"",u:0}, rrcur:{id:null,u:0},
+    evals:[], notes:[], votes:[], rrq:[], speeches:[], assigns:[], rsvp:[], attend:[], keys:[], fin:[], guests:[], wrap:{on:false,at:0,u:0}, pres:{chk:{},notes:"",u:0}, saa:{chk:{},u:0}, vote:{state:"closed",u:0}, genotes:{good:"",improve:"",u:0}, rrcur:{id:null,u:0},
     rows:{tt:[],ps:[],rr:[],ev:[],rep:[]}, topics:[], cur:{id:null,u:0},
     fill:{words:FILLERS.slice(),u:0}, ahRows:[],
     gram:{wotd:"",meaning:"",u:0}, gramRows:[],
@@ -596,12 +596,12 @@ function normalize(st){
   if(!Array.isArray(o.fill.words)) o.fill.words=FILLERS.slice();
   SESSIONS.forEach(function(s){ var k=s.id; o.rows[k]=Array.isArray(st.rows&&st.rows[k])?st.rows[k]:[]; });
   ["ev","rep"].forEach(function(k){ if(!o.limits[k]) o.limits[k]=blank().limits[k]; });
-  ["evals","notes","votes","rrq","speeches","assigns","rsvp","fin"].forEach(function(k){ o[k]=Array.isArray(st[k])?st[k]:[]; });
+  ["evals","notes","votes","rrq","speeches","assigns","rsvp","fin","guests"].forEach(function(k){ o[k]=Array.isArray(st[k])?st[k]:[]; });
   o.keys=Array.isArray(st.keys)?st.keys.filter(function(k){return k&&k.id;}).map(function(k){ k.u=+k.u||1; k.ord=+k.ord||1; return k; }):[];
   o.evals.forEach(function(e){ if(e&&(e.c1!=null||e.r!=null||e.c2!=null||e.rate)){ if(e.done==null) e.done=!!(e.c1||e.r||e.c2); delete e.c1; delete e.r; delete e.c2; delete e.rate; } });
   o.notes=o.notes.filter(function(n){ return n&&n.enc; });
   o.attend=Array.isArray(st.attend)?st.attend.filter(function(a){return a&&a.id&&a.name;}).map(function(a){ a.u=+a.u||1; a.ord=+a.ord||1; return a; }):[];
-  o.vote=Object.assign(b.vote, st.vote||{}); o.genotes=Object.assign(b.genotes, st.genotes||{}); o.rrcur=Object.assign(b.rrcur, st.rrcur||{}); o.wrap=Object.assign(b.wrap, st.wrap||{});
+  o.vote=Object.assign(b.vote, st.vote||{}); o.genotes=Object.assign(b.genotes, st.genotes||{}); o.rrcur=Object.assign(b.rrcur, st.rrcur||{}); o.wrap=Object.assign(b.wrap, st.wrap||{}); o.pres=Object.assign(b.pres, st.pres||{}); o.saa=Object.assign(b.saa, st.saa||{}); if(!o.pres.chk||typeof o.pres.chk!=="object") o.pres.chk={}; if(!o.saa.chk||typeof o.saa.chk!=="object") o.saa.chk={};
   o.members=(st.members&&Array.isArray(st.members.list))?{list:st.members.list.filter(function(m){return m&&m.name;}),u:+st.members.u||0}:b.members;
   o.pin=Object.assign(b.pin, st.pin||{});
   o.agenda=Object.assign(b.agenda, st.agenda||{}); if(!Array.isArray(o.agenda.items)) o.agenda.items=defaultItems(); if(!o.agenda.assign||typeof o.agenda.assign!=="object") o.agenda.assign={};
@@ -792,6 +792,8 @@ function renderAll(){
   else if(L.role==="seval"||L.role==="tteval") v.innerHTML=evalHTML();
   else if(L.role==="rrm") v.innerHTML=rrHTML();
   else if(L.role==="member") v.innerHTML=memberHTML();
+  else if(L.role==="president") v.innerHTML=presidentHTML();
+  else if(L.role==="saa") v.innerHTML=saaHTML();
   else if(L.role==="speaker") v.innerHTML=speakerHTML();
   else if(L.role==="timer") v.innerHTML=timerHTML();
   else if(L.role==="ttm") v.innerHTML=ttmHTML();
@@ -1032,7 +1034,7 @@ function addCounterSpeaker(kind,name){
 
 /* ---------- agenda, role players, coordinator, toastmaster run-sheet ---------- */
 var AROLES=[
-  {k:"president",n:"President"},{k:"tmod",n:"Toastmaster of the Day"},{k:"ge",n:"General Evaluator"},
+  {k:"president",n:"President"},{k:"saa",n:"Sergeant at Arms"},{k:"tmod",n:"Toastmaster of the Day"},{k:"ge",n:"General Evaluator"},
   {k:"ttm",n:"Table Topics Master"},{k:"rrm",n:"Round Robin Master"},{k:"keynote",n:"Keynote Speaker"},
   {k:"timer",n:"Timer"},{k:"ah",n:"Ah-Counter"},{k:"gram",n:"Grammarian"},
   {k:"speakers",n:"Prepared Speakers",multi:true},{k:"sevals",n:"Speech Evaluators",multi:true},{k:"ttevals",n:"Table Topic Evaluators",multi:true},
@@ -1083,7 +1085,7 @@ function extraText(x){
 function whoFor(role){ var v=asList(role); return v.join(", "); }
 
 /* push the agenda's names out to every role and the Timer's queues */
-var DEVICE_ROLE_FROM_AGENDA={coord:"coord",tmod:"tmod",ge:"ge",rrm:"rrm",timer:"timer",ttm:"ttm",ah:"ah",gram:"gram"};
+var DEVICE_ROLE_FROM_AGENDA={coord:"coord",president:"president",saa:"saa",tmod:"tmod",ge:"ge",rrm:"rrm",timer:"timer",ttm:"ttm",ah:"ah",gram:"gram"};
 function applyAgenda(){
   Object.keys(DEVICE_ROLE_FROM_AGENDA).forEach(function(k){
     var nm=assigned(k); if(nm && S.people[k]!==nm){ S.people[k]=nm; S.peopleU[k]=Math.max(now(),(S.peopleU[k]||0)+1); }
@@ -2066,7 +2068,7 @@ document.getElementById("restoreFile").addEventListener("change",function(){
 
 /* ---------- report ---------- */
 function fmtDate(iso){ if(!iso) return ""; var p=iso.split("-"); if(p.length!==3) return iso; return new Date(+p[0],+p[1]-1,+p[2]).toLocaleDateString("en-AU",{weekday:"long",day:"numeric",month:"long",year:"numeric"}); }
-var REPSECS=[{id:"timer",name:"Timer"},{id:"ttm",name:"Table Topics"},{id:"rrm",name:"Round Robin"},{id:"ah",name:"Ah-Counter"},{id:"gram",name:"Grammarian"},{id:"evals",name:"Evaluations"},{id:"ge",name:"General Evaluator"},{id:"awards",name:"Awards"},{id:"attend",name:"Attendance"}];
+var REPSECS=[{id:"timer",name:"Timer"},{id:"ttm",name:"Table Topics"},{id:"rrm",name:"Round Robin"},{id:"ah",name:"Ah-Counter"},{id:"gram",name:"Grammarian"},{id:"evals",name:"Evaluations"},{id:"ge",name:"General Evaluator"},{id:"awards",name:"Awards"},{id:"guests",name:"President & guests"},{id:"attend",name:"Attendance"}];
 function hasData(k){
   if(k==="timer") return SESSIONS.some(function(s){return S.rows[s.id].length;});
   if(k==="ttm") return S.topics.length>0; if(k==="ah") return S.ahRows.length>0;
@@ -2074,6 +2076,7 @@ function hasData(k){
   if(k==="evals") return S.evals.some(function(e){return e.done;});
   if(k==="ge") return !!(S.genotes.good||S.genotes.improve);
   if(k==="awards") return S.vote.state==="shown";
+  if(k==="guests") return S.guests.length>0||Object.keys(S.pres.chk||{}).length>0;
   if(k==="attend") return S.attend.some(function(a){return a.mid===S.mid&&a.present;});
   return S.gramRows.length>0||!!S.gram.wotd;
 }
@@ -2162,6 +2165,10 @@ function buildReport(){
   }
   if(inc("ge")){ h+='<h4>🧭 General Evaluator</h4>'+(S.genotes.good?'<div><b>What went well:</b> '+esc(S.genotes.good)+'</div>':'')+(S.genotes.improve?'<div><b>What could be better:</b> '+esc(S.genotes.improve)+'</div>':''); }
   if(inc("awards")){ h+='<h4>🏆 Awards</h4><table><tbody>'+VCATS.map(function(c){ var tl=tally(c.k); return '<tr><td>'+c.n+'</td><td><b>'+esc(tl.winners.map(function(w){return w.name;}).join(" & ")||"—")+'</b></td><td class="c">'+(tl.winners.length?tl.winners[0].n+' votes':'')+'</td></tr>'; }).join("")+'</tbody></table><div style="color:#666;margin-top:3px">'+votersCount()+' devices voted.</div>'; }
+  if(inc("guests")){ var pc2=presChecks(), od=pc2.open.length-chkLeft("pres","open",pc2.open).length, cd=pc2.close.length-chkLeft("pres","close",pc2.close).length;
+    h+='<h4>🔔 President &amp; guests</h4><div>Opening '+od+'/'+pc2.open.length+' · Closing '+cd+'/'+pc2.close.length+(S.pres.notes?' · Announcements: '+esc(S.pres.notes):'')+'</div>';
+    if(S.guests.length){ h+='<table style="margin-top:4px"><thead><tr><th style="width:34px">#</th><th>Guest</th><th>From / how they heard</th><th class="c">Welcomed</th></tr></thead><tbody>'+S.guests.map(function(g,i){ return '<tr><td>'+(i+1)+'</td><td>'+esc(g.name)+'</td><td>'+esc(g.from||"—")+'</td><td class="c">'+(g.welcomed?'✓':'—')+'</td></tr>'; }).join("")+'</tbody></table>'; }
+    else h+='<div class="none">No guests recorded.</div>'; }
   if(inc("attend")){ var pr=S.attend.filter(function(a){return a.mid===S.mid&&a.present;}).map(function(a){return a.name;}); h+='<h4>✅ Attendance</h4><div>'+pr.length+' present: '+esc(pr.join(", "))+'</div>'; }
   if(!REPSECS.some(function(r){return inc(r.id);})) h+='<div class="none" style="margin-top:14px">Nothing selected. Tick a section above that has data.</div>';
   h+='<div class="sign"><span>'+esc(myName()?ROLES.find(function(r){return r.id===L.role;}).name+": "+myName():"")+'</span><span>Generated '+new Date().toLocaleString("en-AU",{dateStyle:"medium",timeStyle:"short"})+'</span></div>';
@@ -2331,7 +2338,7 @@ document.getElementById("connBox").addEventListener("keydown",function(e){ if(e.
 
 /* ---------- welcome: pick role, then host / join ---------- */
 var W={step:"role",role:null,code:""};
-var ROLE_DESC={speaker:"Your speech title, time limits, result and private feedback",ge:"Calls for reports, tracks evaluations, opens voting",rrm:"Round Robin questions; queues each person on the Timer",seval:"Commend / Recommend / Commend for prepared speakers",tteval:"Commend / Recommend / Commend for Table Topics speakers",member:"Check in, vote, send notes, see your feedback card",coord:"Sets up the agenda, role players and members (PIN)",tmod:"Runs the meeting: Now / Next, on time or behind",timer:"Times every speaker and shows the signals",ttm:"Runs Table Topics and calls the speakers",ah:"Counts filler words for each speaker",gram:"Word of the Day, great phrases and slips"};
+var ROLE_DESC={president:"Opens and closes the meeting, welcomes guests by name",saa:"Room set-up, greets members and guests, packs up",speaker:"Your speech title, time limits, result and private feedback",ge:"Calls for reports, tracks evaluations, opens voting",rrm:"Round Robin questions; queues each person on the Timer",seval:"Commend / Recommend / Commend for prepared speakers",tteval:"Commend / Recommend / Commend for Table Topics speakers",member:"Check in, vote, send notes, see your feedback card",coord:"Sets up the agenda, role players and members (PIN)",tmod:"Runs the meeting: Now / Next, on time or behind",timer:"Times every speaker and shows the signals",ttm:"Runs Table Topics and calls the speakers",ah:"Counts filler words for each speaker",gram:"Word of the Day, great phrases and slips"};
 var SITE_URL="https://npfernando.github.io/toastmasters-speechcraft/";
 function baseUrl(){ return /^https?:/.test(location.protocol) ? location.origin+location.pathname : SITE_URL; }
 function inviteLink(code){ return baseUrl()+"#join="+fmtCode(code); }
@@ -2449,7 +2456,7 @@ function dropRole(id){ myRoles(); if(L.roles.length<2) return; L.roles=L.roles.f
 /* roles the agenda gives this person today */
 function agendaRolesFor(name){
   if(!name) return []; var k=nkey(name), out=[];
-  ["coord","tmod","ge","ttm","rrm","timer","ah","gram"].forEach(function(r){ if(nkey(assigned(r))===k) out.push(r); });
+  ["coord","president","saa","tmod","ge","ttm","rrm","timer","ah","gram"].forEach(function(r){ if(nkey(assigned(r))===k) out.push(r); });
   if(asList("sevals").some(function(n){return nkey(n)===k;})||S.assigns.some(function(a){return nkey(a.evaluator)===k;})) out.push("seval");
   if(asList("ttevals").some(function(n){return nkey(n)===k;})) out.push("tteval");
   if(asList("speakers").some(function(n){return nkey(n)===k;})) out.push("speaker");
@@ -2583,8 +2590,77 @@ function copyBtn(role){ return '<button class="btn sm" data-copyrep="'+role+'">�
   V.addEventListener("input",function(e){ if(e.target.id==="rsvpNote"){ setRsvp(e.target.dataset.rname,null,e.target.value); commitQuiet(); } });
 })();
 
+/* ---------- President and Sergeant at Arms ---------- */
+function presChecks(){
+  var tm=S.people.tmod||assigned("tmod");
+  return {
+    open:[["order","Call the meeting to order on time"],["anthem","National Anthem"],["welcome","Welcome members and guests (see the guest list below)"],["mission","Share the club mission"],["intro","Introduce the Toastmaster of the Day"+(tm?" ("+tm+")":"")+" and hand over"]],
+    close:[["thank","Thank the Toastmaster and every role player"],["awards","Congratulate the award winners"],["guests","Invite guests to share a comment"],["next","Announce the next meeting"+(S.agenda.next?" ("+fmtDate(S.agenda.next)+")":"")],["adjourn","Adjourn the meeting"]]
+  };
+}
+var SAA_CHECKS={
+  before:[["room","Room or online meeting link ready"],["lectern","Lectern, microphone and projector set up"],["lights","Timing lights or cards ready for the Timer"],["badges","Name badges and sign-in sheet out"],["agenda","Agenda shared (printed or link)"]],
+  during:[["greet","Greet members and guests as they arrive"],["guests","Add guests to the guest list"],["seat","Ask everyone to be seated and silence phones"],["intro","Introduce the President to open the meeting"]],
+  after:[["tidy","Room tidied, furniture back in place"],["pack","Equipment and club items packed away"]]
+};
+function chkList(store,group,items){
+  var c=S[store].chk||{}, done=items.filter(function(x){return c[group+"."+x[0]];}).length;
+  return '<div class="chklist">'+items.map(function(x){ var k=group+"."+x[0], on=!!c[k];
+    return '<label class="chk'+(on?' on':'')+'"><input type="checkbox" data-chk="'+store+'|'+k+'"'+(on?' checked':'')+'> <span>'+esc(x[1])+'</span></label>'; }).join("")+
+    '</div><div class="saved" style="margin-top:4px">'+done+' of '+items.length+' done</div>';
+}
+function chkLeft(store,group,items){ var c=S[store].chk||{}; return items.filter(function(x){return !c[group+"."+x[0]];}).map(function(x){return x[1];}); }
+function roleTimes(role){ return itemsSorted().filter(function(i){return i.role===role;}).map(function(i){ return '<div class="ritem"><b>'+esc(fmtHM(i.time))+'</b> '+esc(i.text)+'</div>'; }).join(""); }
+function guestsHTML(){
+  var h='<h2 class="sec">👋 Guests <span class="cnt">'+S.guests.length+'</span></h2>'+
+    '<div class="row"><input class="t" id="gName" autocomplete="off" placeholder="Guest name" style="flex:1 1 160px"><input class="t" id="gFrom" autocomplete="off" placeholder="From / how they heard of us (optional)" style="flex:2 1 200px"><button class="btn primary" id="gAdd">+ Add guest</button></div>';
+  if(!S.guests.length) return h+'<div class="note">No guests yet. Add each visitor so the President can welcome them by name.</div>';
+  return h+'<div class="glist">'+S.guests.map(function(g){
+    return '<div class="grow'+(g.welcomed?' on':'')+'"><div><b>'+esc(g.name)+'</b>'+(g.from?' <span class="saved">· '+esc(g.from)+'</span>':'')+'</div><span class="row"><button class="btn sm'+(g.welcomed?' go':'')+'" data-gwel="'+g.id+'">'+(g.welcomed?'✓ Welcomed':'Welcomed?')+'</button><button class="btn sm ghost" data-gdel="'+g.id+'" title="Remove">✕</button></span></div>';
+  }).join("")+'</div>';
+}
+function winnersLine(){
+  if(S.vote.state!=="shown") return '<div class="saved">Award winners appear here once the Toastmaster reveals the votes.</div>';
+  var w=VCATS.map(function(c){ var t=tally(c.k); return t.winners.length?c.n+": "+t.winners.map(function(x){return x.name;}).join(" & "):""; }).filter(Boolean);
+  return w.length?'<div class="selcard"><b>🏆 Winners</b><br>'+esc(w.join(" · "))+'</div>':'';
+}
+function presidentHTML(){
+  var pc=presChecks(), h='<section class="card">';
+  var times=roleTimes("president"); if(times) h+='<h2 class="sec" style="margin-top:0">🔔 Your part of the agenda</h2><div class="ritems">'+times+'</div>';
+  h+='<h2 class="sec">Opening</h2>'+chkList("pres","open",pc.open);
+  h+='<details class="mission"><summary>Club mission (to read out)</summary><div class="note">'+esc(CLUB_MISSION)+'</div></details>';
+  h+='<label class="f" style="margin-top:10px">Announcements<textarea class="t" id="presNotes" rows="2" placeholder="Anything to announce at the opening or close">'+esc(S.pres.notes||"")+'</textarea></label>';
+  h+='</section><section class="card" style="margin-top:12px">'+guestsHTML()+'</section>';
+  h+='<section class="card" style="margin-top:12px"><h2 class="sec" style="margin-top:0">Closing</h2>'+winnersLine()+chkList("pres","close",pc.close)+'</section>';
+  return h;
+}
+function saaHTML(){
+  var h='<section class="card"><h2 class="sec" style="margin-top:0">🛎 Before the meeting</h2>'+chkList("saa","before",SAA_CHECKS.before)+
+    '<h2 class="sec">As people arrive</h2>'+chkList("saa","during",SAA_CHECKS.during)+'</section>';
+  h+='<section class="card" style="margin-top:12px">'+guestsHTML()+'</section>';
+  h+='<section class="card" style="margin-top:12px"><h2 class="sec" style="margin-top:0">After the meeting</h2>'+chkList("saa","after",SAA_CHECKS.after)+'</section>';
+  return h;
+}
+(function(){
+  var V=document.getElementById("view");
+  V.addEventListener("change",function(e){
+    var c=e.target.closest("[data-chk]"); if(!c) return;
+    var p=c.dataset.chk.split("|"), st=S[p[0]]; st.chk=st.chk||{}; if(c.checked) st.chk[p[1]]=now(); else delete st.chk[p[1]]; tick(st); commit();
+  });
+  V.addEventListener("input",function(e){ if(e.target.id==="presNotes"){ S.pres.notes=e.target.value; tick(S.pres); commitQuiet(); } });
+  V.addEventListener("click",function(e){
+    var t=e.target;
+    if(t.closest("#gAdd")){ var n=document.getElementById("gName"), f=document.getElementById("gFrom"), nm=(n.value||"").trim(); if(!nm){ n.focus(); return; }
+      if(S.guests.some(function(g){return nkey(g.name)===nkey(nm);})){ showToastMsg(nm+" is already on the guest list"); return; }
+      S.guests.push({id:uid(),name:nm,from:(f.value||"").trim(),welcomed:false,ord:maxOrd(S.guests)+1,u:now()}); addName(S,nm); commit(); var n2=document.getElementById("gName"); if(n2) n2.focus(); return; }
+    var w=t.closest("[data-gwel]"); if(w){ var g=S.guests.find(function(x){return x.id===w.dataset.gwel;}); if(g){ g.welcomed=!g.welcomed; tick(g); commit(); } return; }
+    var d=t.closest("[data-gdel]"); if(d){ var i=S.guests.findIndex(function(x){return x.id===d.dataset.gdel;}); if(i>=0){ var it=S.guests[i]; S.guests.splice(i,1); S.dead[it.id]=Math.max(now(),(it.u||0)+1); commit(); } return; }
+  });
+  V.addEventListener("keydown",function(e){ if(e.key==="Enter"&&(e.target.id==="gName"||e.target.id==="gFrom")){ e.preventDefault(); document.getElementById("gAdd").click(); } });
+})();
+
 /* ---------- finish the meeting: every role confirms it is done ---------- */
-var FIN_ROLES=["tmod","ge","timer","ttm","rrm","ah","gram","seval","tteval"];
+var FIN_ROLES=["president","saa","tmod","ge","timer","ttm","rrm","ah","gram","seval","tteval"];
 function finRoleName(r){ var o=roleObj(r); return o?o.name:r; }
 function finNameFor(r){ return MULTI_ROLES[r] ? ((L.myNames||{})[r]||L.me||"") : (S.people[r]||assigned(r)||""); }
 function finId(r,name){ return "f|"+r+"|"+(MULTI_ROLES[r]?nkey(name||devId()):""); }
@@ -2592,7 +2668,9 @@ function finRec(r,name){ var id=finId(r,name); return S.fin.find(function(f){ret
 /* simple checks: things that are easy to forget before the meeting closes */
 function finChecks(r){
   var w=[], me=nkey(finNameFor(r));
-  if(r==="timer"){
+  if(r==="president"){ var pl=chkLeft("pres","close",presChecks().close); if(pl.length) w.push("Closing not ticked: "+pl.join("; ")+"."); var nw=S.guests.filter(function(g){return !g.welcomed;}).length; if(nw) w.push(nw+" guest"+(nw>1?"s":"")+" not marked as welcomed."); }
+  else if(r==="saa"){ var sl=chkLeft("saa","after",SAA_CHECKS.after); if(sl.length) w.push("After the meeting not ticked: "+sl.join("; ")+"."); }
+  else if(r==="timer"){
     var run=runningList(); if(run.length) w.push(run.length+" timer"+(run.length>1?"s are":" is")+" still running.");
     var all=0, noname=0; SESSIONS.forEach(function(s){ S.rows[s.id].forEach(function(x){ all++; if(!String(x.name||"").trim()) noname++; }); });
     if(!all) w.push("No times recorded."); if(noname) w.push(noname+" timed entr"+(noname>1?"ies have":"y has")+" no name.");
@@ -2623,7 +2701,7 @@ function finChecks(r){
 function finExpected(){
   var out=[], seen={};
   var add=function(r,name){ var id=finId(r,name); if(seen[id]) return; seen[id]=1; out.push({r:r,name:name||"",id:id}); };
-  ["tmod","ge","timer","ttm","rrm","ah","gram"].forEach(function(r){ var n=assigned(r)||S.people[r]; if(n) add(r,n); });
+  ["president","saa","tmod","ge","timer","ttm","rrm","ah","gram"].forEach(function(r){ var n=assigned(r)||S.people[r]; if(n) add(r,n); });
   asList("sevals").forEach(function(n){ add("seval",n); }); S.assigns.forEach(function(a){ if(a.evaluator) add("seval",a.evaluator); });
   asList("ttevals").forEach(function(n){ add("tteval",n); });
   (NET.peers||[]).forEach(function(p){ (Array.isArray(p.roles)&&p.roles.length?p.roles:[p.role]).forEach(function(r){ if(FIN_ROLES.indexOf(r)>=0) add(r,MULTI_ROLES[r]?p.name:(assigned(r)||S.people[r]||p.name)); }); });
