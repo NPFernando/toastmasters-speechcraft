@@ -51,7 +51,7 @@ input.t:focus,textarea.t:focus,select.t:focus{outline:2px solid var(--brand);out
 /* header */
 header.top{display:flex;flex-wrap:wrap;align-items:center;gap:10px;justify-content:space-between;margin-bottom:12px}
 .brand{display:flex;align-items:center;gap:14px;flex:1 1 100%}
-.brand h1{flex:1;min-width:0}
+.brand h1{flex:1;min-width:0;cursor:pointer} .abtgrid{display:grid;gap:8px;margin-top:8px} .abtrow{display:flex;justify-content:space-between;align-items:center;gap:12px;border:1px solid var(--line);border-radius:10px;padding:10px 12px} .abtrow.danger{border-color:var(--r)} .abtrow .btn{flex:0 0 auto}
 .logo{height:56px;display:flex;align-items:center}
 .logo img{max-height:56px;max-width:170px;display:block;object-fit:contain}
 .logo.co img{border-radius:6px}
@@ -423,6 +423,8 @@ details.guide td:first-child{font-weight:600;width:190px}
     </div>
     <div class="hbtns">
       <span class="saved" id="saved"></span>
+      <button class="btn ghost" id="homeBtn" title="Back to the start screen: choose your role and meeting">🏠 Home</button>
+      <button class="btn ghost" id="aboutBtn" title="About this app, help and clean-up">ℹ️ About</button>
       <button class="conn" id="connBtn" title="Connect devices"><i></i><span id="connTxt">Not connected</span></button>
       <button class="btn ghost" id="backupBtn" title="Download a backup file of everything">⤓ Save backup</button>
       <button class="btn ghost" id="restoreBtn" title="Load a backup file">⤒ Restore</button>
@@ -481,6 +483,7 @@ details.guide td:first-child{font-weight:600;width:190px}
   </details>
 </div>
 
+<div id="aboutModal" class="modal" role="dialog" aria-modal="true" aria-label="About"><div class="mbox" id="aboutBox"></div></div>
 <div id="welcome" role="dialog" aria-modal="true" aria-label="Get started"><div class="wbox" id="wbox"></div></div>
 <div id="voteBar" class="votebar"></div>
 <div id="finSheet"></div>
@@ -629,8 +632,9 @@ function load(){
 }
 var S=load();
 var L=(function(){ try{ return Object.assign({role:"timer",tab:"tt",conn:null,rep:{timer:true,ttm:true,ah:true,gram:true},ahSel:null,gramSel:null}, JSON.parse(lsGet(LKEY)||"{}")); }catch(e){ return {role:"timer",tab:"tt",conn:null,rep:{timer:true,ttm:true,ah:true,gram:true}}; } })();
-function saveL(){ lsSet(LKEY,JSON.stringify(L)); }
-function save(){ setSaved(lsSet(KEY,JSON.stringify(S))?"Saved on this device":"Auto-save unavailable in this browser"); }
+var resetting=false;
+function saveL(){ if(resetting) return; lsSet(LKEY,JSON.stringify(L)); }
+function save(){ if(resetting) return; setSaved(lsSet(KEY,JSON.stringify(S))?"Saved on this device":"Auto-save unavailable in this browser"); }
 function setSaved(t){ var el=document.getElementById("saved"); if(el) el.textContent=t; }
 function commit(){ save(); NET.push(); renderAll(); }
 function commitQuiet(){ save(); NET.push(); }
@@ -2688,6 +2692,45 @@ function renderFin(){
     if(u){ var r2=u.dataset.finundo, n2=finNameFor(r2), g=finRec(r2,n2); if(g){ g.state="open"; g.issues=[]; tick(g); commit(); } }
   });
 })();
+
+/* ---------- home, about and clean-up ---------- */
+var APP_VERSION="2.6 · November 2026";
+function aboutHTML(){
+  var on=!!NET.mode, coord=L.role==="coord";
+  return '<div class="finhead"><h2 class="sec" style="margin:0">ℹ️ About</h2><button class="btn ghost" id="aboutClose">Close</button></div>'+
+  '<p style="margin:8px 0 4px"><b>Speechcraft Meeting Roles</b> for <b>Dijital Team Colombo</b> · Toastmasters Speechcraft</p>'+
+  '<div class="saved">Version '+APP_VERSION+'</div>'+
+  '<p class="note">One page for every meeting role: Coordinator, Toastmaster, General Evaluator, Timer, Table Topics Master, Round Robin Master, Ah-Counter, Grammarian, evaluators, speakers and members. Devices connect with a 6-letter meeting code.</p>'+
+  '<ul class="note" style="padding-left:18px;margin:4px 0">'+
+   '<li>Your data is saved in this browser. There is no server and no account.</li>'+
+   '<li>Devices talk to each other directly over an encrypted connection; the meeting code is the key.</li>'+
+   '<li>Speaker feedback is encrypted so only that speaker can read it.</li>'+
+   '<li>Works on phones and laptops. Use <b>📱 Open on phone</b> to move your role across.</li></ul>'+
+  '<div class="saved">Source and help: <a href="https://github.com/NPFernando/toastmasters-speechcraft" target="_blank" rel="noopener">github.com/NPFernando/toastmasters-speechcraft</a></div>'+
+  '<h3 style="margin:16px 0 0">🧹 Clean up</h3><div class="saved">Use these after a practice run or test.</div><div class="abtgrid">'+
+   '<div class="abtrow"><div><b>Clear this meeting</b><div class="saved">Removes speakers, times, topics, counts, votes and this week\'s role players'+(on?' on all connected devices':'')+'. Keeps the member list, PIN and settings.</div></div><button class="btn" id="cleanMeeting">Clear meeting</button></div>'+
+   '<div class="abtrow danger"><div><b>Reset this device</b><div class="saved">Deletes everything this browser has saved: meeting, member list, Coordinator PIN, your role, drafts and feedback keys'+(on?'. Leaves the meeting first; the other devices keep their data':'')+'. Save a backup first if you might need it.</div></div><button class="btn" id="cleanDevice" style="color:var(--r)">Reset device</button></div>'+
+  '</div>'+(coord?'<div class="note" style="margin-top:8px">To remove test members, use ✕ next to each name in the Coordinator member list. To clear test data on every device, start a new meeting code after everyone resets.</div>':'');
+}
+function openAbout(){ document.getElementById("aboutBox").innerHTML=aboutHTML(); document.getElementById("aboutModal").classList.add("on"); }
+function closeAbout(){ document.getElementById("aboutModal").classList.remove("on"); }
+document.getElementById("homeBtn").addEventListener("click",function(){ closeAbout(); openWelcome("role"); });
+document.querySelector(".brand h1").addEventListener("click",function(){ openWelcome("role"); });
+document.getElementById("aboutBtn").addEventListener("click",openAbout);
+document.getElementById("aboutModal").addEventListener("click",function(e){
+  var t=e.target;
+  if(t.id==="aboutModal"||t.closest("#aboutClose")){ closeAbout(); return; }
+  if(t.closest("#cleanMeeting")){ closeAbout(); document.getElementById("newMeeting").click(); return; }
+  if(t.closest("#cleanDevice")){
+    if(!confirm("Reset this device?\n\nEverything saved in this browser for this app is deleted: the meeting, member list, Coordinator PIN, your role, drafts and feedback keys."+(NET.mode?"\n\nThis device leaves the meeting. The other devices keep their data.":""))) return;
+    if(!confirm("Are you sure? This can't be undone.")) return;
+    resetting=true; try{ stopNet(true); }catch(err){}
+    [KEY,LKEY,OLDKEY,OLDNAMES].forEach(function(k){ try{ localStorage.removeItem(k); }catch(err){} });
+    resetting=true; S=blank(); L={role:"timer"};
+    location.replace(location.pathname+location.search);
+  }
+});
+document.addEventListener("keydown",function(e){ if(e.key==="Escape"&&document.getElementById("aboutModal").classList.contains("on")) closeAbout(); });
 
 /* ---------- start ---------- */
 if(!sessionOf(L.tab)) L.tab="tt";
