@@ -6,12 +6,20 @@ A single HTML page for running Speechcraft meetings at **Dijital Team Colombo**.
 |---|---|
 | 🗂 **Speechcraft Coordinator** | PIN-protected set-up: member list (remembered for every meeting), meeting details, role players and agenda; names fill in on every device; prints the agenda sheet |
 | 🎩 **Toastmaster of the Day** | Run-sheet with Now / Next, tap to move on, shows if the meeting is on time or behind; everyone sees a "Now:" line |
+| 🧭 **General Evaluator** | Live Timer / Ah-Counter / Grammarian results for the call for reports, evaluation status, meeting notes, opens and closes voting |
 | ⏱ **Timer** | Plan speakers, live counter with green / amber / red signal flashes, Table Topics, Prepared Speech, Round Robin, Evaluations and Role reports (Timer and Ah-Counter 1 min, Grammarian 2 min), manual time entry, time totals |
 | 🎤 **Table Topics Master** | Prepare topics, random pick, full-screen topic display, record who took each topic, remaining vs used topics |
 | 🔢 **Ah-Counter** | Tap counts of filler words (Um, Ah, Er, So, Like…) per speaker, editable word list |
 | 📝 **Grammarian** | Word of the Day, uses per speaker, great phrases and slips |
+| 🔁 **Round Robin Master** | Question list, show the question full screen, tap each person to queue them on the Timer (20-second bell) |
+| 🗣 **Speech Evaluator** / 💬 **Table Topic Evaluator** | Commend · Recommend · Commend notes and quick ratings for each speaker, with their time shown |
+| 🙋 **Member / Audience** | Check in, vote, send anonymous notes to speakers, open a printable personal feedback card |
 
 One **Meeting report** combines every role and can be saved as a PDF.
+
+### Voting
+
+When the General Evaluator opens voting, a vote bar appears on every connected device: Best Prepared Speaker, Best Table Topics Speaker, Best Evaluator and Best Role Player, one vote per device per award. Results stay hidden until the Toastmaster taps **Reveal winners**, then they appear on every screen together.
 
 ### Coordinator PIN
 
