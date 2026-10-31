@@ -27,7 +27,10 @@ You can also tap **Continue without connecting** to use a role on its own.
 
 Once connected, devices sync live: when the Table Topics Master calls a speaker, they appear in the Timer's list; the Ah-Counter and Grammarian see who is speaking now.
 
-- Devices connect directly to each other over WebRTC, which is always encrypted. The free public [PeerJS](https://peerjs.com/) service only matches devices by code; meeting data doesn't pass through it.
+- Devices find each other through public [Nostr](https://nostr.com/) relays, using several at once so one relay being down doesn't matter, via [Trystero](https://github.com/dmotz/trystero). This is the same approach other peer-to-peer apps on GitHub Pages use.
+- The meeting code is the room password: the short set-up messages on the relays are encrypted with it, so only people with the code can connect.
+- After that, devices talk directly to each other over WebRTC, which is always end-to-end encrypted. Meeting data never passes through the relays.
+- Everyone connects to everyone, so the meeting keeps going even if the person who started it closes their page.
 - Each device keeps its own copy, so if the internet drops everyone keeps working and catches up on reconnect.
 - Needs internet on every device. If a strict network blocks direct connections, use the same Wi-Fi or a phone hotspot.
 
@@ -37,5 +40,5 @@ Everything is saved in the browser on each device. Use **⤓ Save backup** after
 
 ## Credits
 
-- Connection library: [PeerJS](https://github.com/peers/peerjs) 1.5.4, MIT License, embedded in the page.
+- Connection library: [Trystero](https://github.com/dmotz/trystero) 0.26.0 (Nostr strategy, includes @noble/secp256k1), MIT License, embedded in the page.
 - The Toastmasters International logo is used under the Toastmasters brand guidelines for club and Speechcraft materials. It is a trademark of Toastmasters International. The Dijital Team logo belongs to Dijital Team.
