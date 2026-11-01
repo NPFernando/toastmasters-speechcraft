@@ -582,6 +582,16 @@ table.prog{width:100%;border-collapse:collapse;font-size:13px} table.prog th,tab
 .linkbar{width:100%;display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;font-size:13px;background:color-mix(in srgb,var(--brand) 9%,var(--card));border:1px solid color-mix(in srgb,var(--brand) 30%,var(--line));border-radius:10px;padding:5px 6px 5px 10px;margin-bottom:6px} .linkbar .iconbtn{margin-left:auto}
 
 .evprog{font-size:13px;margin:-2px 0 8px;color:var(--muted)} .evprog b{color:var(--ink)} .ttevsel{width:auto;max-width:170px;height:32px;padding:3px 6px;font-size:13px}
+
+/* role guides */
+#report .gpage{padding:4px 0 10px} #report .gpage + .gpage{border-top:2px dashed #ccc;margin-top:18px;padding-top:18px}
+#report .gwhat{font-size:15px;margin:8px 0 10px} #report .ggrid{display:grid;grid-template-columns:1fr 1fr;gap:6px 22px} #report .ggrid h4{margin:8px 0 2px;color:#004165} #report .ggrid ul{margin:0;padding-left:18px} #report .ggrid li{margin:3px 0}
+#report .gfoot{margin-top:14px;font-size:11px;color:#666;border-top:1px solid #ddd;padding-top:6px}
+@media (max-width:640px){ #report .ggrid{grid-template-columns:1fr} }
+@media print{ #report .gpage{font-size:15px;line-height:1.45;break-after:page;border:0!important;margin:0!important;padding-top:0!important} #report .gpage h2{font-size:26px;margin-top:10px} #report .gpage .gwhat{font-size:17px;margin:12px 0 16px} #report .gpage .ggrid{gap:14px 28px} #report .gpage .ggrid h4{font-size:16px;margin-top:14px;border-bottom:2px solid #004165;padding-bottom:3px} #report .gpage li{margin:6px 0} #report .gpage .gfoot{margin-top:30px;font-size:12px} #report .gpage:last-child{break-after:auto} #report .ggrid{grid-template-columns:1fr 1fr} }
+/* connection check */
+.ccverdict{margin:10px 0;padding:10px 12px;border-radius:10px;font-weight:800} .ccverdict.ok{background:var(--g-bg)} .ccverdict.warn{background:var(--a-bg)} .ccverdict.no{background:var(--r-bg)}
+.cct td{vertical-align:top;text-align:left} .cct td:first-child{width:28px}
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#004165">
@@ -609,6 +619,8 @@ table.prog{width:100%;border-collapse:collapse;font-size:13px} table.prog th,tab
           <button class="mi" id="restoreBtn">⤒ Restore<small>Load a backup or meeting record</small></button>
           <button class="mi" id="newMeeting">🆕 New meeting<small>Clear this meeting; keep members and settings</small></button>
           <button class="mi" id="installBtn" hidden>📲 Install as an app<small>Home-screen icon; opens even with weak signal</small></button>
+          <button class="mi" id="ccBtn">🔌 Connection check<small>Is this device ready for the meeting?</small></button>
+          <button class="mi" id="guidesBtn">📘 Role guides<small>One printable page per role</small></button>
           <button class="mi" id="practiceBtn">🎓 Practice meeting<small>Try every role with sample data; the real meeting isn’t touched</small></button>
           <button class="mi" id="projBtn">📺 Projector view<small>Full screen for the room screen or Zoom share</small></button>
           <a class="mi" href="https://github.com/NPFernando/toastmasters-speechcraft" target="_blank" rel="noopener">🐙 Open on GitHub<small>Source code, issues and ideas</small></a>
@@ -674,6 +686,7 @@ table.prog{width:100%;border-collapse:collapse;font-size:13px} table.prog th,tab
 </div>
 
 <div id="fbModal" class="modal" role="dialog" aria-modal="true" aria-label="Report a problem or idea"><div class="mbox" id="fbBox"></div></div>
+<div id="ccModal" class="modal" role="dialog" aria-modal="true" aria-label="Connection check"><div class="mbox" id="ccBox"></div></div>
 <div id="aboutModal" class="modal" role="dialog" aria-modal="true" aria-label="About"><div class="mbox" id="aboutBox"></div></div>
 <div id="welcome" role="dialog" aria-modal="true" aria-label="Get started"><div class="wbox" id="wbox"></div></div>
 <div id="voteBar" class="votebar"></div>
@@ -2582,6 +2595,7 @@ document.getElementById("openReport").addEventListener("click",function(){
 document.getElementById("repPick").addEventListener("change",function(e){ var k=e.target.dataset.rep; if(!k) return; L.rep[k]=e.target.checked; saveL(); buildReport(); });
 document.getElementById("closeReport").addEventListener("click",function(){ document.getElementById("reportWrap").classList.remove("on"); });
 document.getElementById("printReport").addEventListener("click",function(){ var old=document.title; if(document.getElementById("reportWrap").dataset.kind==="card"){ document.title="Speechcraft Feedback "+(document.getElementById("reportWrap").dataset.card||"")+" "+(S.meta.date||""); window.print(); setTimeout(function(){document.title=old;},500); return; }
+  if(document.getElementById("reportWrap").dataset.kind==="guide"){ document.title="Speechcraft Role Guides"; window.print(); setTimeout(function(){document.title=old;},500); return; }
   if(document.getElementById("reportWrap").dataset.kind==="agenda"){ document.title="Speechcraft Agenda "+(S.agenda.no?"No "+S.agenda.no+" ":"")+(S.meta.date||""); window.print(); setTimeout(function(){document.title=old;},500); return; } document.title="Speechcraft Report "+(S.meta.date||"")+(S.meta.week?" "+S.meta.week:""); window.print(); setTimeout(function(){document.title=old;},500); });
 ["reportWrap","connModal"].forEach(function(id){ document.getElementById(id).addEventListener("click",function(e){ if(e.target.id===id) e.target.classList.remove("on"); }); });
 document.addEventListener("keydown",function(e){ if(e.key==="Escape"){ document.getElementById("reportWrap").classList.remove("on"); document.getElementById("connModal").classList.remove("on"); closeStage(); } });
@@ -2668,6 +2682,8 @@ function onMsg(pid,m){
     if(!known && m.t!=="hello") sendTo(pid,{t:"hello",role:L.role,roles:myRoles(),name:myName(),state:S});
     refreshPeers();
   } else { known.last=now(); known.host=!!m.host; if(Array.isArray(m.roles)) known.roles=m.roles.slice(0,12).map(String); }
+  if(m.t==="pingrt"){ sendTo(pid,{t:"pongrt",ts:m.ts}); return; }
+  if(m.t==="pongrt"){ CC.rtt[pid]=Math.max(0,now()-(+m.ts||now())); renderCC(); return; }
   if(m.t==="ping") return;
   if(m.state&&typeof m.state==="object"){
     var remote; try{ remote=normalize(clone(m.state)); }catch(e){ return; }
@@ -3109,7 +3125,7 @@ function finChecks(r){
   else if(r==="saa"){ var sl=chkLeft("saa","after",SAA_CHECKS.after); if(sl.length) w.push("After the meeting not ticked: "+sl.join("; ")+"."); }
   else if(r==="timer"){
     var run=runningList(); if(run.length) w.push(run.length+" timer"+(run.length>1?"s are":" is")+" still running.");
-    var all=0, noname=0; SESSIONS.forEach(function(s){ S.rows[s.id].forEach(function(x){ all++; if(!String(x.name||"").trim()) noname++; }); });
+    var all=0, noname=0; SESSIONS.forEach(function(s){ S.rows[s.id].forEach(function(x){ if(rowState(x)==="idle") return; all++; if(!String(x.name||"").trim()) noname++; }); });
     if(!all) w.push("No times recorded."); if(noname) w.push(noname+" timed entr"+(noname>1?"ies have":"y has")+" no name.");
   } else if(r==="ttm"){
     var used=S.topics.filter(function(t){return t.used;});
@@ -3370,7 +3386,7 @@ var TIPS={
 function tipsHTML(){
   var r=L.role, t=TIPS[r]; if(!t||curView()!=="role"||inFocus()) return "";
   L.tipsSeen=L.tipsSeen||{}; if(L.tipsSeen[r]&&!L.tipsOpen) return "";
-  return '<section class="card tips"><div class="finhead"><b>💡 '+esc(roleObj(r).name)+' in 3 steps</b><button class="btn sm" data-tipsdone>Got it</button></div><ol>'+t.map(function(x){return '<li>'+esc(x)+'</li>';}).join("")+'</ol></section>';
+  return '<section class="card tips"><div class="finhead"><b>💡 '+esc(roleObj(r).name)+' in 3 steps</b><span class="row"><button class="btn sm" data-guide>📘 Full guide</button><button class="btn sm" data-tipsdone>Got it</button></span></div><ol>'+t.map(function(x){return '<li>'+esc(x)+'</li>';}).join("")+'</ol></section>';
 }
 document.getElementById("view").addEventListener("click",function(e){ if(e.target.closest("[data-tipsdone]")){ L.tipsSeen=L.tipsSeen||{}; L.tipsSeen[L.role]=1; L.tipsOpen=false; saveL(); renderAll(); } });
 document.getElementById("roles").addEventListener("click",function(e){ if(e.target.closest("[data-tips]")){ L.tipsOpen=true; saveL(); renderAll(); window.scrollTo(0,0); } });
@@ -3701,6 +3717,143 @@ setInterval(function(){
   var ch=selectPerson(sp,"timer"); if(ch) commit(); else softRender();
 },700);
 document.getElementById("roles").addEventListener("click",function(e){ if(e.target.closest("[data-unlink]")){ L.person=null; saveL(); renderAll(); } });
+/* ---------- printable role guides: one page per role ---------- */
+var ROLE_GUIDE={
+  coord:{what:"Runs the Speechcraft programme: sets up each meeting, the members and role players, and keeps the records.",
+    before:["Add the group’s members once (they’re remembered every week).","Fill in the role players, speakers and their evaluators.","Check the agenda times and print the agenda (📄 Print agenda).","Host the meeting and share the code or QR with everyone."],
+    during:["Watch the clashes list for people who can’t come, and reassign roles.","Mark attendance as people arrive.","Invite a co-organiser if someone else is helping you."],
+    after:["Lead the discussion and call for next week’s role players.","Tap 🏁 Finish meeting and wait for every role to confirm.","⤓ Save meeting record (keep every week’s file)."],
+    app:["Coordinator PIN protects the set-up; keep the recovery code safe.","👥 Co-organisers lets a teammate edit too.","📈 Speechcraft progress shows each member across the 10 weeks."]},
+  president:{what:"Opens and closes the meeting and makes members and guests feel welcome.",
+    before:["Check your agenda times at the top of your screen.","Prepare a short welcome and any announcements."],
+    during:["Call the meeting to order; National Anthem; welcome everyone.","Welcome each guest by name (they’re in the guest list).","Read the club mission and introduce the Toastmaster of the Day."],
+    after:["Thank the role players, congratulate the award winners, invite guests to comment.","Announce the next meeting and adjourn."],
+    app:["Tick the opening and closing checklists as you go.","Mark guests ✓ Welcomed."]},
+  saa:{what:"Prepares the room, greets people and keeps the meeting running smoothly.",
+    before:["Set up the room or online link, lectern, mic and projector.","Get the timing lights or cards ready for the Timer.","Put out name badges and the sign-in sheet."],
+    during:["Greet members and guests as they arrive and add guests to the list.","Ask everyone to be seated and silence phones.","Introduce the President to open the meeting."],
+    after:["Tidy the room and pack away club items."],
+    app:["Work through the Before / As people arrive / After checklists.","Guests you add appear on the President’s screen."]},
+  tmod:{what:"Hosts the meeting: introduces every part and every role player, and keeps it on time.",
+    before:["Read the agenda and speakers’ titles and objectives.","Prepare short introductions and links between sessions."],
+    during:["Tap ▶ Start the meeting when the President hands over, then Next ▶ for each part.","Watch the on-time / behind status; move a late item to the end or skip it.","Introduce the speakers with their titles and objectives."],
+    after:["Ask the Toastmaster for votes, then reveal the winners.","Hand back to the President."],
+    app:["🎯 Focus shows just Now / Next with a big Next ▶ button.","📺 Projector view shows Now / Next on the room screen."]},
+  ge:{what:"Evaluates the whole meeting and leads the evaluation team.",
+    before:["Check who evaluates whom and that your team is ready."],
+    during:["Take notes on everything that happens (and what should have).","Introduce each evaluator; call for the Timer, Ah-Counter and Grammarian reports.","Open and close voting."],
+    after:["Give your overall evaluation (about 3 minutes)."],
+    app:["The evaluations table shows each speaker’s evaluator and status.","📣 Call for reports gives the reporters’ results."]},
+  timer:{what:"Times every speaker and shows the green, amber and red signals.",
+    before:["Check the time limits for each session.","Plan speakers ahead with + Add to list (the agenda fills prepared speakers in)."],
+    during:["Press ▶ Start when a speaker begins and ■ Stop when they finish.","Show green, amber and red as the screen tells you; your phone vibrates at each signal.","⏸ Pause if the mic or Zoom fails."],
+    after:["Give your report: 📋 Copy report text, or read it from the screen."],
+    app:["🎯 Focus gives big Start buttons.","Keep the app open; the screen stays awake while timing."]},
+  ttm:{what:"Runs Table Topics: gives impromptu topics and calls the speakers.",
+    before:["Add your topics, one per line."],
+    during:["Explain the rules; pick or 🎲 randomise a topic; 📺 show it on screen.","Type who takes it and tap Call speaker (the Timer gets the name).","Each speaker is shared out to a Table Topic Evaluator; change it in the Used list if needed."],
+    after:["Hand back to the Toastmaster."],
+    app:["🎯 Focus shows the current topic and Call speaker."]},
+  rrm:{what:"Runs the Round Robin: a quick question everyone answers in turn.",
+    before:["Add your Round Robin questions."],
+    during:["Show the question with 📺; tap each person’s name to queue them on the Timer (20-second bell)."],
+    after:["Hand back to the Toastmaster."],
+    app:["Names come from the member list; add guests by name."]},
+  ah:{what:"Counts filler words and sounds (um, ah, so…) for each speaker.",
+    before:["Check the filler words list."],
+    during:["When the Timer starts someone, their name appears automatically.","Tap a word each time you hear it."],
+    after:["Give your report: 📋 Copy report text."],
+    app:["🎯 Focus gives big buttons with Undo.","With another role on the same device, you follow the same speaker in both."]},
+  gram:{what:"Introduces the Word of the Day and notes good language and slips.",
+    before:["Choose a Word of the Day and its meaning; enter it before the meeting."],
+    during:["Introduce the word at the start.","Tap +1 each time a speaker uses it; note great phrases and slips."],
+    after:["Give your report: 📋 Copy report text."],
+    app:["🎯 Focus gives a big +1 button and quick Good / Slip notes.","The Word of the Day shows on the projector and dashboard."]},
+  speaker:{what:"Gives a prepared speech from the Speechcraft programme.",
+    before:["Enter your speech title, objectives and time limits.","Set your feedback PIN so only you can read your evaluation."],
+    during:["When the Timer starts you, your screen shows your time and signal (⛶ full screen on the lectern)."],
+    after:["Unlock your feedback card with your PIN; read your evaluation and notes.","📚 My feedback history keeps every week."],
+    app:["Your evaluator sees your title and objectives."]},
+  seval:{what:"Evaluates a prepared speech: Commend, Recommend, Commend.",
+    before:["Find your speaker under ⭐ Your speakers; read their title and objectives."],
+    during:["Write your notes while they speak; it stays a private draft."],
+    after:["Give your evaluation, then tap Submit; only the speaker can read it."],
+    app:["Assign to me if you weren’t assigned.","With Ah-Counter too, both follow the same speaker."]},
+  tteval:{what:"Evaluates Table Topics speakers (often several each).",
+    before:["Wait for the Table Topics Master to call speakers; they’re shared out to you."],
+    during:["Your speakers show under ⭐ Your Table Topics speakers with progress.","Write Commend · Recommend · Commend for each."],
+    after:["Submit each one; only the speaker can read it."],
+    app:["Assign to me / Unassign me to take or give back a speaker."]},
+  member:{what:"Takes part, votes and gives encouragement.",
+    before:["Tap In person / Online / Can’t make it.","Set a feedback PIN to read feedback written for you."],
+    during:["Check in when you arrive; vote when voting opens.","Send private notes to speakers."],
+    after:["Open your feedback card; 💬 Report a problem or idea if anything didn’t work."],
+    app:["Table Topics speakers see their time on their own phone when timed."]}
+};
+function guidePageHTML(id){
+  var r=roleObj(id), g=ROLE_GUIDE[id]; if(!r||!g) return "";
+  var li=function(a){ return '<ul>'+a.map(function(x){return '<li>'+esc(x)+'</li>';}).join("")+'</ul>'; };
+  return '<div class="gpage"><div class="rlogos"><img src="'+document.querySelector(".logo img").src+'" alt="Toastmasters International"><img src="'+document.querySelector(".logo.co img").src+'" alt="Dijital Team"></div>'+
+    '<h2>'+r.icon+' '+esc(r.name)+'</h2><div class="sub">'+esc(GROUP)+' · Speechcraft role guide</div><p class="gwhat">'+esc(g.what)+'</p>'+
+    '<div class="ggrid"><div><h4>Before the meeting</h4>'+li(g.before)+'</div><div><h4>During</h4>'+li(g.during)+'</div><div><h4>After</h4>'+li(g.after)+'</div><div><h4>In the app</h4>'+li(g.app)+'</div></div>'+
+    '<div class="gfoot">Open the app: '+esc(SITE_URL)+' · choose '+r.icon+' '+esc(r.name)+'</div></div>';
+}
+function openGuides(ids){
+  ids=ids&&ids.length?ids:ROLES.map(function(r){return r.id;});
+  document.getElementById("report").innerHTML=ids.map(guidePageHTML).join("");
+  document.getElementById("repPick").innerHTML='<b style="font-size:14px">Role guide'+(ids.length>1?'s ('+ids.length+')':'')+'</b> <span class="saved">'+(ids.length===1?'<button class="linkbtn" id="guidesAll">Show all roles</button>':'')+'</span>';
+  var w=document.getElementById("reportWrap"); w.dataset.kind="guide"; w.classList.add("on");
+}
+document.getElementById("repPick").addEventListener("click",function(e){ if(e.target.closest("#guidesAll")) openGuides(); });
+document.getElementById("guidesBtn").addEventListener("click",function(){ openGuides(); });
+document.getElementById("view").addEventListener("click",function(e){ if(e.target.closest("[data-guide]")) openGuides([L.role]); });
+/* ---------- connection check: is this device ready for the meeting? ---------- */
+var CC={rtt:{},sent:0,storage:null};
+function relayStatus(){ try{ var m=Trystero.getRelaySockets(), k=Object.keys(m); return {open:k.filter(function(x){return m[x]&&m[x].readyState===1;}).length,total:k.length}; }catch(e){ return {open:0,total:0}; } }
+function ccRows(){
+  var rows=[], ok=function(b){return b?"ok":"no";};
+  var online=navigator.onLine!==false; rows.push([ok(online),"Internet",online?"Online":"Offline — connecting to the meeting won’t work until it’s back"]);
+  if(NET.mode){
+    var rs=relayStatus(); rows.push([rs.open?"ok":"no","Connection relays",rs.open+" of "+rs.total+" reachable"+(rs.open?"":" — this network may block them; try mobile data")]);
+    var pp=(NET.peers||[]).filter(function(p){return !p.me;});
+    rows.push([pp.length?"ok":"warn","Meeting "+fmtCode(NET.code),pp.length?pp.length+" other device"+(pp.length===1?"":"s")+" connected":"No other devices yet — check the code, or that the host’s page is open"]);
+    Object.keys(NET.info).forEach(function(pid){ var p=NET.info[pid], rt=CC.rtt[pid]; if(now()-p.last>20000) return;
+      rows.push([rt==null?"warn":rt<1500?"ok":"warn","↔ "+(p.name||roleName(p.role)),rt==null?"Measuring…":rt+" ms round trip"+(rt>=1500?" (slow — updates may lag)":"")]); });
+  } else rows.push(["warn","Meeting","Not connected to a meeting — join or host one, then run this check again"]);
+  rows.push([ok(cryptoOK()),"Private feedback (encryption)",cryptoOK()?"Supported":"Not available here — open the app from the website link"]);
+  rows.push(["wakeLock" in navigator?"ok":"warn","Keep screen awake","wakeLock" in navigator?"Supported (on while timing)":"Not supported — set the screen timeout longer on the Timer’s phone"]);
+  rows.push([navigator.vibrate?"ok":"info","Vibration at signals",navigator.vibrate?"Supported":"Not on this device (iPhones don’t allow it)"]);
+  var st=lsSet("speechcraftProbe"+NS,"1"); try{ localStorage.removeItem("speechcraftProbe"+NS); }catch(e){}
+  rows.push([ok(st),"Saving on this device",st?(CC.storage?CC.storage:"Working"):"Blocked — private browsing? Data won’t survive closing the page"]);
+  rows.push([isStandalone()?"ok":"info","Installed app",isStandalone()?"Opened as the installed app":"In the browser — ⋯ More → Install for a home-screen icon"]);
+  rows.push(["info","Device",deviceInfo()+" · v"+APP_VERSION]);
+  return rows;
+}
+function ccHTML(){
+  var rows=ccRows(), bad=rows.filter(function(r){return r[0]==="no";}).length, warn=rows.filter(function(r){return r[0]==="warn";}).length;
+  var ic={ok:"✅",no:"❌",warn:"⚠️",info:"ℹ️"};
+  return '<div class="finhead"><h2 class="sec" style="margin:0">🔌 Connection check</h2><button class="btn ghost" id="ccClose">Close</button></div>'+
+    '<div class="ccverdict '+(bad?"no":warn?"warn":"ok")+'">'+(bad?"❌ Not ready — fix the items marked ❌":warn?"⚠️ Mostly ready — see the ⚠️ items":"✅ Ready for the meeting")+'</div>'+
+    '<table class="sumtable cct"><tbody>'+rows.map(function(r){ return '<tr><td>'+ic[r[0]]+'</td><td><b>'+esc(r[1])+'</b></td><td>'+esc(r[2])+'</td></tr>'; }).join("")+'</tbody></table>'+
+    '<div class="row" style="margin-top:10px"><button class="btn primary" id="ccRun">↻ Check again</button><button class="btn" id="ccCopy">📋 Copy results</button></div>'+
+    '<div class="saved" style="margin-top:6px">Run this on every phone during the dry run. Copy the results into 💬 Report a problem if something is ❌.</div>';
+}
+function ccMeasure(){
+  CC.rtt={}; if(NET.room) sendAll({t:"pingrt",ts:now()});
+  try{ if(navigator.storage&&navigator.storage.estimate) navigator.storage.estimate().then(function(e){ if(e&&e.quota) CC.storage="Working · "+Math.round((e.usage||0)/1024)+" KB used of "+Math.round(e.quota/1048576)+" MB"; renderCC(); }); }catch(e){}
+}
+function renderCC(){ var m=document.getElementById("ccModal"); if(m&&m.classList.contains("on")) document.getElementById("ccBox").innerHTML=ccHTML(); }
+function openCC(){ document.getElementById("ccModal").classList.add("on"); ccMeasure(); renderCC(); setTimeout(renderCC,1500); setTimeout(renderCC,4000); }
+(function(){
+  var M=document.getElementById("ccModal");
+  M.addEventListener("click",function(e){
+    var t=e.target;
+    if(t.id==="ccModal"||t.closest("#ccClose")){ M.classList.remove("on"); return; }
+    if(t.closest("#ccRun")){ ccMeasure(); renderCC(); setTimeout(renderCC,1500); setTimeout(renderCC,4000); return; }
+    if(t.closest("#ccCopy")){ copyText("Connection check — "+new Date().toLocaleString("en-AU")+"\n"+ccRows().map(function(r){return ({ok:"OK",no:"FAIL",warn:"WARN",info:"INFO"}[r[0]])+" · "+r[1]+": "+r[2];}).join("\n")); }
+  });
+  document.getElementById("ccBtn").addEventListener("click",openCC);
+})();
 /* ---------- projector / screen-share view ---------- */
 function projHTML(){
   var t=now(), run=runningList(), ss=scheduleStatus(), tm=document.querySelector(".logo img").src, co=document.querySelector(".logo.co img").src, main="", cls="";
@@ -3753,7 +3906,7 @@ applyDisplay();
   document.addEventListener("keydown",function(e){ if(e.key==="Escape") setOpen(false); });
 })();
 /* ---------- home, about and clean-up ---------- */
-var APP_VERSION="3.0 · November 2026";
+var APP_VERSION="3.1 · November 2026";
 function aboutHTML(){
   var on=!!NET.mode, coord=L.role==="coord";
   return '<div class="finhead"><h2 class="sec" style="margin:0">ℹ️ About</h2><button class="btn ghost" id="aboutClose">Close</button></div>'+
@@ -3765,7 +3918,7 @@ function aboutHTML(){
    '<li>Devices talk to each other directly over an encrypted connection; the meeting code is the key.</li>'+
    '<li>Speaker feedback is encrypted so only that speaker can read it.</li>'+
    '<li>Works on phones and laptops. Use <b>📱 Open on phone</b> to move your role across.</li>'+'<li>Install it: <b>⋯ More → 📲 Install as an app</b> (Android, Chrome, Edge), or in Safari tap Share → <b>Add to Home Screen</b>.</li></ul>'+
-  '<div class="saved" style="margin-bottom:4px">Found a problem or have an idea? <b>⋯ More → 💬 Report a problem or idea</b>.</div><div class="saved">Source and help: <a href="https://github.com/NPFernando/toastmasters-speechcraft" target="_blank" rel="noopener">github.com/NPFernando/toastmasters-speechcraft</a></div>'+
+  '<div class="saved" style="margin-bottom:4px">Found a problem or have an idea? <b>⋯ More → 💬 Report a problem or idea</b>. Before a first meeting, run the <a href="https://github.com/NPFernando/toastmasters-speechcraft/blob/main/docs/DRY-RUN.md" target="_blank" rel="noopener">15-minute dry run</a>.</div><div class="saved">Source and help: <a href="https://github.com/NPFernando/toastmasters-speechcraft" target="_blank" rel="noopener">github.com/NPFernando/toastmasters-speechcraft</a></div>'+
   '<h3 style="margin:16px 0 0">🧹 Clean up</h3><div class="saved">Use these after a practice run or test.</div><div class="abtgrid">'+
    '<div class="abtrow"><div><b>Clear this meeting</b><div class="saved">Removes speakers, times, topics, counts, votes and this week\'s role players'+(on?' on all connected devices':'')+'. Keeps the member list, PIN and settings.</div></div><button class="btn" id="cleanMeeting">Clear meeting</button></div>'+
    '<div class="abtrow danger"><div><b>Reset this device</b><div class="saved">Deletes everything this browser has saved: meeting, member list, Coordinator PIN, your role, drafts, feedback keys, feedback history and progress records'+(on?'. Leaves the meeting first; the other devices keep their data':'')+'. Save a backup first if you might need it.</div></div><button class="btn" id="cleanDevice" style="color:var(--r)">Reset device</button></div>'+

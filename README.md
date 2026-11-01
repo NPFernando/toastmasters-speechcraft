@@ -1,6 +1,6 @@
 # Speechcraft Meeting Roles
 
-A single HTML page for running Speechcraft meetings at **Dijital Team Colombo**. It covers four meeting roles:
+A single HTML page for running Speechcraft meetings at **Dijital Team Colombo**. It covers every meeting role, connected across phones and laptops with a meeting code:
 
 | Role | What it does |
 |---|---|
@@ -30,6 +30,8 @@ One **Meeting report** combines every role and can be saved as a PDF.
 - **📲 Install as an app** (⋯ More on Android / Chrome / Edge; on iPhone: Share → Add to Home Screen): home-screen icon, opens full screen, and loads even with weak or no signal. Connecting devices still needs internet.
 - **📈 Speechcraft progress** (Coordinator): add each week's saved meeting record to see, for every member, the meetings attended, roles taken per week, prepared speeches with time and result, Table Topics, awards and the roles they haven't tried yet. **Print progress** for the graduation file. Kept on the Coordinator's device only.
 - **📚 My feedback history** (Speaker / Member feedback card): every meeting where you spoke or got feedback is kept on your device — times, filler count, Word of the Day, phrases, awards, and your evaluations and notes. Evaluations stay encrypted in the history and are readable only after unlocking with your feedback PIN.
+- **📘 Role guides** (⋯ More, or 📘 Full guide on a role's tips): one printable page per role — what it does before, during and after the meeting, and which buttons to use.
+- **🔌 Connection check** (⋯ More): whether this device reaches the connection relays and the other devices (with round-trip time), and supports encryption, keeping the screen awake, vibration and saving. **Copy results** to include in a problem report.
 - **💬 Report a problem or idea** (⋯ More): see [Issues and ideas](#issues-and-ideas).
 - **Accessibility:** every screen passes an automated WCAG 2.1 AA check (axe-core) in light and dark mode: labelled form fields, contrast, a visible keyboard focus ring, and reduced motion when the device asks for it.
 - **Look:** Toastmasters brand colours (Loyal Blue, True Maroon, Happy Yellow). **⋯ More → Display** sets Auto / Light / Dark and **Bigger text** for this device.
@@ -69,6 +71,8 @@ Edits sync field by field: each agenda detail, role player, agenda item and memb
 ### Coordinator PIN
 
 The Coordinator area is locked with a 4–8 digit PIN. When it is first set, a one-time **recovery code** is shown: keep it with the coordinator handover notes. To hand over, share the PIN or unlock and use **Change PIN**. This is a lock against casual changes; because everything runs in the browser without a server, it isn't strong security.
+
+> **Before the first real meeting:** run the [15-minute dry run](docs/DRY-RUN.md) with real phones. **To change the app:** see [CONTRIBUTING.md](CONTRIBUTING.md); every push runs the automated tests.
 
 ## Use it
 

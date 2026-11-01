@@ -1,0 +1,11 @@
+{
+  "name": "speechcraft-tests",
+  "private": true,
+  "description": "Multi-device browser tests for Speechcraft Meeting Roles",
+  "scripts": { "test": "node run.js" },
+  "devDependencies": {
+    "axe-core": "4.10.2",
+    "playwright": "1.53.0",
+    "ws": "8.18.0"
+  }
+}

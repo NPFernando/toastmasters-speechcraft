@@ -1,0 +1,30 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Build check and multi-device tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: index.html is built from src/
+        run: python3 src/build.py --check
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install test tools
+        working-directory: tests
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Run tests (several simulated devices through a local relay)
+        working-directory: tests
+        run: npm test
