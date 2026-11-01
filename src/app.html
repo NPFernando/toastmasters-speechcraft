@@ -2977,7 +2977,7 @@ var NET={room:null,act:null,mode:null,code:"",status:"off",msg:"",info:{},peers:
   push:function(){ if(!NET.room) return; clearTimeout(NET.pushT); NET.pushT=setTimeout(function(){ sendAll({t:"state",state:S}); },120); },
   hello:function(){ if(!NET.room) return; sendAll({t:"who",role:L.role,roles:myRoles(),name:myName(),v:APP_VERSION}); refreshPeers(); }
 };
-function flags(m){ m.host=NET.mode==="host"; m.synced=NET.synced||NET.mode==="host"; return m; }
+function flags(m){ m.host=NET.mode==="host"; m.synced=NET.synced||NET.mode==="host"; if(PRACTICE) m.pr=1; return m; }
 function sendAll(m){ try{ if(NET.act) NET.act.send(flags(m)); }catch(e){} }
 function sendTo(pid,m){ try{ if(NET.act) NET.act.send(flags(m),{target:pid}); }catch(e){} }
 function makeCode(){ var A="ABCDEFGHJKMNPQRSTUVWXYZ23456789", s="", r=new Uint8Array(6); (window.crypto||window.msCrypto).getRandomValues(r); for(var i=0;i<6;i++) s+=A[r[i]%A.length]; return s; }
@@ -3041,8 +3041,17 @@ function stopNet(keep){
   NET.info={}; NET.peers=[];
   if(!keep){ NET.mode=null; NET.code=""; L.conn=null; saveL(); setStatus("off"); renderAll(); }
 }
+var prSwitching=false;
 function onMsg(pid,m){
   if(!pid||!m||typeof m!=="object") return;
+  /* never mix the practice meeting with real data: a real device that joins a practice code moves into practice mode; a practice device ignores a real meeting */
+  if(!!m.pr!==PRACTICE){
+    /* only a joining device reacts, and only to the host; the host just ignores the wrong kind of device */
+    if(NET.mode==="host"||!m.host) return;
+    if(m.pr&&!PRACTICE){ if(!prSwitching&&NET.code){ prSwitching=true; var code=NET.code; try{ stopNet(true); }catch(e){} showToastMsg("That’s a practice meeting — opening it in practice mode"); setTimeout(function(){ location.href=practiceUrl(true)+"#join="+fmtCode(code); },600); } }
+    else if(!m.pr&&PRACTICE){ if(!prSwitching){ prSwitching=true; try{ stopNet(true); }catch(e){} alert("That code is a real meeting, not the practice meeting.\n\nTap “Leave practice” first, then join with the code."); prSwitching=false; } }
+    return;
+  }
   var known=NET.info[pid];
   if(m.t==="bye"){ delete NET.info[pid]; refreshPeers(); return; }
   if(m.t==="hello"||m.t==="who"||m.t==="ping"||!known){
@@ -4411,7 +4420,7 @@ applyDisplay();
   document.addEventListener("keydown",function(e){ if(e.key==="Escape") setOpen(false); });
 })();
 /* ---------- home, about and clean-up ---------- */
-var APP_VERSION="3.9.1 · November 2026";
+var APP_VERSION="3.9.2 · November 2026";
 function aboutHTML(){
   var on=!!NET.mode, coord=L.role==="coord";
   return '<div class="finhead"><h2 class="sec" style="margin:0">ℹ️ About</h2><button class="btn ghost" id="aboutClose">Close</button></div>'+
