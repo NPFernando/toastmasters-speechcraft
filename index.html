@@ -555,6 +555,29 @@ table.prog{width:100%;border-collapse:collapse;font-size:13px} table.prog th,tab
 .idea{border:1px solid var(--line);border-left:4px solid var(--hy);border-radius:10px;padding:10px 12px;margin-top:8px} .idea.github{border-left-color:var(--brand)} .idea.done{border-left-color:var(--g);opacity:.7}
 .idea-h{display:flex;justify-content:space-between;gap:10px;align-items:flex-start} .idea-t{margin-top:4px;white-space:pre-wrap}
 #ideasCard > summary{cursor:pointer;list-style:none} #ideasCard > summary::-webkit-details-marker{display:none} #ideasCard > summary::after{content:"▸";float:right;color:var(--muted)} #ideasCard[open] > summary::after{content:"▾"}
+
+/* start screen v2 */
+.steps .stp{border:0;background:transparent;font:inherit;color:inherit;padding:0;cursor:pointer} .steps .stp.on{font-weight:800;color:var(--ink)} .steps span.stp{cursor:default}
+.wlbl{font-size:12px;color:var(--muted);margin:2px 0 6px}
+.wlinks{display:flex;flex-wrap:wrap;gap:6px 16px;justify-content:center;margin-top:14px;padding-top:12px;border-top:1px dashed var(--line);font-size:14px} .wlinks a.linkbtn{text-decoration:underline}
+#fbModal{z-index:90} a.mi{text-decoration:none;color:var(--ink)}
+.wnames{margin-bottom:8px} .wnames .chip{font-size:15px;padding:7px 12px}
+.wback{border-color:var(--hy);background:color-mix(in srgb,var(--hy) 16%,var(--card))} .wbh{font-size:17px;margin-bottom:2px}
+#wGrid .rolegrid{grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px}
+#wGrid .rolecard{position:relative;display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;min-height:64px}
+#wGrid .rolecard .ic{font-size:22px;line-height:1.2} #wGrid .rolecard b{font-size:14.5px;display:block;margin:0}
+#wGrid .rolecard .rdesc{display:block;font-size:12px;color:var(--muted);margin-top:2px;line-height:1.3}
+#wGrid .rolecard .tick{position:absolute;top:6px;right:8px;width:20px;height:20px;border-radius:50%;background:var(--brand);color:var(--brand-ink);font-size:12px;display:none;align-items:center;justify-content:center;font-weight:900}
+#wGrid .rolecard.active{border-color:var(--brand);background:color-mix(in srgb,var(--brand) 8%,var(--card))} #wGrid .rolecard.active .tick{display:flex}
+#wGrid .rolecard .today,#wGrid .rolecard .taken{display:block;font-size:11.5px;margin-top:2px} #wGrid .rolecard .taken{color:var(--muted)} #wGrid .rolecard .taken::before{content:"👤 "}
+.wfoot.sticky{position:sticky;bottom:-22px;background:var(--card);margin:12px -20px -22px;padding:12px 20px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--line);border-radius:0 0 20px 20px;z-index:2}
+@media (max-width:520px){
+  #wGrid .rolegrid{grid-template-columns:1fr 1fr} #wGrid .rolecard{flex-direction:column;gap:2px;padding:9px 10px;display:flex} #wGrid .rolecard .rdesc{display:none} #wGrid .rolecard .ic{font-size:20px}
+  .wfoot.sticky{bottom:-16px;margin:12px -12px -16px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));border-radius:0 0 16px 16px} .wfoot.sticky .big1{flex:1}
+}
+.wfoot.sticky .big1{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+@media (max-width:520px){ .wfoot.sticky .big1{font-size:15px;padding:12px 14px} }
+@media (min-width:900px){ #welcome .wbox{max-width:860px} #wGrid .rolegrid{grid-template-columns:repeat(3,1fr)} }
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#004165">
@@ -584,6 +607,7 @@ table.prog{width:100%;border-collapse:collapse;font-size:13px} table.prog th,tab
           <button class="mi" id="installBtn" hidden>📲 Install as an app<small>Home-screen icon; opens even with weak signal</small></button>
           <button class="mi" id="practiceBtn">🎓 Practice meeting<small>Try every role with sample data; the real meeting isn’t touched</small></button>
           <button class="mi" id="projBtn">📺 Projector view<small>Full screen for the room screen or Zoom share</small></button>
+          <a class="mi" href="https://github.com/NPFernando/toastmasters-speechcraft" target="_blank" rel="noopener">🐙 Open on GitHub<small>Source code, issues and ideas</small></a>
           <button class="mi" id="fbBtn">💬 Report a problem or idea<small>Goes to the organisers; no account needed</small></button>
           <button class="mi" id="aboutBtn">ℹ️ About &amp; clean up<small>Help, version, reset this device</small></button>
           <span class="mset" id="mset"><b>Display <small>this device</small></b>
@@ -1027,6 +1051,7 @@ function renderAll(){
   renderAgendaLine(); renderMemberList(); renderVoteBar(); renderFin(); maybeShowWinners(false); flushPending(); checkNewFeedback(); renderCompanion();
   if(document.getElementById("voteModal").classList.contains("on")) renderVoteModal();
   renderConnBtn();
+  if(document.getElementById("welcome").classList.contains("on")&&W.step==="role"){ var ae=document.activeElement; if(ae&&ae.id==="wName") wRefreshWho(); else renderWelcome(); }
 }
 function renderLiveOnly(){ renderFin(); renderNow(); renderCompanion(); renderAgendaLine(); renderVoteBar(); maybeShowWinners(false); renderConnBtn(); renderRoles(); if(document.getElementById("voteModal").classList.contains("on")) renderVoteModal(); }
 function renderMeta(){
@@ -2581,7 +2606,7 @@ function relayCount(){ try{ var m=Trystero.getRelaySockets(); return Object.keys
 function startMeeting(code,asHost){
   stopNet(true);
   if(typeof Trystero==="undefined"){ setStatus("err","The connection library didn't load."); return; }
-  NET.mode=asHost?"host":"join"; NET.code=code; NET.info={}; NET.peers=[]; NET.synced=!!asHost; NET.decided=!!asHost;
+  NET.mode=asHost?"host":"join"; NET.code=code; NET.info={}; NET.peers=[]; L.lastCode=code; L.lastHost=!!asHost; NET.synced=!!asHost; NET.decided=!!asHost;
   L.conn={mode:NET.mode,code:code}; saveL();
   var cfg={appId:APP_ID,password:"dtc-speechcraft|"+code};
   try{ var q=new URLSearchParams(location.search).get("relay"); if(q) cfg.relayConfig={urls:[q],redundancy:1}; }catch(e){}
@@ -2719,19 +2744,23 @@ document.getElementById("qrBox").addEventListener("click",function(e){
   else if(t.closest("#qrClose")) document.getElementById("qrModal").classList.remove("on");
 });
 document.getElementById("qrModal").addEventListener("click",function(e){ if(e.target.id==="qrModal") e.target.classList.remove("on"); });
-function openWelcome(step){ W.name=null; W.step=step||"role"; W.role=L.setup?L.role:null; document.getElementById("welcome").classList.add("on"); renderWelcome(); }
+function openWelcome(step){ W.name=null; W.step=step||"connect"; W.fresh=!L.setup; W.sel=[]; document.getElementById("welcome").classList.add("on"); renderWelcome(); }
 function closeWelcome(){ L.view="role"; L.setup=true; saveL(); document.getElementById("welcome").classList.remove("on"); renderAll(); window.scrollTo(0,0); }
 function refreshWelcome(){
   if(document.getElementById("welcome").classList.contains("on") && W.step==="connect"){
     renderWelcome();
-    if(W.auto && NET.status==="on" && NET.peers.length>1){ W.auto=false; setTimeout(closeWelcome,900); }
+    if(W.auto && NET.status==="on" && (NET.peers.length>1||NET.mode==="host")){ W.auto=false; setTimeout(closeWelcome,900); }
+    else if(W.advance && NET.status==="on" && NET.peers.length>1){ W.advance=false; setTimeout(function(){ if(W.step==="connect"){ W.step="role"; renderWelcome(); } },700); }
   }
   if(document.getElementById("qrModal").classList.contains("on")) renderPhoneQR();
 }
 var ROLE_GROUPS=[["Running the meeting",["coord","president","tmod","ge","saa"]],["Timing & reports",["timer","ttm","rrm","ah","gram"]],["Speakers & evaluators",["speaker","seval","tteval"]],["Audience",["member"]]];
+function wName(){ return W.name!=null?W.name:(L.me||myName()||""); }
 function roleCardHTML(r,today){
-  var other=S.people[r.id] && r.id!==L.role ? S.people[r.id] : "";
-  return '<button class="rolecard'+(W.role===r.id?' active':'')+(today.indexOf(r.id)>=0?' mine':'')+'" data-wrole="'+r.id+'"><span class="ic">'+r.icon+'</span><div><b>'+r.name+'</b><span>'+ROLE_DESC[r.id]+'</span><span class="today">⭐ Your role today</span>'+(other&&NET.mode?'<span class="taken">Taken by '+esc(other)+'</span>':'')+'</div></button>';
+  var on=(W.sel||[]).indexOf(r.id)>=0, holder=S.people[r.id]||assigned(r.id)||"", nm=wName();
+  var other=holder&&!MULTI_ROLES[r.id]&&nkey(holder)!==nkey(nm)?holder:"";
+  return '<button class="rolecard'+(on?' active':'')+(today.indexOf(r.id)>=0?' mine':'')+'" data-wrole="'+r.id+'" aria-pressed="'+on+'"><span class="ic">'+r.icon+'</span><div><b>'+r.name+'</b><span class="rdesc">'+ROLE_DESC[r.id]+'</span>'+
+    (today.indexOf(r.id)>=0?'<span class="today">⭐ Yours today</span>':other?'<span class="taken">'+esc(other)+'</span>':'')+'</div><span class="tick" aria-hidden="true">✓</span></button>';
 }
 function roleGridHTML(today){
   var h='';
@@ -2742,65 +2771,85 @@ function roleGridHTML(today){
   });
   return h;
 }
-function wTodayText(t){ return t.length?'⭐ On today\'s agenda: '+t.map(function(r){return roleObj(r).name;}).join(", ")+'. Pick one; you can add the others later.':'Choose your role'; }
+function wTodayText(t){ return t.length?'⭐ The agenda has you as '+t.map(function(r){return roleObj(r).name;}).join(", ")+'.'+(t.some(function(r){return (W.sel||[]).indexOf(r)<0;})?' <button class="linkbtn" id="wSelToday">Select '+(t.length>1?'them':'it')+'</button>':''):'Choose one or more roles.'; }
+function wStartLabel(){
+  var s=W.sel||[]; if(!s.length) return W.add?"Choose a role to add":"Choose your role";
+  var o=roleObj(s[0]); return (W.add?"Add ":"Start: ")+o.icon+" "+o.name+(s.length>1?" +"+(s.length-1):"")+" →";
+}
+function wNamesHTML(){
+  var ms=memberNames(), nm=wName();
+  var h='<div class="wlbl">Your name</div>';
+  if(ms.length) h+='<div class="chips wnames">'+ms.map(function(n){ return '<button class="chip'+(nkey(n)===nkey(nm)?' active':'')+'" data-wname="'+esc(n)+'">'+esc(n)+'</button>'; }).join("")+'</div>';
+  h+='<input class="t" id="wName" list="roster" autocomplete="off" placeholder="'+(ms.length?'Not on the list? Type your name':'Type your name')+'" value="'+esc(ms.some(function(n){return nkey(n)===nkey(nm);})?"":nm)+'">';
+  return h;
+}
+function connStatusHTML(){
+  var on=NET.status==="on", n=Math.max(onlinePeople().length,1), h='<div class="wcard" style="text-align:center"><div class="saved">'+(NET.mode==="host"?"Your meeting code — share it with the other roles":"Meeting code")+'</div><div class="code">'+fmtCode(NET.code)+'</div>';
+  h+= on ? '<div class="ok">✓ '+(NET.mode==="host"?"Meeting open":"Connected")+' · '+n+' '+(n===1?'person':'people')+' online</div>' : '<div class="'+(NET.status==="err"?"connerr":"saved")+'">'+esc(NET.msg||"Connecting…")+'</div>';
+  if(NET.peers.length>1) h+='<ul class="devlist" style="text-align:left">'+onlinePeople().map(function(p){ return '<li>'+peopleRoleNames(p)+(p.name?' — '+esc(p.name):'')+devTag(p)+(p.host?' <span class="saved">(host)</span>':'')+'</li>'; }).join("")+'</ul>';
+  if(NET.mode==="host"){ var link=inviteLink(NET.code); h+='<div class="qrwrap">'+qrSvg(link)+'<div class="saved">Others scan this with their phone camera to join</div></div><div class="row" style="justify-content:center;margin-top:6px"><button class="btn" id="wCopyCode">Copy code</button><button class="btn" id="wCopyLink">Copy invite link</button></div>'; }
+  return h+'</div>';
+}
+function welcomeBackHTML(){
+  if(!L.setup) return "";
+  var nm=L.me||myName(), rs=myRoles().map(roleObj).filter(Boolean); if(!nm&&!rs.length) return "";
+  var last=L.lastCode&&!NET.mode?L.lastCode:"";
+  return '<div class="wcard wback"><div class="wbh">👋 Welcome back'+(nm?', <b>'+esc(nm)+'</b>':'')+'</div><div class="saved">'+rs.map(function(r){return r.icon+' '+r.name;}).join(" + ")+'</div>'+
+    '<div class="row" style="margin-top:10px">'+(NET.mode?'<button class="btn primary big1" id="wDone">Continue →</button>':(last?'<button class="btn primary big1" id="wRejoin">↻ Rejoin '+fmtCode(last)+'</button>':'')+'<button class="btn'+(last?'':' primary')+'" id="wSolo2">Continue'+(last?' offline':'')+'</button>')+'<button class="linkbtn" id="wChange">Change name or role</button></div></div>';
+}
 function renderWelcome(){
-  var tm=document.querySelector(".logo img").src, co=document.querySelector(".logo.co img").src;
+  var tm=document.querySelector(".logo img").src, co=document.querySelector(".logo.co img").src, who=W.step==="role";
   var h='<div class="wlogos"><img src="'+tm+'" alt="Toastmasters International"><img class="co" src="'+co+'" alt="Dijital Team"></div>'+
-        '<h2>Speechcraft Meeting Roles</h2><p class="lead">Dijital Team Colombo'+(S.meta.week?' · '+esc(S.meta.week):'')+'</p>'+
-        '<div class="steps"><span class="'+(W.step==="role"?"on":"")+'">① Your role</span><span>›</span><span class="'+(W.step==="connect"?"on":"")+'">② Join the meeting</span></div>';
-  if(W.step==="role"){
-    var nmv=W.name!=null?W.name:(W.role?(MULTI_ROLES[W.role]?((L.myNames||{})[W.role]||L.me||""):(S.people[W.role]||L.me||"")):(L.me||""));
-    var today=agendaRolesFor(nmv);
-    h+='<label class="f" style="margin-bottom:10px">Your name<input class="t" id="wName" list="roster" autocomplete="off" placeholder="Type your name" value="'+esc(nmv)+'"></label>';
-    h+='<div class="saved" id="wToday" style="margin-bottom:6px">'+wTodayText(today)+'</div>';
-    h+='<div id="wGrid">'+roleGridHTML(today)+'</div>';
-    h+='<div class="wfoot"><span class="saved">'+(W.role?'':'Choose your role to continue')+(PRACTICE?'':' · <button class="linkbtn" id="wPractice">🎓 Try a practice meeting first</button>')+'</span><button class="btn primary big1" id="wNext"'+(W.role?'':' disabled')+'>Next →</button></div>';
-  } else {
-    var r=ROLES.find(function(x){return x.id===L.role;});
-    h+='<div class="wcard" style="display:flex;justify-content:space-between;align-items:center;gap:10px"><div>'+r.icon+' <b>'+r.name+'</b>'+(myName()?' · '+esc(myName()):'')+'</div><button class="linkbtn" id="wBack">Change</button></div>';
-    if(!NET.mode){
-      h+='<div class="wcard"><b class="t">Join a meeting</b><div class="saved" style="margin:4px 0 10px">Type the meeting code from the host.</div>'+
-         '<div class="row"><input class="t" id="wCode" placeholder="e.g. K7Q-M4P" maxlength="9" autocomplete="off" value="'+esc(W.code?fmtCode(W.code):"")+'" style="text-transform:uppercase;letter-spacing:3px;font-weight:800;font-size:20px"><button class="btn primary big1" id="wJoin">Join</button></div></div>'+
-         '<div class="wcard"><b class="t">Start a new meeting</b><div class="saved" style="margin:4px 0 10px">Usually the Timer. You get a code to share with the other roles.</div><button class="btn big1" id="wHost">Host meeting &amp; get code</button></div>'+
-         '<div class="wfoot"><button class="linkbtn" id="wSolo">Continue without connecting</button><span class="saved">🔒 Encrypted direct connection · needs internet</span></div>';
+        '<h2>Speechcraft Meeting Roles</h2><p class="lead">Dijital Team Colombo'+(S.meta.week?' · '+esc(S.meta.week):'')+'</p>';
+  if(!W.add) h+='<div class="steps"><button class="stp'+(who?'':' on')+'" id="wToJoin">① Join the meeting</button><span>›</span><span class="stp'+(who?' on':'')+'">② Who are you?</span></div>';
+  if(!who){
+    if(!W.fresh) h+=welcomeBackHTML();
+    if(NET.mode){
+      h+=connStatusHTML();
+      h+='<div class="wfoot sticky"><button class="linkbtn" id="wLeave">'+(NET.mode==="host"?"Cancel this meeting":"Use a different code")+'</button><button class="btn primary big1" id="wNextWho"'+(NET.status==="on"||NET.mode==="host"?'':' disabled')+'>Next →</button></div>';
     } else {
-      var on=NET.status==="on", n=Math.max(onlinePeople().length,1);
-      h+='<div class="wcard" style="text-align:center"><div class="saved">'+(NET.mode==="host"?"Your meeting code — share it with the other roles":"Meeting code")+'</div><div class="code">'+fmtCode(NET.code)+'</div>';
-      h+= on ? '<div class="ok">✓ '+(NET.mode==="host"?"Meeting open":"Connected")+' · '+n+' '+(n===1?'person':'people')+' online</div>' : '<div class="'+(NET.status==="err"?"connerr":"saved")+'">'+esc(NET.msg||"Connecting…")+'</div>';
-      if(NET.peers.length>1) h+='<ul class="devlist" style="text-align:left">'+onlinePeople().map(function(p){ return '<li>'+peopleRoleNames(p)+(p.name?' — '+esc(p.name):'')+devTag(p)+(p.host?' <span class="saved">(host)</span>':'')+'</li>'; }).join("")+'</ul>';
-      if(NET.mode==="host"){
-        var link=inviteLink(NET.code);
-        h+='<div class="qrwrap">'+qrSvg(link)+'<div class="saved">Others scan this with their phone camera to join</div></div>';
-        h+='<div class="row" style="justify-content:center;margin-top:6px"><button class="btn" id="wCopyCode">Copy code</button><button class="btn" id="wCopyLink">Copy invite link</button></div>';
-      }
-      h+='</div><div class="wfoot"><button class="linkbtn" id="wLeave">'+(NET.mode==="host"?"Cancel this meeting":"Use a different code")+'</button><button class="btn primary big1" id="wDone"'+(on||NET.mode==="host"?'':' disabled')+'>Continue →</button></div>';
+      h+='<div class="wcard"><b class="t">Join a meeting</b><div class="saved" style="margin:4px 0 10px">Scan the host’s QR code with your phone camera, or type the code.</div>'+
+         '<div class="row"><input class="t" id="wCode" placeholder="e.g. K7Q-M4P" maxlength="9" autocomplete="off" aria-label="Meeting code" value="'+esc(W.code?fmtCode(W.code):"")+'" style="text-transform:uppercase;letter-spacing:3px;font-weight:800;font-size:20px"><button class="btn primary big1" id="wJoin">Join</button></div></div>'+
+         '<div class="wcard"><b class="t">Start a new meeting</b><div class="saved" style="margin:4px 0 10px">Usually the Timer or Coordinator. You get a code and QR for the others.</div><button class="btn big1" id="wHost">Host meeting &amp; get code</button></div>'+
+         '<div class="wfoot"><span class="row"><button class="linkbtn" id="wSolo">Continue without connecting</button>'+(PRACTICE?'':'<button class="linkbtn" id="wPractice">🎓 Practice meeting</button>')+'</span><span class="saved">🔒 Encrypted direct connection · needs internet</span></div>';
     }
+  } else {
+    var today=agendaRolesFor(wName().trim());
+    if(W.add) h+='<div class="wcard" style="margin-bottom:8px"><b>＋ Add a role</b><div class="saved">Pick the extra role you’re doing today. Your other roles stay open.</div></div>';
+    else h+=wNamesHTML();
+    h+='<div class="saved" id="wToday" style="margin:10px 0 2px">'+wTodayText(today)+'</div><div id="wGrid">'+roleGridHTML(today)+'</div>';
+    h+='<div class="wfoot sticky">'+(W.add?'<button class="linkbtn" id="wCancel">Cancel</button>':'<button class="linkbtn" id="wToJoin2">‹ Meeting</button>')+'<button class="btn primary big1" id="wNext"'+((W.sel||[]).length?'':' disabled')+'>'+wStartLabel()+'</button></div>';
   }
+  if(!who) h+='<div class="wlinks"><button class="linkbtn" id="wReport">💬 Report a problem or idea</button><a class="linkbtn" href="'+REPO_URL+'" target="_blank" rel="noopener">Open on GitHub ↗</a><a class="linkbtn" href="'+REPO_URL+'/issues" target="_blank" rel="noopener">Known issues &amp; ideas ↗</a></div>';
   document.getElementById("wbox").innerHTML=h;
 }
+function wRefreshWho(){ var t=agendaRolesFor(wName().trim()), g=document.getElementById("wGrid"); if(g) g.innerHTML=roleGridHTML(t); var tt=document.getElementById("wToday"); if(tt) tt.innerHTML=wTodayText(t); var nb=document.getElementById("wNext"); if(nb){ nb.textContent=wStartLabel(); nb.disabled=!(W.sel||[]).length; } document.querySelectorAll("[data-wname]").forEach(function(c){ c.classList.toggle("active",nkey(c.dataset.wname)===nkey(wName())); }); }
+function wFinish(){
+  var sel=(W.sel||[]).slice(); if(!sel.length) return;
+  var nmEl=document.getElementById("wName"), nm=W.name!=null?String(W.name).trim():(nmEl?nmEl.value.trim():"");
+  if(W.add){ myRoles(); sel.forEach(function(r){ if(L.roles.indexOf(r)<0) L.roles.push(r); }); L.role=sel[0]; W.add=false; }
+  else { L.roles=sel; L.role=sel[0]; }
+  if(nm){ var keep=L.role; sel.forEach(function(r){ L.role=r; if(nm!==myName()) setMyName(nm); }); L.role=keep; L.me=nm; }
+  saveL(); NET.hello(); closeWelcome();
+}
 var wbox=document.getElementById("wbox");
-wbox.addEventListener("input",function(e){
-  if(e.target.id!=="wName") return; W.name=e.target.value; var t=agendaRolesFor(W.name.trim());
-  var g=document.getElementById("wGrid"); if(g) g.innerHTML=roleGridHTML(t);
-  var tt=document.getElementById("wToday"); if(tt) tt.innerHTML=wTodayText(t);
-});
+wbox.addEventListener("input",function(e){ if(e.target.id!=="wName") return; W.name=e.target.value; wRefreshWho(); });
 wbox.addEventListener("click",function(e){
-  var t=e.target, rc=t.closest("[data-wrole]");
+  var t=e.target, b;
   if(t.closest("#wPractice")){ location.href=practiceUrl(true); return; }
-  if(rc){ var nf=document.getElementById("wName"); if(nf) W.name=nf.value; W.role=rc.dataset.wrole; renderWelcome(); var nb=document.getElementById("wNext"); if(nb) nb.focus({preventScroll:true}); return; }
-  if(t.closest("#wNext")){
-    var nm=(document.getElementById("wName").value||"").trim();
-    if(W.add){ myRoles(); if(L.roles.indexOf(W.role)<0) L.roles.push(W.role); W.add=false; } else L.roles=[W.role];
-    L.role=W.role; saveL();
-    if(nm!==myName()) setMyName(nm);
-    NET.hello();
-    if(NET.mode && NET.status==="on"){ closeWelcome(); return; }
-    W.step="connect"; renderWelcome(); var c=document.getElementById("wCode"); if(c&&!W.code) c.focus(); return;
-  }
-  if(t.closest("#wBack")){ W.step="role"; renderWelcome(); return; }
-  if(t.closest("#wJoin")){ var code=cleanCode(document.getElementById("wCode").value); if(code.length!==6){ alert("The meeting code has 6 letters/numbers, e.g. K7Q-M4P."); return; } W.code=code; startJoin(code); renderWelcome(); return; }
+  if(t.closest("#wReport")){ openFb(); return; }
+  if((b=t.closest("[data-wrole]"))){ var r=b.dataset.wrole; W.sel=W.sel||[]; var i=W.sel.indexOf(r); if(i>=0) W.sel.splice(i,1); else W.sel.push(r); wRefreshWho(); return; }
+  if((b=t.closest("[data-wname]"))){ W.name=b.dataset.wname; var ni=document.getElementById("wName"); if(ni) ni.value=""; var td=agendaRolesFor(W.name); if(td.length&&!W.add) W.sel=td.slice(); wRefreshWho(); return; }
+  if(t.closest("#wSelToday")){ W.sel=uniq((W.sel||[]).concat(agendaRolesFor(wName().trim()))); wRefreshWho(); return; }
+  if(t.closest("#wNext")){ wFinish(); return; }
+  if(t.closest("#wNextWho")||t.closest("#wChange")){ W.step="role"; renderWelcome(); return; }
+  if(t.closest("#wToJoin")||t.closest("#wToJoin2")){ if(W.add) return; W.step="connect"; renderWelcome(); return; }
+  if(t.closest("#wCancel")){ W.add=false; closeWelcome(); return; }
+  if(t.closest("#wJoin")){ var code=cleanCode(document.getElementById("wCode").value); if(code.length!==6){ alert("The meeting code has 6 letters/numbers, e.g. K7Q-M4P."); return; } W.code=code; W.advance=true; startJoin(code); renderWelcome(); return; }
   if(t.closest("#wHost")){ startHost(makeCode()); renderWelcome(); return; }
-  if(t.closest("#wSolo")){ closeWelcome(); return; }
+  if(t.closest("#wRejoin")){ var lc=L.lastCode; W.code=lc; if(L.lastHost) startHost(lc); else startJoin(lc); W.auto=true; renderWelcome(); return; }
+  if(t.closest("#wSolo2")){ closeWelcome(); return; }
+  if(t.closest("#wSolo")){ if(L.setup&&!W.fresh){ closeWelcome(); return; } W.step="role"; renderWelcome(); return; }
   if(t.closest("#wDone")){ closeWelcome(); return; }
   if(t.closest("#wLeave")){ stopNet(false); W.code=""; W.step="connect"; document.getElementById("welcome").classList.add("on"); renderWelcome(); return; }
   if(t.closest("#wCopyCode")){ try{ navigator.clipboard.writeText(fmtCode(NET.code)); t.textContent="Copied ✓"; }catch(err){} return; }
@@ -3655,9 +3704,9 @@ function aboutHTML(){
 }
 function openAbout(){ document.getElementById("aboutBox").innerHTML=aboutHTML(); document.getElementById("aboutModal").classList.add("on"); }
 function closeAbout(){ document.getElementById("aboutModal").classList.remove("on"); }
-document.getElementById("homeBtn").addEventListener("click",function(){ closeAbout(); openWelcome("role"); });
-document.getElementById("homeMi").addEventListener("click",function(){ closeAbout(); openWelcome("role"); });
-document.querySelector(".brand h1").addEventListener("click",function(){ openWelcome("role"); });
+document.getElementById("homeBtn").addEventListener("click",function(){ closeAbout(); openWelcome("connect"); });
+document.getElementById("homeMi").addEventListener("click",function(){ closeAbout(); openWelcome("connect"); });
+document.querySelector(".brand h1").addEventListener("click",function(){ openWelcome("connect"); });
 document.getElementById("aboutBtn").addEventListener("click",openAbout);
 document.getElementById("aboutModal").addEventListener("click",function(e){
   var t=e.target;
@@ -3689,9 +3738,9 @@ if(hashCode.length===6 && hashRole){
   if(!L.setup) L.roles=[hashRole]; L.role=hashRole; L.setup=true; saveL(); renderAll();
   W.code=hashCode; W.auto=true; startJoin(hashCode); openWelcome("connect");
 }
-else if(hashCode.length===6 && !(resumeCode===hashCode)){ W.code=hashCode; openWelcome(L.setup?"connect":"role"); W.code=hashCode; renderWelcome(); }
-else if(resumeCode){ if(L.conn.mode==="host") startHost(L.conn.code); else startJoin(L.conn.code); if(!L.setup) openWelcome("role"); }
-else if(!L.setup) openWelcome("role");
+else if(hashCode.length===6 && !(resumeCode===hashCode)){ W.code=hashCode; startJoin(hashCode); W.advance=true; openWelcome("connect"); }
+else if(resumeCode){ if(L.conn.mode==="host") startHost(L.conn.code); else startJoin(L.conn.code); if(!L.setup) openWelcome("connect"); }
+else if(!L.setup) openWelcome("connect");
 window.addEventListener("pagehide",sayBye);
 window.addEventListener("beforeunload",sayBye);
 })();
