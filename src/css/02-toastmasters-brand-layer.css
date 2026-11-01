@@ -1,0 +1,31 @@
+/* ---------- Toastmasters brand layer ---------- */
+body{font-family:"Source Sans 3","Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif}
+header.top{background:var(--bar);color:var(--bar-ink);border-radius:16px;padding:12px 16px;box-shadow:0 6px 20px rgba(0,65,101,.18)}
+header.top h1{color:var(--bar-ink);font-family:Montserrat,"Segoe UI",system-ui,sans-serif;font-weight:800;letter-spacing:.3px}
+header.top h1 small{color:rgba(255,255,255,.75)}
+header.top .logo{background:#fff;border-radius:12px;padding:4px 8px;height:auto}
+header.top .logo img{max-height:52px}
+header.top .btn.ghost,header.top .conn{background:rgba(255,255,255,.1);color:var(--bar-ink);border-color:rgba(255,255,255,.35)}
+header.top .btn.ghost:hover,header.top .conn:hover{background:rgba(255,255,255,.2);border-color:#fff}
+header.top .btn.primary{background:var(--hy);color:var(--hy-ink);border-color:var(--hy)}
+header.top #saved{color:rgba(255,255,255,.7)}
+h2.sec{color:var(--ink)} h2.sec::before{content:"";display:inline-block;width:4px;height:16px;border-radius:2px;background:var(--mar);margin-right:2px}
+.card{border-radius:14px;box-shadow:0 1px 3px rgba(0,30,50,.06)}
+.btn{border-radius:10px} .btn.primary:hover{filter:brightness(1.08)}
+.rtab.on{background:var(--mar);border-color:var(--mar);color:var(--mar-ink)}
+.tab.active{box-shadow:inset 0 3px 0 var(--mar)}
+.badge.on{background:var(--hy);color:var(--hy-ink)}
+.rolecard.active{border-color:var(--brand)}
+.rolecard .today{color:var(--mar)} .rolecard.mine{border-color:var(--hy);background:color-mix(in srgb,var(--hy) 14%,var(--card))}
+.rgh{color:var(--mar)}
+#welcome{background:linear-gradient(160deg,var(--bar),#0a2f45)}
+.mset{display:grid;gap:8px;border-top:1px solid var(--line);margin-top:4px;padding:10px 12px 6px}
+.mset b small{font-weight:400;color:var(--muted);font-size:12px;margin-left:4px}
+.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{flex:1;border:0;background:transparent;padding:7px 6px;font:inherit;font-size:13px;font-weight:700;color:var(--ink);cursor:pointer}
+.seg button+button{border-left:1px solid var(--line)} .seg button.on{background:var(--brand);color:var(--brand-ink)}
+.tgl{display:flex;align-items:center;gap:8px;font-weight:600;cursor:pointer} .tgl input{width:18px;height:18px}
+html.big body{zoom:1.16}
+#welcome .wbox{background:var(--card);border-radius:20px;padding:22px 20px;box-shadow:0 16px 48px rgba(0,0,0,.28);margin-top:8px;margin-bottom:24px}
+@media (max-width:520px){ #welcome{padding:10px 8px} #welcome .wbox{padding:16px 12px;border-radius:16px} }
+

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Speechcraft Portal</title>
+<style>
+%%CSS%%
+</style>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#004165">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Speechcraft">
+</head>
+<body>
+<div class="wrap" id="app">
+  <div id="practiceBar" role="status"></div>
+  <header class="top">
+    <div class="brand">
+      <div class="logo"><img src="%%LOGO_TM%%" alt="Toastmasters International"></div>
+      <h1>Speechcraft Portal<small>Dijital Team Colombo · every meeting role, connected by a meeting code</small></h1>
+      <div class="logo co"><img src="%%LOGO_CO%%" alt="Dijital Team"></div>
+    </div>
+    <div class="hbtns">
+      <span class="saved" id="saved"></span>
+      <button class="conn" id="connBtn" title="Connect devices"><i></i><span id="connTxt">Not connected</span></button>
+      <button class="btn ghost" id="homeBtn" title="Back to the start screen: choose your role and meeting">🏠 Home</button>
+      <span class="morewrap"><button class="btn ghost" id="moreBtn" aria-haspopup="true" aria-expanded="false" title="More options">⋯ More</button>
+        <span class="moremenu" id="moreMenu" role="group" aria-label="More options">
+          <button class="mi mobonly" id="homeMi">🏠 Home<small>Start screen: change your role or meeting</small></button>
+          <button class="mi" id="backupBtn">⤓ Save meeting record<small>Download this meeting as a file (backup)</small></button>
+          <button class="mi" id="restoreBtn">⤒ Import meeting record<small>Bring a saved record back onto this device</small></button>
+          <button class="mi" id="newMeeting">🆕 New meeting<small>Clear this meeting; keep members and settings</small></button>
+          <button class="mi" id="installBtn" hidden>📲 Install as an app<small>Home-screen icon; opens even with weak signal</small></button>
+          <button class="mi" id="ccBtn">🔌 Connection check<small>Is this device ready for the meeting?</small></button>
+          <button class="mi" id="guidesBtn">📘 Role guides<small>One printable page per role</small></button>
+          <button class="mi" id="practiceBtn">🎓 Practice meeting<small>Try every role with sample data; the real meeting isn’t touched</small></button>
+          <button class="mi" id="projBtn">📺 Projector view<small>Full screen for the room screen or Zoom share</small></button>
+          <a class="mi" href="https://github.com/NPFernando/toastmasters-speechcraft" target="_blank" rel="noopener">🐙 Open on GitHub<small>Source code, issues and ideas</small></a>
+          <button class="mi" id="fbBtn">💬 Report a problem or idea<small>Goes to the organisers; no account needed</small></button>
+          <button class="mi" id="aboutBtn">ℹ️ About &amp; clean up<small>Help, version, reset this device</small></button>
+          <span class="mset" id="mset"><b>Display <small>this device</small></b>
+            <span class="seg" role="group" aria-label="Theme"><button data-theme-set="auto">Auto</button><button data-theme-set="light">☀️ Light</button><button data-theme-set="dark">🌙 Dark</button></span>
+            <label class="tgl"><input type="checkbox" id="bigText"> <span>Bigger text</span></label></span>
+        </span></span>
+      <input type="file" id="restoreFile" accept=".json,application/json" style="display:none">
+      <button class="btn primary" id="openReport">Meeting report</button>
+    </div>
+  </header>
+  <nav class="bnav" id="bnav" aria-label="Sections"></nav>
+
+  <div class="card meta">
+    <div class="f">Group<span class="fixedval">Dijital Team Colombo</span></div>
+    <label class="f">Speechcraft week<select class="t" id="mWeek">
+      <option value="">Select week…</option>
+      <option>Week 1 of 10</option><option>Week 2 of 10</option><option>Week 3 of 10</option><option>Week 4 of 10</option><option>Week 5 of 10</option>
+      <option>Week 6 of 10</option><option>Week 7 of 10</option><option>Week 8 of 10</option><option>Week 9 of 10</option><option>Week 10 of 10</option>
+      <option>Graduation</option>
+    </select></label>
+    <label class="f">Date<input class="t" type="date" id="mDate"></label>
+    <label class="f"><span id="myNameLbl">Your name</span><input class="t" id="myName" placeholder="Your name" list="roster" autocomplete="off"></label>
+  </div>
+
+  <nav class="roles" id="roles"></nav>
+  <div id="agendaLine" class="agline"></div>
+  <div id="live"></div>
+  <div id="nowStrip"></div>
+  <div id="nudge" role="status" aria-live="polite"></div>
+  <div id="companion" class="companion"></div>
+  <main id="view"></main>
+
+  <details class="guide card">
+    <summary>How to use</summary>
+    <table>
+      <tr><td>More than one role</td><td>Covering for someone? Tap <b>＋ Role</b> to add another role on the same device, then switch with one tap. If the agenda already lists you in several roles, the page offers to add them. While you're in one role, small panels keep your other jobs at hand: the Ah-Counter buttons and the Grammarian's Word of the Day +1 for whoever is speaking, and the Timer's live bar.</td></tr>
+      <tr><td>Changes on the day</td><td>Members tap <b>In person / Online / Can't make it</b> (with a note like "leaving at 8") so the Coordinator sees clashes and reassigns roles. The Toastmaster can move an item to the end (e.g. a late keynote) or skip it on the run-sheet. <b>📋 Copy report text</b> (Timer, Ah-Counter, Grammarian, General Evaluator) gives a text summary to paste anywhere, and anyone taking over a role carries on with the same data.</td></tr>
+      <tr><td>Getting started</td><td><b>① Join the meeting:</b> scan the host’s QR code with your phone camera, or type the 6-character code (or host a new meeting, try the 🎓 practice meeting, or continue offline). <b>② Who are you?</b> Tap your name, and the roles the agenda gives you are ticked; you can tick several. Next time, <b>Welcome back</b> gets you in with one tap.</td></tr>
+      <tr><td>QR codes</td><td>After starting a meeting, a QR code appears: others scan it with their phone camera to open the page with the code filled in. <b>📱 Open on phone</b> (next to your role) shows a QR code that opens <i>your</i> role on your phone in the same meeting, with all the data.</td></tr>
+      <tr><td>Connect devices</td><td>One person (usually the Coordinator or Timer) taps <b>Host meeting &amp; get code</b> and shares the code or QR. Everyone else scans it or types the code. The connection is encrypted and goes directly between devices. <b>⋯ More → 🔌 Connection check</b> shows whether a device is ready.</td></tr>
+      <tr><td>Speechcraft Coordinator</td><td>Protected by a PIN (4–8 digits). Set once; a one-time <b>recovery code</b> is shown for when the PIN is forgotten. Hand the PIN to the next coordinator, or unlock and use <b>Change PIN</b>. Add members (remembered for every meeting), enter the meeting details, pick role players and edit the agenda. Names fill in on every device and the Timer's lists. <b>📄 Print agenda</b> makes the agenda sheet.</td></tr>
+      <tr><td>President</td><td>Your agenda times, the opening and closing checklists, announcements, and the guest list (tick <b>Welcomed</b>). The award winners appear for your closing remarks.</td></tr>
+      <tr><td>Sergeant at Arms</td><td>Before / as people arrive / after checklists, and add guests to the shared guest list as they arrive.</td></tr>
+      <tr><td>Toastmaster of the Day</td><td>Shows the agenda with <b>Now</b> and <b>Next</b>. Tap <b>Start the meeting</b>, then <b>Next ▶</b> as you go (or tap any item). It shows whether the meeting is on time or running behind, and everyone connected sees a small "Now:" line.</td></tr>
+      <tr><td>General Evaluator</td><td>Sees the Timer, Ah-Counter and Grammarian results live (<b>Call for reports</b>), which speakers have been evaluated, and writes notes on the meeting. Opens and closes voting.</td></tr>
+      <tr><td>Speaker</td><td>For prepared speakers (Table Topics speakers are picked on the day). Pick your name and add your <b>speech title</b>, objectives and time limits; you also see your assigned evaluator. The Timer, Toastmaster, evaluators and report show your title, and the Timer uses your limits. See your result, set your <b>feedback PIN</b> and open your private feedback card.</td></tr>
+      <tr><td>Speech / Table Topics Evaluator</td><td><b>⭐ Your speakers</b> come first, with a progress line. Prepared speakers are assigned by the Coordinator; Table Topics speakers are shared out as the Table Topics Master calls them (or tap <b>Assign to me</b>). Tap a speaker and write Commend · Recommend · Commend; it stays a private draft until you tap <b>Submit</b>, and only that speaker can read it.</td></tr>
+      <tr><td>Private feedback</td><td>Each speaker sets a <b>feedback PIN</b> once (Participant → My feedback card). Evaluations and audience notes are encrypted for that speaker before they leave the writer's phone; other devices only hold scrambled data, and the General Evaluator and report show only who evaluated whom. Forgot the PIN? The Coordinator can reset it, but older feedback can't be recovered.</td></tr>
+      <tr><td>Voting</td><td>When the General Evaluator opens voting, a <b>🗳 Vote</b> bar appears on every device. Pick Best Prepared Speaker, Table Topics Speaker, Evaluator and Role Player (one vote per device per award). Results stay hidden until the Toastmaster taps <b>🏆 Reveal winners</b>, then they pop up on every screen.</td></tr>
+      <tr><td>Round Robin Master</td><td>Add questions, tap <b>First question</b> / <b>Next question</b>, show it on screen, and tap each person as they answer: they're queued on the Timer's Round Robin list (20-second bell).</td></tr>
+      <tr><td>Participant</td><td>Check in when you arrive, vote, send an anonymous note to a speaker, and open <b>My feedback card</b>: your times, Ah count, grammar notes, evaluation, notes and awards on one printable page. <b>📚 My feedback history</b> keeps every week.</td></tr>
+      <tr><td>Timer: plan speakers</td><td>Type names and press <b>+ Add to list</b> (several at once with commas). Press <b>▶ Start next: Name</b> when they stand up. Rename, reorder ↑ ↓ or remove ✕ any time.</td></tr>
+      <tr><td>Timer: timing</td><td>Type a name (optional) and press <b>Start speaker</b>. Add or fix the name in the live bar while they speak. Press <b>Stop</b> when done. The live bar flashes <b>● SHOW GREEN / ▲ AMBER / ■ RED</b> (each signal has its own shape as well as its colour) at each signal. If someone is still running when you start another, the page asks first.</td></tr>
+      <tr><td>Timer: fix or add a time</td><td><b>✎ Add time manually</b> for anyone you forgot. Click a finished time to correct it (m:ss). Finished speakers can't be restarted; ✕ removes them (with Undo).</td></tr>
+      <tr><td>Status meaning</td><td><b class="st-u">Under time</b>: stopped before green. <b class="st-q">Qualified</b>: green to red inclusive. <b class="st-o">Overtime</b>: past red. Round Robin: <b class="st-q">Within time</b> up to the bell.</td></tr>
+      <tr><td>Table Topics Master</td><td>Paste topics (one per line) and press <b>Add topics</b>. During the session tap <b>🎲 Random topic</b> or <b>Pick</b> on any topic, then <b>📺 Show on screen</b> to display it large. Type who takes it and press <b>▶ Call speaker</b>: the topic moves to <b>Used</b> with their name, and when connected they appear in the Timer's Table Topics list as <b>Next up</b>.</td></tr>
+      <tr><td>Ah-Counter</td><td>Add speakers (or tap <b>+ Add</b> next to whoever is speaking now). Select a speaker and tap a word each time you hear it; <b>−</b> undoes one. Edit the word list under <b>Words to count</b>.</td></tr>
+      <tr><td>Grammarian</td><td>Enter the Word of the Day. Select a speaker, tap <b>+1 Word of the Day</b> each time they use it, and note great phrases and slips.</td></tr>
+      <tr><td>Report</td><td><b>Meeting report</b> builds one report. Tick which roles to include, then <b>Print / Save as PDF</b>.</td></tr>
+      <tr><td>Meeting record &amp; new meeting</td><td>Data is saved on this device. <b>⤓ Save meeting record</b> downloads a file you can <b>⤒ Import</b> anywhere. <b>New meeting</b> clears speakers, topics and counts (for connected devices too) but keeps names, time limits and word lists.</td></tr>
+    </table>
+  </details>
+</div>
+
+<div id="fbModal" class="modal" role="dialog" aria-modal="true" aria-label="Report a problem or idea"><div class="mbox" id="fbBox"></div></div>
+<div id="ccModal" class="modal" role="dialog" aria-modal="true" aria-label="Connection check"><div class="mbox" id="ccBox"></div></div>
+<div id="aboutModal" class="modal" role="dialog" aria-modal="true" aria-label="About"><div class="mbox" id="aboutBox"></div></div>
+<div id="welcome" role="dialog" aria-modal="true" aria-label="Get started"><div class="wbox" id="wbox"></div></div>
+<div id="voteBar" class="votebar"></div>
+<div id="finSheet"></div>
+<div id="voteModal" class="modal" role="dialog" aria-modal="true" aria-label="Vote"><div class="mbox" id="voteBox"></div></div>
+<div id="winModal" class="modal" role="dialog" aria-modal="true" aria-label="Winners"><div class="mbox" id="winBox"></div></div>
+<div id="toast" role="status"><span id="toastMsg"></span><button id="toastUndo">Undo</button></div>
+<datalist id="roster"></datalist>
+<datalist id="memberlist"></datalist>
+
+<div id="qrModal" class="modal" role="dialog" aria-modal="true" aria-label="Open on another device"><div class="mbox" id="qrBox" style="text-align:center"></div></div>
+<div id="connModal" class="modal" role="dialog" aria-modal="true" aria-label="Connect devices"><div class="mbox" id="connBox"></div></div>
+
+<div id="reportWrap" class="modal" role="dialog" aria-modal="true" aria-label="Meeting report">
+  <div class="reportShell">
+    <div class="reportBar">
+      <div id="repPick"></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn" id="closeReport">Close</button>
+        <button class="btn primary" id="printReport">Print / Save as PDF</button>
+      </div>
+    </div>
+    <div id="report"></div>
+  </div>
+</div>
+
+<div id="proj" role="dialog" aria-label="Projector view"></div>
+<div id="stage" role="dialog" aria-label="Table topic">
+  <img class="l" alt=""><img class="r" alt="">
+  <div class="lbl" id="stageLbl">Table Topic</div>
+  <div class="txt" id="stageTxt"></div>
+  <div class="spk" id="stageSpk"></div>
+  <div class="ctl"><button class="btn" id="stageRandom">🎲 Next random</button><button class="btn" id="stageClose">Close (Esc)</button></div>
+</div>
+
+<script>
+/* QR Code Generator for JavaScript 1.4.4 — MIT License, Copyright (c) 2009 Kazuhiko Arase. "QR Code" is a registered trademark of DENSO WAVE INCORPORATED. */
+%%QRCODE%%
+/* Trystero 0.26.0 (Nostr strategy) — MIT License, Copyright (c) Dan Motzenbecker, https://github.com/dmotz/trystero. Includes @noble/secp256k1 (MIT). */
+%%TRYSTERO%%
+</script>
+<script>
+%%JS%%
+</script>
+</body>
+</html>

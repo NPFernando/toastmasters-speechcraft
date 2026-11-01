@@ -3790,6 +3790,32 @@ document.getElementById("roles").addEventListener("click",function(e){ if(e.targ
 /* ---------- practice meeting: a sample meeting in its own storage on this device ---------- */
 var PRACTICE=(NS===".practice");
 function practiceUrl(on){ var u=new URL(location.href); if(on) u.searchParams.set("as","practice"); else u.searchParams.delete("as"); u.hash=""; return u.toString(); }
+var SAMPLE_NAMES=["Amal Perera","Bhagya Silva","Chathura Fernando","Dilini Jayasinghe","Eshan Rodrigo","Fathima Rizvi","Gihan de Mel","Hiruni Wickrama","Isuru Bandara","Janani Kumar"];
+/* one-time repair: older versions could copy the practice meeting's sample data into a device's real meeting
+   (typing a practice code into the normal app). Only acts when at least 8 of the 10 sample names are present together. */
+function cleanSampleLeak(){
+  if(PRACTICE) return;
+  var sk={}; SAMPLE_NAMES.forEach(function(n){ sk[nkey(n)]=1; });
+  var hits=S.members.list.filter(function(m){return sk[nkey(m.name)];});
+  if(hits.length<8) return;
+  S.members.list=S.members.list.filter(function(m){return !sk[nkey(m.name)];}); tick(S.members);
+  S.names=S.names.filter(function(n){return !sk[nkey(n)];});
+  var A=S.agenda, changed=false;
+  Object.keys(A.assign||{}).forEach(function(k){ var v=A.assign[k];
+    if(Array.isArray(v)){ var w=v.filter(function(n){return !sk[nkey(n)];}); if(w.length!==v.length){ A.assign[k]=w; changed=true; } }
+    else if(v&&sk[nkey(v)]){ delete A.assign[k]; changed=true; } });
+  if(A.title==="Practice Meeting"){ A.title=defaultAgenda().title; changed=true; } if(A.no==="P1"){ A.no=""; changed=true; } if(A.venue==="Training room"){ A.venue=""; changed=true; }
+  if(changed) tick(A);
+  ["speeches","assigns","attend","rsvp"].forEach(function(c){ (S[c]||[]).slice().forEach(function(x){ if(sk[nkey(x.name||x.speaker||"")]){ S.dead[x.id]=Math.max(now(),(x.u||0)+1); } }); S[c]=(S[c]||[]).filter(function(x){ return !sk[nkey(x.name||x.speaker||"")]; }); });
+  var ST=["What would you do with an extra hour every day?","Describe your perfect weekend","A skill you would like to learn and why","What is your favourite food?","Name a place you would like to visit"];
+  ["topics","rrq"].forEach(function(c){ S[c].slice().forEach(function(x){ if(ST.indexOf(x.text)>=0) S.dead[x.id]=Math.max(now(),(x.u||0)+1); }); S[c]=S[c].filter(function(x){return ST.indexOf(x.text)<0;}); });
+  if(S.gram.wotd==="Curious"&&S.gram.meaning==="Eager to know or learn something"){ S.gram.wotd=""; S.gram.meaning=""; tick(S.gram); }
+  Object.keys(S.people).forEach(function(k){ if(sk[nkey(S.people[k])]){ S.people[k]=""; S.peopleU[k]=now(); } });
+  if(L.me&&sk[nkey(L.me)]){ L.me=""; L.myNames={}; saveL(); }
+  /* the sample Coordinator PIN (1234): clear it so the real organiser sets their own */
+  if(S.pin&&S.pin.hash) sha("pin|"+S.pin.salt+"|1234").then(function(h){ if(h===S.pin.hash){ S.pin={hash:"",rhash:"",salt:"",u:now()}; L.coordOK=null; saveL(); commit(); renderAll(); } });
+  commit(); setTimeout(function(){ showToastMsg("Removed practice sample data from this device"); },800);
+}
 function seedPractice(){
   if(!PRACTICE || L.practiceSeeded || S.members.list.length) return;
   var names=["Amal Perera","Bhagya Silva","Chathura Fernando","Dilini Jayasinghe","Eshan Rodrigo","Fathima Rizvi","Gihan de Mel","Hiruni Wickrama","Isuru Bandara","Janani Kumar"];
@@ -4430,7 +4456,7 @@ applyDisplay();
   document.addEventListener("keydown",function(e){ if(e.key==="Escape") setOpen(false); });
 })();
 /* ---------- home, about and clean-up ---------- */
-var APP_VERSION="3.9.2 · November 2026";
+var APP_VERSION="3.9.3 · November 2026";
 function aboutHTML(){
   var on=!!NET.mode, coord=L.role==="coord";
   return '<div class="finhead"><h2 class="sec" style="margin:0">ℹ️ About</h2><button class="btn ghost" id="aboutClose">Close</button></div>'+
@@ -4472,7 +4498,7 @@ document.addEventListener("keydown",function(e){ if(e.key==="Escape"&&document.g
 if(!sessionOf(L.tab)) L.tab="tt";
 if(!ROLES.some(function(r){return r.id===L.role;})) L.role="timer";
 if(!Array.isArray(L.roles)||!L.roles.length) L.roles=[L.role]; L.roles=L.roles.filter(function(r){return ROLES.some(function(x){return x.id===r;});}); if(L.roles.indexOf(L.role)<0) L.roles.push(L.role);
-seedPractice(); shadowSync(); renderAll(); wake(); save();
+seedPractice(); shadowSync(); try{ cleanSampleLeak(); }catch(e){} renderAll(); wake(); save();
 var hashCode=""; try{ var hm=location.hash.match(/join=([A-Za-z0-9-]+)/); if(hm) hashCode=cleanCode(hm[1]); }catch(e){}
 var hashGuest=/[#&]guest=1/.test(location.hash);
 try{ var hc=location.hash.match(/co=([A-Za-z0-9-]+)/); if(hc){ L.pendingCo=cleanCode(hc[1]); saveL(); } }catch(e){}
