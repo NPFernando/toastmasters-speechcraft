@@ -61,6 +61,22 @@ module.exports = async (b) => {
   await T.eventually(async () => { const n = await M.evaluate(() => { const d = new Date(); return Math.ceil(d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60); }); const hm = String(Math.floor(n / 60) % 24).padStart(2, "0") + ":" + String(n % 60).padStart(2, "0"); return new RegExp(fmt(hm)).test(await M.innerText(".wcard")); }, "next item re-timed to now");
   await M.click("#runAdjReset");
   await T.eventually(async () => !/later|earlier/.test(await M.innerText(".runadj")), "back to printed times");
-  T.noErrors(C, M);
+  // back-up control: the President (and an unlocked organiser) can move the live agenda from the Now tab; nothing moves by itself
+  const P = await T.device(b, { phone: true });
+  await T.join(P, code, "SC Laurel Senanayake", ["president"]);
+  await P.click('[data-nav="now"]');
+  await T.eventually(async () => /Live agenda controls/.test(await P.innerText(".livectl")), "President sees live controls");
+  const nowBefore = await M.innerText(".curtopic");
+  await P.click('[data-lc="next"]');
+  await T.eventually(async () => (await M.innerText(".curtopic")) !== nowBefore, "President's Next moves the Toastmaster's Now");
+  await T.eventually(async () => /Last change by SC Laurel Senanayake/.test(await P.innerText(".livectl")), "shows who changed it");
+  await C.click('[data-nav="now"]');
+  await C.click('[data-lc="prev"]');
+  await T.eventually(async () => (await M.innerText(".curtopic")) === nowBefore, "organiser's Back works too");
+  const X = await T.device(b, { phone: true });
+  await T.join(X, code, "Guest One", ["member"]);
+  await X.click('[data-nav="now"]');
+  T.assert.strictEqual(await X.$(".livectl"), null, "participants don't get the controls");
+  T.noErrors(C, M, P, X);
 };
 function fmt(hm) { const [h, m] = hm.split(":").map(Number); return ((h + 11) % 12 + 1) + ":" + String(m).padStart(2, "0") + (h < 12 ? " am" : " pm"); }
