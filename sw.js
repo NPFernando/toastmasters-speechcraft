@@ -1,7 +1,7 @@
 /* Speechcraft Portal – offline helper.
    Pages: network first (so updates arrive), cached copy when offline.
    Other files from this site: cached copy first. Connections to other sites are left alone. */
-var CACHE = "speechcraft-v7";
+var CACHE = "speechcraft-v8";
 var CORE = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png"];
 self.addEventListener("install", function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(CORE); }).then(function () { return self.skipWaiting(); }));

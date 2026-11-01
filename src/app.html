@@ -290,7 +290,7 @@ details.fold{margin-top:14px;border:1px solid var(--line);border-radius:10px;pad
 #report .agtab td{vertical-align:top;word-wrap:break-word}
 #report .agtab td:first-child{white-space:nowrap}
 #report .agx2{border-left:3px solid #004165;background:#f4f6f9;font-size:12px}
-#report .agnext{margin-top:10px;font-weight:700} #report .aghd{display:block} #report .agsub{margin-top:5px} #report .agl{padding-left:10px} #report .agev{color:#555} #report .agmission{font-family:Georgia,"Times New Roman",serif}
+#report .aghd{display:block} #report .agsub{margin-top:5px} #report .agl{padding-left:10px} #report .agev{color:#555} #report .agmission{font-family:Georgia,"Times New Roman",serif}
 @media print{
   #report .agdoc{font-size:11.5px;line-height:1.32}
   #report .agdoc .aghead img{max-height:86px}
@@ -355,9 +355,6 @@ details.fold{margin-top:14px;border:1px solid var(--line);border-radius:10px;pad
 #finSheet.on{display:block} #finSheet.min{width:auto;border:0;padding:0;background:transparent;box-shadow:none;left:auto;right:14px;transform:none}
 #endCard td{text-align:left} .finhead{display:flex;justify-content:space-between;align-items:center;gap:8px} .finrow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line)} .finrow.done{opacity:.75} .finwarn{color:var(--a);font-size:13px;margin-top:2px}
 .badge.no{background:var(--r-bg);color:var(--r)} .badge.on{background:var(--a-bg);color:#8a6100}
-.pastebox{border:1px dashed var(--brand);border-radius:12px;padding:10px 12px;margin:10px 0}
-.pastebox summary{cursor:pointer}
-.pastebox textarea{margin-top:8px}
 .clash{background:var(--r-bg);border-radius:10px;padding:8px 12px;display:grid;gap:4px}
 .runlist li.skipped > span:nth-child(2){text-decoration:line-through;opacity:.6}
 .runact{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
@@ -752,7 +749,7 @@ div.timebox::before{font-size:.75em;vertical-align:1px}
 
 <div id="proj" role="dialog" aria-label="Projector view"></div>
 <div id="stage" role="dialog" aria-label="Table topic">
-  <img class="l" src="%%LOGO_TM%%" alt=""><img class="r" src="%%LOGO_CO%%" alt="">
+  <img class="l" alt=""><img class="r" alt="">
   <div class="lbl" id="stageLbl">Table Topic</div>
   <div class="txt" id="stageTxt"></div>
   <div class="spk" id="stageSpk"></div>
@@ -982,7 +979,6 @@ function rowState(row){ if(row.start!=null&&row.end==null&&row.manual==null) ret
 function limOf(sid,row){ return (row&&row.lim)||S.limits[sid]; }
 function signal(sid,sec,row){ if(sec==null) return ""; var L2=limOf(sid,row); if(sid==="rr") return sec<=L2.b?"sg":"sr"; if(sec>=L2.r) return "sr"; if(sec>=L2.a) return "sa"; if(sec>=L2.g) return "sg"; return ""; }
 /* each signal has its own shape as well as its colour (● green, ▲ amber, ■ red), so it reads without colour */
-var SIG_SHAPE={sg:"●",sa:"▲",sr:"■"};
 function signalName(c){ return c==="sg"?"● Green":c==="sa"?"▲ Amber":c==="sr"?"■ Red":"No signal yet"; }
 function status(sid,row,t){
   var st=rowState(row), sec=elapsed(row,t);
@@ -1679,7 +1675,6 @@ function guessKind(name){ var n=String(name||"").trim(); return /^tm[\s.-]/i.tes
 function memberRec(name){ var k=nkey(name); return S.members.list.find(function(m){ return nkey(m.name)===k; }); }
 function memberKind(name){ var m=memberRec(name); if(m) return m.kind||guessKind(m.name); if(/^tm[\s.-]/i.test(String(name||""))) return "tm"; return S.guests.some(function(g){return nkey(g.name)===nkey(name);})?"guest":"sc"; }
 function kindBadge(name,long){ var k=memberKind(name); if(k==="sc") return ""; var m=memberRec(name); return ' <span class="kbadge k-'+k+'" title="'+KINDS[k].n+(m&&m.club?' · '+esc(m.club):'')+'">'+(k==="tm"?"⭐ TM":"👋 Guest")+(long&&m&&m.club?' · '+esc(m.club):'')+'</span>'; }
-function speechcrafterNames(){ return S.members.list.filter(function(m){ return (m.kind||guessKind(m.name))==="sc"; }).map(function(m){return m.name;}); }
 function awardEligible(name){ return memberKind(name)!=="tm" || !!S.members.tmAwards; }
 function membersEditorHTML(){
   var groups={sc:[],tm:[],guest:[]};
@@ -2136,7 +2131,6 @@ function evalHTML(){
   return h+'</section>';
 }
 function evBox(f,label,hint,val){ return '<label class="f evbox"><b>'+label+'</b><textarea class="t" data-evf="'+f+'" rows="3" placeholder="'+esc(hint)+'">'+esc(val||"")+'</textarea></label>'; }
-function evRecord(){ var kind=evKind(), sel=(L.evSel||{})[kind], me=myName(); if(!sel) return null; return upsert(["evals"],evId(kind,sel,me),{kind:kind,speaker:sel,by:me||"Evaluator",c1:"",r:"",c2:"",rate:{}}); }
 
 /* ---------- General Evaluator ---------- */
 function reportsSummary(){
@@ -2724,6 +2718,8 @@ view.addEventListener("change",function(e){
 });
 document.getElementById("toastUndo").addEventListener("click",undoRemove);
 document.getElementById("stageClose").addEventListener("click",closeStage);
+/* the stage reuses the header logos (embedded once) */
+(function(){ var st=document.getElementById("stage"), hl=document.querySelectorAll("header .logo img, .logo img"); if(hl.length>=2){ st.querySelector("img.l").src=hl[0].src; st.querySelector("img.r").src=hl[1].src; } })();
 document.getElementById("stageRandom").addEventListener("click",function(){ if(L.role==="rrm") rrNextQ(); else randomTopic(); renderStage(); });
 document.addEventListener("fullscreenchange",function(){ if(!document.fullscreenElement) document.getElementById("stage").classList.remove("on"); });
 
@@ -4415,7 +4411,7 @@ applyDisplay();
   document.addEventListener("keydown",function(e){ if(e.key==="Escape") setOpen(false); });
 })();
 /* ---------- home, about and clean-up ---------- */
-var APP_VERSION="3.9 · November 2026";
+var APP_VERSION="3.9.1 · November 2026";
 function aboutHTML(){
   var on=!!NET.mode, coord=L.role==="coord";
   return '<div class="finhead"><h2 class="sec" style="margin:0">ℹ️ About</h2><button class="btn ghost" id="aboutClose">Close</button></div>'+

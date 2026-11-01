@@ -8,7 +8,7 @@ The app is one HTML file (`index.html`) so it can be downloaded, opened offline 
 |---|---|
 | `src/app.html` | The app source: HTML, CSS and JavaScript. Edit this. |
 | `src/build.py` | Builds `index.html` by inlining the logos and libraries. |
-| `src/assets/` | Toastmasters and Dijital Team logos (as data URIs). |
+| `src/assets/` | Toastmasters (WebP, quality 90) and Dijital Team (256-colour PNG) logos as data URIs, embedded once in the header; the Table Topics stage reuses them at runtime. Keep them small: the whole app loads in about 2 s on a slow 3G phone (≈220 KB gzipped). |
 | `src/vendor/` | Bundled libraries (Trystero for encrypted peer-to-peer sync, qrcode-generator) — see its README. |
 | `index.html` | The built app (published by GitHub Pages). |
 | `manifest.webmanifest`, `sw.js`, `icon-*.png` | Install-as-an-app files and offline helper. |
