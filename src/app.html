@@ -254,9 +254,11 @@ tr.queued:not(.nextup) .btn.go{background:transparent;color:var(--g);border-colo
 .agmv button:disabled{opacity:.3;cursor:default}
 .agdurw{display:flex;align-items:center;gap:4px;font-size:13px;color:var(--muted)}.agdurw .agdur{width:52px;padding-left:6px;padding-right:2px;text-align:right}.agend{padding-top:10px;font-style:italic}
 .agacts{display:flex;gap:2px}
+.cotabs{display:flex;gap:2px;flex-wrap:nowrap;overflow-x:auto;margin:12px 0 4px;border-bottom:1px solid var(--line)}.cotabs button{white-space:nowrap;border:0;background:transparent;color:var(--muted);font:inherit;font-weight:600;padding:8px 10px;border-bottom:3px solid transparent;cursor:pointer;margin-bottom:-1px}.cotabs button.on{color:var(--ink);border-bottom-color:var(--b,#004165)}
+details.fold{margin-top:14px;border:1px solid var(--line);border-radius:10px;padding:8px 12px}details.fold>summary{cursor:pointer;font-weight:600;padding:2px 0}details.fold[open]>summary{margin-bottom:8px}
 .agtools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px}.agst{display:flex;gap:6px;align-items:center;font-weight:600}.agst input{width:136px}
 .livectl{margin-top:10px;padding:10px;border:1px dashed var(--line);border-radius:12px}.lc-h{font-weight:700;margin-bottom:6px}.lc-over{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px;padding:8px 10px;border-radius:10px;background:rgba(245,166,35,.18);color:var(--ink)}
-.runadj{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:space-between;margin-top:8px;padding:8px 10px;border:1px dashed var(--line);border-radius:10px}
+.lcadj{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:space-between;margin-top:8px;padding:8px 10px;border:1px dashed var(--line);border-radius:10px}
 .agtext{min-height:38px}
 .agview{display:grid;grid-template-columns:80px 1fr;gap:2px 10px;border-bottom:1px solid var(--line);padding:6px 0}
 .agview .muted{grid-column:2}
@@ -310,6 +312,7 @@ tr.queued:not(.nextup) .btn.go{background:transparent;color:var(--g);border-colo
 #report .agdoc.agmeas .agtab th,#report .agdoc.agmeas .agtab td{padding:4px 6px}
 @media (max-width:640px){
   .rprow{grid-template-columns:1fr} .rpl{padding-top:0}
+  .cotabs button{padding:8px 6px;font-size:14px;flex:1 1 auto}
   .agrow{grid-template-columns:30px 128px 1fr auto} .agrow .agrole,.agrow .agtext,.agrow .agx{grid-column:1 / -1} .agrow .agacts{grid-column:4;grid-row:1}
   #report .aggrid{grid-template-columns:1fr}
 }
@@ -644,8 +647,8 @@ div.timebox::before{font-size:.75em;vertical-align:1px}
       <span class="morewrap"><button class="btn ghost" id="moreBtn" aria-haspopup="true" aria-expanded="false" title="More options">⋯ More</button>
         <span class="moremenu" id="moreMenu" role="group" aria-label="More options">
           <button class="mi mobonly" id="homeMi">🏠 Home<small>Start screen: change your role or meeting</small></button>
-          <button class="mi" id="backupBtn">⤓ Save backup<small>Download everything as a file</small></button>
-          <button class="mi" id="restoreBtn">⤒ Restore<small>Load a backup or meeting record</small></button>
+          <button class="mi" id="backupBtn">⤓ Save meeting record<small>Download this meeting as a file (backup)</small></button>
+          <button class="mi" id="restoreBtn">⤒ Import meeting record<small>Bring a saved record back onto this device</small></button>
           <button class="mi" id="newMeeting">🆕 New meeting<small>Clear this meeting; keep members and settings</small></button>
           <button class="mi" id="installBtn" hidden>📲 Install as an app<small>Home-screen icon; opens even with weak signal</small></button>
           <button class="mi" id="ccBtn">🔌 Connection check<small>Is this device ready for the meeting?</small></button>
@@ -712,7 +715,7 @@ div.timebox::before{font-size:.75em;vertical-align:1px}
       <tr><td>Ah-Counter</td><td>Add speakers (or tap <b>+ Add</b> next to whoever is speaking now). Select a speaker and tap a word each time you hear it; <b>−</b> undoes one. Edit the word list under <b>Words to count</b>.</td></tr>
       <tr><td>Grammarian</td><td>Enter the Word of the Day. Select a speaker, tap <b>+1 Word of the Day</b> each time they use it, and note great phrases and slips.</td></tr>
       <tr><td>Report</td><td><b>Meeting report</b> builds one report. Tick which roles to include, then <b>Print / Save as PDF</b>.</td></tr>
-      <tr><td>Backup &amp; new meeting</td><td>Data is saved on this device. <b>⤓ Save backup</b> downloads a file you can <b>⤒ Restore</b> anywhere. <b>New meeting</b> clears speakers, topics and counts (for connected devices too) but keeps names, time limits and word lists.</td></tr>
+      <tr><td>Meeting record &amp; new meeting</td><td>Data is saved on this device. <b>⤓ Save meeting record</b> downloads a file you can <b>⤒ Import</b> anywhere. <b>New meeting</b> clears speakers, topics and counts (for connected devices too) but keeps names, time limits and word lists.</td></tr>
     </table>
   </details>
 </div>
@@ -1109,7 +1112,7 @@ function renderAll(){
   document.body.classList.toggle("focus",inFocus());
   if(curView()!=="role") v.innerHTML=curView()==="now"?dashHTML():agendaViewHTML();
   else if(inFocus()) v.innerHTML=focusHTML();
-  else if(L.role==="coord"){ var cu=coordUnlocked(), won=cu&&S.wrap.on; v.innerHTML=(won?endMeetingHTML():"")+(cu?availabilityHTML():"")+coordHTML()+(cu?coorgHTML()+attendanceHTML()+feedbackPinsHTML()+progressHTML()+ideasHTML()+(won?"":endMeetingHTML()):""); }
+  else if(L.role==="coord"){ var cu=coordUnlocked(), won=cu&&S.wrap.on; var ct=coTab(); v.innerHTML=(won?endMeetingHTML():"")+coordHTML()+(cu?(ct==="setup"?availabilityHTML():ct==="people"?coorgHTML()+attendanceHTML()+feedbackPinsHTML():ct==="after"?(won?"":endMeetingHTML())+progressHTML()+ideasHTML():""):""); }
   else if(L.role==="tmod") v.innerHTML=(S.vote.state!=="closed"?'<section class="card" style="margin-bottom:12px">'+voteControlHTML(false,true)+'</section>':'')+tmodHTML();
   else if(L.role==="ge") v.innerHTML=geHTML();
   else if(L.role==="seval"||L.role==="tteval") v.innerHTML=evalHTML();
@@ -1123,7 +1126,7 @@ function renderAll(){
   else if(L.role==="ah") v.innerHTML=ahHTML();
   else v.innerHTML=gramHTML();
   var tp=tipsHTML(); if(tp) v.insertAdjacentHTML("afterbegin",tp);
-  if(curView()==="role" && !inFocus() && L.role!=="coord"){ var up=upcomingHTML(false); if(up) v.insertAdjacentHTML("afterbegin",up); }
+  if(curView()==="role" && !inFocus() && L.role!=="coord" && !(S.run&&S.run.cur)){ var up=upcomingHTML(false); if(up) v.insertAdjacentHTML("afterbegin",up); }
   if(L.role==="speaker"||L.role==="member"){ try{ histCapture(L.role==="speaker"?myName():(L.cardName||"")); }catch(e){} }
   if(document.getElementById("stage").classList.contains("on")) renderStage();
   renderAgendaLine(); renderMemberList(); renderVoteBar(); renderFin(); maybeShowWinners(false); flushPending(); checkNewFeedback(); renderCompanion();
@@ -1507,18 +1510,21 @@ function runBy(){ return L.me||roleName(L.role)||""; }
 /* who may move the live agenda: the Toastmaster, plus the President and an unlocked organiser as back-up */
 function canRun(){ var rs=(L.roles&&L.roles.length?L.roles:[L.role]); return rs.indexOf("tmod")>=0||rs.indexOf("president")>=0||(rs.indexOf("coord")>=0&&coordUnlocked()); }
 function overMin(){ var c=curItem(); if(!c.cur||!c.next) return 0; var m=hm2min(rt(c.next)); return m==null?0:Math.floor(minutesNow()-m); }
+/* the same timing controls on the Toastmaster's run-sheet and on the Now tab (Toastmaster, President, organiser) */
+function adjCtlHTML(){
+  var c=curItem(); if(!c.cur) return "";
+  var ov=overMin(), adj=runAdjTotal(), h='';
+  if(ov>=2&&ov<180) h+='<div class="lc-over">⏰ <b>'+esc(arole(c.cur.role).n)+'</b> is '+ov+' min past the next item’s time. It stays as Now until someone taps Next.<button class="btn sm" data-lc="now">Move the rest '+ov+' min later</button></div>';
+  if(c.next) h+='<div class="lcadj"><span class="saved">Rest of the agenda'+(adj?' · <b>'+(adj>0?adj+' min later':(-adj)+' min earlier')+'</b> than printed':'')+'</span><span class="row"><button class="btn sm" data-lc="plus">+5 min</button><button class="btn sm" data-lc="minus">−5 min</button><button class="btn sm" data-lc="now" title="Make the next item start now and move the rest with it">⟳ Next starts now</button>'+(Object.keys(S.run.adj||{}).length?'<button class="linkbtn" data-lc="reset">Printed times</button>':'')+'</span></div>';
+  if(S.run.by) h+='<div class="saved" style="margin-top:4px">Last change by '+esc(S.run.by)+'.</div>';
+  return h;
+}
 function liveCtlHTML(){
   if(!canRun()) return "";
-  var c=curItem(), h='<div class="livectl"><div class="lc-h">🎛 Live agenda controls <span class="saved">· the Now item only changes when someone taps here or on the Toastmaster’s run-sheet</span></div>';
+  var c=curItem(), h='<div class="livectl"><div class="lc-h">🎛 Live agenda controls <span class="saved">· the Now item only changes when someone taps Next</span></div>';
   if(!c.cur) return h+'<div class="row"><button class="btn go" data-lc="start">▶ Start the meeting</button></div></div>';
-  var ov=overMin(), adj=runAdjTotal();
-  if(ov>=2&&ov<180) h+='<div class="lc-over">⏰ <b>'+esc(arole(c.cur.role).n)+'</b> is '+ov+' min past the next item’s time. It stays as Now until someone moves on.<button class="btn sm" data-lc="now">Move the rest '+ov+' min later</button></div>';
-  h+='<div class="row"><button class="btn" data-lc="prev"'+(c.i>0?'':' disabled')+'>◀ Back</button><button class="btn go" data-lc="next"'+(c.next?'':' disabled')+'>Next ▶</button>'+
-     (c.next?'<button class="btn sm" data-lc="plus">+5 min</button><button class="btn sm" data-lc="minus">−5 min</button><button class="btn sm" data-lc="now" title="Make the next item start now and move the rest with it">⟳ Next starts now</button>':'')+
-     (c.next?'':'<button class="btn" data-lc="end">Finish</button>')+(Object.keys(S.run.adj||{}).length?'<button class="linkbtn" data-lc="reset">Printed times</button>':'')+'</div>';
-  if(adj) h+='<div class="saved">Rest of the agenda '+(adj>0?adj+' min later':(-adj)+' min earlier')+' than printed.</div>';
-  if(S.run.by) h+='<div class="saved">Last change by '+esc(S.run.by)+'.</div>';
-  return h+'</div>';
+  h+='<div class="row"><button class="btn" data-lc="prev"'+(c.i>0?'':' disabled')+'>◀ Back</button>'+(c.next?'<button class="btn go" data-lc="next">Next ▶</button>':'<button class="btn" data-lc="end">Finish</button>')+'</div>';
+  return h+adjCtlHTML()+'</div>';
 }
 (function(){
   document.getElementById("view").addEventListener("click",function(e){
@@ -1707,6 +1713,11 @@ function membersEditorHTML(){
 })();
 /* ---------- coordinator view ---------- */
 function memberNames(){ return S.members.list.map(function(m){return m.name;}); }
+/* Coordinator area split into sub-tabs */
+var CO_TABS=[["setup","⚙️","Set-up"],["agenda","📋","Agenda"],["people","👥","People"],["after","🏁","After"]];
+function coTab(){ return CO_TABS.some(function(t){return t[0]===L.coTab;})?L.coTab:"setup"; }
+function coTabsHTML(ct){ return '<div class="cotabs" role="tablist" aria-label="Coordinator sections">'+CO_TABS.map(function(t){ return '<button role="tab" aria-selected="'+(ct===t[0])+'" class="'+(ct===t[0]?'on':'')+'" data-cotab="'+t[0]+'"><span aria-hidden="true">'+t[1]+'</span> '+t[2]+'</button>'; }).join("")+'</div>'; }
+(function(){ document.getElementById("view").addEventListener("click",function(e){ var b=e.target.closest("[data-cotab]"); if(!b) return; L.coTab=b.dataset.cotab; saveL(); renderAll(); }); })();
 function coordHTML(){
   var h='<section class="card">';
   if(!S.pin.hash && (L.pendingCo || (NET.mode && !NET.synced))){
@@ -1735,15 +1746,19 @@ function coordHTML(){
   var A=S.agenda;
   h+='<div class="row" style="justify-content:space-between"><h2 class="sec" style="margin:0">🗂 Meeting set-up</h2><div class="row"><button class="btn" id="agPrint">📄 Print agenda</button>'+(isMainCoord()?'<button class="btn" id="pinChange">Change PIN</button>':'<span class="badge on" style="align-self:center">Co-organiser</span>')+'<button class="btn" id="coordLock">🔒 Lock</button></div></div>';
   if(!NET.room) h+='<div class="note" style="margin-bottom:8px">Tip: start a meeting (top of the page) and share its code or QR in your group chat before the meeting. Everyone who joins gets this agenda and their names automatically.</div>';
-  h+='<div class="meta" style="margin-top:10px">'+
+  var CT=coTab();
+  h+=coTabsHTML(CT);
+  if(CT==="setup"&&!memberNames().length) h+='<div class="note">Start by adding the group’s members on <button class="linkbtn" data-cotab="people">👥 People</button>. Role players are chosen from that list.</div>';
+  if(CT==="setup") h+='<div class="meta" style="margin-top:10px">'+
      '<label class="f">Program title<input class="t" data-ag="title" value="'+esc(A.title)+'"></label>'+
      '<label class="f">Meeting no<input class="t" data-ag="no" value="'+esc(A.no)+'" placeholder="e.g. 05"></label>'+
      '<label class="f">Venue<input class="t" data-ag="venue" value="'+esc(A.venue)+'" placeholder="e.g. Level 12 East Tower WTC"></label>'+
      '<label class="f">Next meeting date<input class="t" type="date" data-ag="next" value="'+esc(A.next)+'"></label></div>';
   /* members */
   var ms=memberNames();
-  h+='<h2 class="sec">👥 Members <span class="cnt">('+ms.length+') · remembered for every meeting · tap a name to set Speechcrafter / Toastmaster / Guest</span></h2>'+membersEditorHTML();
+  if(CT==="people") h+='<h2 class="sec">👥 Members <span class="cnt">('+ms.length+') · remembered for every meeting · tap a name to set Speechcrafter / Toastmaster / Guest</span></h2>'+membersEditorHTML();
   /* role players */
+  if(CT==="setup"){
   h+='<h2 class="sec">🎭 Role players</h2><div class="rp">';
   AROLES.forEach(function(a){
     if(a.multi){
@@ -1757,7 +1772,9 @@ function coordHTML(){
   h+='<div class="rprow"><span class="rpl">Keynote topic</span><div class="rpv row"><input class="t" data-ag="ktopic" value="'+esc(A.ktopic)+'" placeholder="e.g. Effective use of Humor"><input class="t" data-ag="korg" value="'+esc(A.korg)+'" placeholder="Club / organisation (optional)"></div></div></div>';
   h+=assignTableHTML();
   h+='<div class="note">Role players fill in automatically on every device: names for each role, the Timer\'s Prepared Speech, Evaluations and Role reports lists, and the report header.</div>';
+  }
   /* agenda items */
+  if(CT==="agenda"){
   var AGL=itemsSorted();
   h+='<h2 class="sec">📋 Agenda</h2>'+tplHTML()+
     '<div class="agtools"><label class="agst">Start at <input class="t" type="time" id="agStart" aria-label="Agenda start time" value="'+esc(AGL[0]?AGL[0].time:"")+'"></label>'+
@@ -1774,7 +1791,8 @@ function coordHTML(){
        '<select class="t agx" data-it="x" title="Add names automatically" aria-label="Add names automatically">'+XTRAS.map(function(x){ return '<option value="'+x.k+'"'+((it.x||"")===x.k?' selected':'')+'>'+x.n+'</option>'; }).join("")+'</select>'+
        '<span class="agacts"><button class="iconbtn" data-agins title="Insert an item below" aria-label="Insert an item below">＋</button><button class="iconbtn" data-itdel title="Remove item" aria-label="Remove item">✕</button></span></div>';
   });
-  h+='</div><div class="row" style="margin-top:8px"><button class="btn" id="itAdd">+ Add agenda item</button><button class="linkbtn" id="itReset">Reset to the standard agenda</button></div>';
+  h+='</div><div class="row" style="margin-top:8px"><button class="btn" id="itAdd">+ Add agenda item</button></div>';
+  }
   h+='</section>';
   return h;
 }
@@ -1853,7 +1871,7 @@ function scheduleStatus(){
   var overdue = c.next ? Math.round(minutesNow()-hm2min(rt(c.next))) : 0;
   var behind=Math.max(late, overdue>0?overdue:-999);
   var txt, cls;
-  if(Math.abs(late)>120 || overdue>180){ return {txt:"Times not checked (meeting isn't running at the agenda times)",cls:"muted",c:c}; }
+  if(Math.abs(late)>120 || overdue>180){ return {txt:"",cls:"muted",c:c}; }
   if(behind>=2){ txt="⏰ Running "+behind+" min behind"; cls="st-o"; }
   else if(late<=-2){ txt="Running "+(-late)+" min ahead"; cls="st-q"; }
   else { txt="✓ On time"; cls="st-q"; }
@@ -1875,8 +1893,7 @@ function tmodHTML(){
     h+='<div class="curtopic" style="margin-top:12px"><div class="lbl">Now'+(S.run.started[c.cur.id]?' · started '+new Date(S.run.started[c.cur.id]).toLocaleTimeString("en-AU",{hour:"numeric",minute:"2-digit"}):'')+'</div>'+itemCard(c.cur,true)+'</div>';
     h+='<div class="wcard"><div class="lbl saved">NEXT</div>'+itemCard(c.next,false)+'</div>';
     h+='<div class="row"><button class="btn" id="runPrev">◀ Back</button><button class="btn go big1" id="runNext"'+(c.next?'':' disabled')+'>Next ▶</button>'+(c.next?'':'<button class="btn" id="runEnd">Finish</button>')+'</div>';
-    var ovm=overMin(); if(ovm>=2&&ovm<180) h+='<div class="lc-over" style="margin-top:8px">⏰ This item is '+ovm+' min past the next item’s time. It stays as Now until you tap Next.<button class="btn sm" data-lc="now">Move the rest '+ovm+' min later</button></div>';
-    if(c.next){ var adj=runAdjTotal(); h+='<div class="runadj"><span class="saved">Rest of the agenda'+(adj?' · <b>'+(adj>0?adj+' min later':(-adj)+' min earlier')+'</b> than printed':'')+'</span><span class="row"><button class="btn sm" data-runadj="5">+5 min</button><button class="btn sm" data-runadj="-5">−5 min</button><button class="btn sm" id="runRetime" title="Make the next item start now and move the rest with it">⟳ Next starts now</button>'+(Object.keys(S.run.adj||{}).length?'<button class="linkbtn" id="runAdjReset">Printed times</button>':'')+'</span></div>'; }
+    h+=adjCtlHTML();
   }
   h+='<h2 class="sec">Full agenda</h2><ul class="tlist runlist">';
   c.its.forEach(function(it,i){
@@ -1895,7 +1912,7 @@ function renderAgendaLine(){
   var ss=scheduleStatus();
   if(!ss||L.role==="tmod"){ el.classList.remove("on"); el.innerHTML=""; return; }
   var who=whoFor(ss.c.cur.role);
-  el.innerHTML='📋 <b>Now:</b> '+arole(ss.c.cur.role).n+(who?' ('+esc(who)+')':'')+(ss.c.next?' · <span class="muted">Next '+fmtHM(rt(ss.c.next))+' '+arole(ss.c.next.role).n+'</span>':'')+' · <span class="'+ss.cls+'">'+ss.txt+'</span>';
+  el.innerHTML='📋 <b>Now:</b> '+arole(ss.c.cur.role).n+(who?' ('+esc(who)+')':'')+(ss.c.next?' · <span class="muted">Next '+fmtHM(rt(ss.c.next))+' '+arole(ss.c.next.role).n+'</span>':'')+(ss.txt?' · <span class="'+ss.cls+'">'+ss.txt+'</span>':'');
   el.classList.add("on");
 }
 setInterval(function(){
@@ -2627,9 +2644,6 @@ document.addEventListener("fullscreenchange",function(){ if(!document.fullscreen
       if(t.closest("#runNext")){ if(c.next) runGo(c.next.id); return; }
       if(t.closest("#runPrev")){ if(c.i>0) runGo(c.its[c.i-1].id); return; }
       if(t.closest("#runEnd")){ runFinish(); return; }
-      var ra=t.closest("[data-runadj]"); if(ra){ runAdjust(+ra.dataset.runadj); return; }
-      if(t.closest("#runRetime")){ runRetimeNow(); return; }
-      if(t.closest("#runAdjReset")){ runAdjReset(); return; }
       var li=t.closest("[data-run]"); if(li){ runGo(li.dataset.run); return; }
       return;
     }
@@ -2665,7 +2679,6 @@ document.addEventListener("fullscreenchange",function(){ if(!document.fullscreen
     if(t.closest("[data-agins]")){ var ni=agInsertAfter(t.closest("[data-iid]").dataset.iid); if(ni){ agChanged(); commit(); var ta=document.querySelector('[data-iid="'+ni.id+'"] .agtext'); if(ta) ta.focus(); } return; }
     var sh=t.closest("[data-agshift]"); if(sh){ agShiftAll(+sh.dataset.agshift); agChanged(); commit(); return; }
     if(t.closest("#itAdd")){ var its=itemsSorted(), last=its[its.length-1]; var tm=last?last.time:"17:30"; S.agenda.items.push({id:uid(),time:tm,role:"tmod",text:"",x:"",ord:maxOrd(S.agenda.items)+1}); agChanged(); commit(); return; }
-    if(t.closest("#itReset")){ if(confirm("Replace the agenda items with the standard Speechcraft agenda? Role players and meeting details are kept.")){ S.agenda.items=defaultItems(); agChanged(); commit(); } return; }
   });
   V.addEventListener("input",function(e){
     var t=e.target; if(L.role!=="coord"||!coordUnlocked()) return;
@@ -2693,11 +2706,20 @@ document.addEventListener("fullscreenchange",function(){ if(!document.fullscreen
 })();
 
 /* ---------- new meeting, backup, restore ---------- */
+function addDaysISO(iso,d){ var m=String(iso).match(/^(\d{4})-(\d{2})-(\d{2})/); if(!m) return ""; var x=new Date(+m[1],+m[2]-1,+m[3]+d); return x.getFullYear()+"-"+String(x.getMonth()+1).padStart(2,"0")+"-"+String(x.getDate()).padStart(2,"0"); }
+function nextWeek(w){ var m=String(w).match(/^Week (\d+) of (\d+)$/); if(!m) return ""; return +m[1]<+m[2]?"Week "+(+m[1]+1)+" of "+m[2]:"Graduation"; }
+function bumpNum(t){ var m=String(t).match(/^(.*?)(\d+)(\D*)$/); if(!m) return t; var n=String(+m[2]+1); while(n.length<m[2].length) n="0"+n; return m[1]+n+m[3]; }
 document.getElementById("newMeeting").addEventListener("click",function(){
   if(!confirm("Start a new meeting?\n\nThis clears speakers, times, topics, counts and this week's role players"+(NET.mode?" on all connected devices":"")+". The member list, agenda layout, time limits and word lists are kept.")) return;
   var keep={people:S.people,peopleU:S.peopleU,limits:S.limits,fill:S.fill,members:S.members,pin:S.pin,agenda:S.agenda};
   var n=blank(); n.people=keep.people; n.peopleU=keep.peopleU; n.limits=keep.limits; n.fill=keep.fill; n.members=keep.members; n.pin=keep.pin; n.attend=S.attend; n.keys=S.keys; n.coorg=S.coorg; n.ideas=S.ideas; n.tpls=S.tpls;
-  n.agenda=clone(keep.agenda); n.agenda.assign={}; n.agenda.no=""; n.agenda.next=""; n.agenda.ktopic=""; n.agenda.korg=""; n.agenda.u=now();
+  var carry=confirm("Carry this week over as next week's draft?\n\nOK = keep the role players and speaker/evaluator pairs to edit, and move the date, week and meeting number on\nCancel = start with empty role players");
+  n.agenda=clone(keep.agenda); n.agenda.ktopic=""; n.agenda.korg=""; n.agenda.u=now();
+  if(carry){
+    n.assigns=clone(S.assigns||[]);
+    var nd=S.agenda.next||(S.meta.date?addDaysISO(S.meta.date,7):""); if(nd) n.meta.date=nd;
+    n.meta.week=nextWeek(S.meta.week||""); n.agenda.no=bumpNum(S.agenda.no||""); n.agenda.next=nd?addDaysISO(nd,7):""; n.meta.u=now();
+  } else { n.agenda.assign={}; n.agenda.no=""; n.agenda.next=""; }
   S=n; L.ahSel=null; L.gramSel=null; saveL(); lastSig={}; commit(); wake();
 });
 document.getElementById("backupBtn").addEventListener("click",function(){
@@ -2706,7 +2728,7 @@ document.getElementById("backupBtn").addEventListener("click",function(){
   var wk=(S.meta.week||"").replace(/[^A-Za-z0-9]+/g,"-").replace(/^-|-$/g,"");
   var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="Speechcraft-meeting-record-"+(S.meta.date||todayISO())+(wk?"-"+wk:"")+".json";
   document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },1000);
-  setSaved("Backup downloaded");
+  setSaved("Meeting record downloaded");
 });
 document.getElementById("restoreBtn").addEventListener("click",function(){ var f=document.getElementById("restoreFile"); f.value=""; f.click(); });
 document.getElementById("restoreFile").addEventListener("change",function(){
@@ -3218,7 +3240,11 @@ function rsvpHTML(name){
   h+='<div class="row">'+RSVP_OPTS.map(function(o){ return '<button class="chip'+(r.status===o[0]?' active':'')+'" data-rsvp="'+o[0]+'" data-rname="'+esc(name)+'">'+o[1]+'</button>'; }).join("")+'</div>'+
      '<div class="row" style="margin-top:6px"><input class="t" id="rsvpNote" data-rname="'+esc(name)+'" value="'+esc(r.note||"")+'" placeholder="Note for the organisers, e.g. leaving at 8 pm"></div>';
   var c={in:0,online:0,no:0}; S.rsvp.forEach(function(x){ if(c[x.status]!=null) c[x.status]++; });
-  return h+'<div class="saved" style="margin-top:6px">So far: '+c.in+' in person · '+c.online+' online · '+c.no+' can\'t make it</div>';
+  h+='<div class="saved" style="margin-top:6px">So far: '+c.in+' in person · '+c.online+' online · '+c.no+' can\'t make it</div>';
+  /* answered already, or the meeting has started: fold it away so the role's main job comes first */
+  if(r.status||(S.run&&S.run.cur)){ var lbl=(RSVP_OPTS.find(function(o){return o[0]===r.status;})||[0,"Not answered"])[1];
+    return '<details class="fold"><summary>📅 Coming to this meeting? <b>'+esc(lbl)+'</b> <span class="saved">· change</span></summary>'+h.replace('<h2 class="sec">📅 Coming to this meeting?</h2>','')+'</details>'; }
+  return h;
 }
 function setRsvp(name,status,note){ var r=upsert(["rsvp"],"rv|"+nkey(name),{name:name,status:"",note:""}); r.name=name; if(status!=null) r.status=status; if(note!=null) r.note=note; tick(r); }
 function roleClashes(){
@@ -3516,7 +3542,7 @@ function dashHTML(){
   if(ss){ var c=ss.c, who=whoFor(c.cur.role);
     h+='<div class="dh-now"><div class="dh-lbl">Now</div><div class="dh-item"><b>'+esc(fmtHM(rt(c.cur)))+'</b> '+esc(arole(c.cur.role).n)+(who?' · '+esc(who):'')+'<div class="muted">'+esc(c.cur.text)+'</div></div></div>';
     if(c.next){ var wn=whoFor(c.next.role); h+='<div class="dh-next"><div class="dh-lbl">Next</div><div class="dh-item"><b>'+esc(fmtHM(rt(c.next)))+'</b> '+esc(arole(c.next.role).n)+(wn?' · '+esc(wn):'')+'</div></div>'; }
-    h+='<div class="'+ss.cls+'" style="margin-top:6px;font-weight:700">'+ss.txt+'</div>';
+    if(ss.txt) h+='<div class="'+ss.cls+'" style="margin-top:6px;font-weight:700">'+ss.txt+'</div>';
   } else { var f=runItems()[0]; h+='<div class="dh-now"><div class="dh-lbl">Not started</div><div class="dh-item">The Toastmaster starts the run-sheet when the meeting begins.'+(f?'<div class="muted">First: '+esc(fmtHM(f.time))+' '+esc(arole(f.role).n)+(whoFor(f.role)?' · '+esc(whoFor(f.role)):'')+'</div>':'')+'</div></div>'; }
   h+=liveCtlHTML();
   if(pr.n) h+='<div class="dh-prog"><div class="bar"><i style="width:'+Math.round(pr.done/pr.n*100)+'%"></i></div><span class="saved">'+pr.done+' of '+pr.n+' agenda items</span></div>';
@@ -4286,7 +4312,7 @@ applyDisplay();
   document.addEventListener("keydown",function(e){ if(e.key==="Escape") setOpen(false); });
 })();
 /* ---------- home, about and clean-up ---------- */
-var APP_VERSION="3.7 · November 2026";
+var APP_VERSION="3.8 · November 2026";
 function aboutHTML(){
   var on=!!NET.mode, coord=L.role==="coord";
   return '<div class="finhead"><h2 class="sec" style="margin:0">ℹ️ About</h2><button class="btn ghost" id="aboutClose">Close</button></div>'+
@@ -4300,8 +4326,8 @@ function aboutHTML(){
    '<li>Works on phones and laptops. Use <b>📱 Open on phone</b> to move your role across.</li>'+'<li>Install it: <b>⋯ More → 📲 Install as an app</b> (Android, Chrome, Edge), or in Safari tap Share → <b>Add to Home Screen</b>.</li></ul>'+
   '<div class="saved" style="margin-bottom:4px">Found a problem or have an idea? <b>⋯ More → 💬 Report a problem or idea</b>. Before a first meeting, run the <a href="https://github.com/NPFernando/toastmasters-speechcraft/blob/main/docs/DRY-RUN.md" target="_blank" rel="noopener">15-minute dry run</a>.</div><div class="saved">Source and help: <a href="https://github.com/NPFernando/toastmasters-speechcraft" target="_blank" rel="noopener">github.com/NPFernando/toastmasters-speechcraft</a></div>'+
   '<h3 style="margin:16px 0 0">🧹 Clean up</h3><div class="saved">Use these after a practice run or test.</div><div class="abtgrid">'+
-   '<div class="abtrow"><div><b>Clear this meeting</b><div class="saved">Removes speakers, times, topics, counts, votes and this week\'s role players'+(on?' on all connected devices':'')+'. Keeps the member list, PIN and settings.</div></div><button class="btn" id="cleanMeeting">Clear meeting</button></div>'+
-   '<div class="abtrow danger"><div><b>Reset this device</b><div class="saved">Deletes everything this browser has saved: meeting, member list, Coordinator PIN, your role, drafts, feedback keys, feedback history and progress records'+(on?'. Leaves the meeting first; the other devices keep their data':'')+'. Save a backup first if you might need it.</div></div><button class="btn" id="cleanDevice" style="color:var(--r)">Reset device</button></div>'+
+   '<div class="abtrow"><div><b>Start the next meeting</b><div class="saved">Use <b>⋯ More → 🆕 New meeting</b>: it clears this week\'s speakers, times, topics, counts and votes and keeps members, PIN and settings.</div></div></div>'+
+   '<div class="abtrow danger"><div><b>Reset this device</b><div class="saved">Deletes everything this browser has saved: meeting, member list, Coordinator PIN, your role, drafts, feedback keys, feedback history and progress records'+(on?'. Leaves the meeting first; the other devices keep their data':'')+'. Save the meeting record first if you might need it.</div></div><button class="btn" id="cleanDevice" style="color:var(--r)">Reset device</button></div>'+
   '</div>'+(coord?'<div class="note" style="margin-top:8px">To remove test members, use ✕ next to each name in the Coordinator member list. To clear test data on every device, start a new meeting code after everyone resets.</div>':'');
 }
 function openAbout(){ document.getElementById("aboutBox").innerHTML=aboutHTML(); document.getElementById("aboutModal").classList.add("on"); }
@@ -4313,7 +4339,6 @@ document.getElementById("aboutBtn").addEventListener("click",openAbout);
 document.getElementById("aboutModal").addEventListener("click",function(e){
   var t=e.target;
   if(t.id==="aboutModal"||t.closest("#aboutClose")){ closeAbout(); return; }
-  if(t.closest("#cleanMeeting")){ closeAbout(); document.getElementById("newMeeting").click(); return; }
   if(t.closest("#cleanDevice")){
     if(!confirm("Reset this device?\n\nEverything saved in this browser for this app is deleted: the meeting, member list, Coordinator PIN, your role, drafts and feedback keys."+(NET.mode?"\n\nThis device leaves the meeting. The other devices keep their data.":""))) return;
     if(!confirm("Are you sure? This can't be undone.")) return;

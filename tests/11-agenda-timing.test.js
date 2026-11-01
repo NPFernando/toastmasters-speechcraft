@@ -7,6 +7,7 @@ module.exports = async (b) => {
   const C = await T.device(b);
   const code = await T.host(C, "Naveen", ["coord"]);
   await T.setCoordPin(C);
+  await T.coTab(C, "agenda");
   const r0 = await rows(C);
   T.assert.ok(r0.length > 8, "standard agenda loaded");
   T.assert.strictEqual(r0[r0.length - 1].dur, null, "last item shows 'end'");
@@ -63,17 +64,17 @@ module.exports = async (b) => {
   await T.join(M, code, "SC Nimega Dilshara", ["tmod"]);
   await T.eventually(async () => (await M.$$("[data-run]")).length === r1.length, "run-sheet synced");
   await M.click("#runStart");
-  await M.click('[data-runadj="5"]');
-  await T.eventually(async () => /5 min later/.test(await M.innerText(".runadj")), "Toastmaster sees the adjustment");
+  await M.click('[data-lc="plus"]');
+  await T.eventually(async () => /5 min later/.test(await M.innerText(".lcadj")), "Toastmaster sees the adjustment");
   const second = await M.innerText(`[data-run="${r1[1].id}"] .n`);
   T.assert.match(second, new RegExp(fmt(add(r1[1].time, 5)))); T.assert.match(second, new RegExp(fmt(r1[1].time)), "original time shown struck through");
   T.assert.match(await M.innerText(".wcard"), new RegExp(fmt(add(r1[1].time, 5))), "Next card shows the new time");
   await T.eventually(async () => /"adj":\{[^}]*"/.test(await T.stored(C)) && (await T.stored(C)).includes(r1[1].id), "adjustment synced to the coordinator");
   T.assert.strictEqual((await rows(C))[1].time, r1[1].time, "planned agenda unchanged");
-  await M.click("#runRetime");
+  await M.click('.lcadj [data-lc="now"]');
   await T.eventually(async () => { const n = await M.evaluate(() => { const d = new Date(); return Math.ceil(d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60); }); const hm = String(Math.floor(n / 60) % 24).padStart(2, "0") + ":" + String(n % 60).padStart(2, "0"); return new RegExp(fmt(hm)).test(await M.innerText(".wcard")); }, "next item re-timed to now");
-  await M.click("#runAdjReset");
-  await T.eventually(async () => !/later|earlier/.test(await M.innerText(".runadj")), "back to printed times");
+  await M.click('[data-lc="reset"]');
+  await T.eventually(async () => !/later|earlier/.test(await M.innerText(".lcadj")), "back to printed times");
   // back-up control: the President (and an unlocked organiser) can move the live agenda from the Now tab; nothing moves by itself
   const P = await T.device(b, { phone: true });
   await T.join(P, code, "SC Laurel Senanayake", ["president"]);
@@ -87,7 +88,7 @@ module.exports = async (b) => {
   await C.click('[data-lc="prev"]');
   await T.eventually(async () => (await M.innerText(".curtopic")) === nowBefore, "organiser's Back works too");
   // how the agenda ran: the organiser sees planned vs actual for each started item
-  await C.click('[data-nav="role"]');
+  await C.click('[data-nav="role"]'); await T.coTab(C, "after");
   await T.eventually(async () => /How the agenda ran/.test(await C.innerText("#view")), "overrun summary for the organiser");
   T.assert.match(await C.innerText(".ovsum"), /Planned[\s\S]*Actual[\s\S]*President/i);
   await M.click('[data-run="' + r1[r1.length - 1].id + '"]'); await M.click("#runEnd");

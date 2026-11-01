@@ -12,6 +12,7 @@ module.exports = async (b) => {
   await C.fill("[data-rpadd-in=sevals]", "SC Rashmi Maneesha"); await C.click("[data-rpadd=sevals]");
   await C.selectOption('[data-assign="SC Laurel Senanayake"]', "SC Rashmi Maneesha");
   // agenda templates: save a shortened agenda, restore the standard one, load the saved one
+  await T.coTab(C, "agenda");
   const nItems = async () => (await C.$$(".agrow")).length;
   const full = await nItems();
   await C.click(".agrow:last-child [data-itdel]"); await C.click(".agrow:last-child [data-itdel]");
@@ -40,6 +41,7 @@ module.exports = async (b) => {
   await T.eventually(async () => /agenda as a speaker/.test(await K.innerText("#wbox")), "guest speaker recognised");
   await K.click("#gDone");
   T.assert.match(await K.innerText("#roles"), /Speaker/);
+  await T.coTab(C, "people");
   await T.eventually(async () => { const t = await C.innerText("#view"); return /Kasun Perera/.test(t) && /TM Nalin De Abrew/.test(t); }, "guests in the Coordinator's attendance");
   // "you're up next": the Toastmaster moves through the agenda; the speaker is nudged before their session
   const M = await T.device(b); await T.join(M, code, "SC Nimega Dilshara", ["tmod"]);

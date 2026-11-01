@@ -46,7 +46,9 @@ Every push runs the **Tests** workflow (Actions tab): it checks that `index.html
 | `08-accessibility` | WCAG 2.1 AA (axe-core) on the main screens in light and dark |
 | `10-guests-nudges-templates` | Agenda templates; speaker reminder and calendar file; guest self check-in incl. a guest speaker; "you're up next" nudges |
 | `11-agenda-timing` | Move agenda items up/down keeping their length; change a length, shift or re-start the whole agenda; insert/remove items; the Toastmaster's +5 / −5 / "next starts now" on the day without changing the printed times; President/organiser back-up controls; organiser undo; drag to reorder; "How the agenda ran" summary |
+| (all) | `lib.js` `coTab(page, "setup"|"agenda"|"people"|"after")` switches the Coordinator sub-tab; `08-accessibility` checks all four |
 | `12-undo` | Undo after removing a guest (President) and a filler word (Ah-Counter) |
+| `13-new-meeting-carry-over` | New meeting carries role players over and moves the date, week and meeting number on; RSVP folds once answered |
 | `09-member-types` | Speechcrafter / Toastmaster / Guest types, club, start-screen groups, awards eligibility and its switch syncing |
 
 ## Tips

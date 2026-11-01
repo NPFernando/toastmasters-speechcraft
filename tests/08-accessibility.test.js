@@ -13,6 +13,9 @@ module.exports = async (b) => {
     };
     await run("start");
     await p.click("#wSolo"); await T.pickWho(p, "Janani Kumar", ["coord"]); await run("coordinator");
+    if (await p.$("#pinIn")) { await p.fill("#pinIn", "1234"); await p.click("#pinUnlock"); }
+    await p.waitForSelector(".cotabs", { timeout: 5000 });
+    for (const t of ["setup", "agenda", "people", "after"]) { await T.coTab(p, t); await run("coordinator " + t); }
     await p.click("[data-nav=now]"); await run("now");
     await p.click("[data-nav=agenda]"); await run("agenda");
     for (const [role, name] of [["timer", "Dilini Jayasinghe"], ["ah", "Eshan Rodrigo"], ["gram", "Fathima Rizvi"], ["ttm", "Gihan de Mel"], ["president", "Amal Perera"], ["speaker", "Isuru Bandara"], ["tteval", "Bhagya Silva"], ["member", "Amal Perera"]]) {

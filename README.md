@@ -52,7 +52,10 @@ One **Meeting report** combines every role and can be saved as a PDF.
 - **📺 Projector view** (Now, or ⋯ More): full screen for the room screen or a Zoom share. Shows the speaker's clock in green / amber / red while timing, the Table Topic, the award winners once revealed, otherwise Now / Next; Word of the Day along the bottom.
 - **🎯 Focus** (Timer, Ah-Counter, Grammarian, Toastmaster, Table Topics Master): hides everything except what the role needs right now — big Start buttons, a big filler-word grid with Undo, a big +1 Word of the Day, a big Now / Next with Next ▶, or the current topic with Call speaker.
 - **💡 Tips:** three quick steps the first time each role is opened; 💡 Tips in the role bar shows them again.
-- **Header:** 🏠 Home, connection status, **⋯ More** (Save backup, Restore, New meeting, About & clean up) and Meeting report. **ℹ️ About** explains the app and has **🧹 Clean up** for after a practice run: **Clear meeting** (keeps members, PIN and settings) or **Reset device** (deletes everything this browser saved and leaves the meeting).
+- **Header:** 🏠 Home, connection status, **⋯ More** (Save meeting record, Import meeting record, New meeting, About & clean up) and Meeting report. **ℹ️ About** explains the app and has **Reset device** (deletes everything this browser saved and leaves the meeting) for after a practice run.
+- **🆕 New meeting** clears this week's speakers, times, topics, counts and votes. It asks whether to **carry this week over as a draft**: role players and speaker/evaluator pairs stay for editing, and the date (to the Next meeting date, or a week later), week and meeting number move on.
+- **Coordinator sub-tabs:** **⚙️ Set-up** (meeting details, role players, who's coming) · **📋 Agenda** (templates and timing) · **👥 People** (members, co-organisers, attendance, feedback PINs) · **🏁 After** (finish, meeting record, how the agenda ran, 10-week progress, issues and ideas).
+- **Shorter role screens:** "Coming to this meeting?" folds away once answered or once the meeting starts, and the next-meeting card hides while the meeting is running.
 - **Start screen (2 steps):** ① **Join the meeting**: scan the host's QR or type the code, host a new meeting, try the 🎓 practice meeting, or continue offline. Opening an invite link joins automatically. Returning devices get **👋 Welcome back** with one-tap **Continue** or **↻ Rejoin** the last meeting. ② **Who are you?**: tap your name from the member list (or type it); the roles the agenda gives you are starred and pre-ticked, and you can tick several roles at once. The **Start** button stays in view. The start screen also has **💬 Report a problem or idea**, **Open on GitHub** and **Known issues & ideas**.
 - **Speaker sees their own time:** when the Timer starts someone, that person's device (Speaker, or Member called for Table Topics or an evaluation) shows a big live clock that turns green, amber and red with the signals, their status ("Keep going", "✓ You've qualified", "Start wrapping up", "Finish now") and the time to the next signal. **⛶ Full screen** fills the phone, e.g. on the lectern.
 - **Timer phone:** the screen stays on while a speaker is timed and the phone vibrates at green, amber and red (no sound).
@@ -115,7 +118,7 @@ Once connected, devices sync live: when the Table Topics Master calls a speaker,
 
 ## Data and backups
 
-Everything is saved in the browser on each device. Use **⤓ Save backup** after each meeting and **⤒ Restore** to load it on another device.
+Everything is saved in the browser on each device. The Coordinator saves the **meeting record** after each meeting (⋯ More or 🏁 After); **⤒ Import meeting record** loads it on another device.
 
 ## Credits
 

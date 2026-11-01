@@ -57,8 +57,10 @@ async function setCoordPin(p, pin = "2468") {
   await p.fill("#pin1", pin); await p.fill("#pin2", pin); await p.click("#pinSet");
   await p.waitForSelector("#recDone"); await p.click("#recDone");
 }
-async function addMembers(p, names) { await p.fill("#memIn", names.join(", ")); await p.click("#memAdd"); }
-async function setRole(p, key, name) { await p.fill(`[data-rp=${key}]`, name); await p.press(`[data-rp=${key}]`, "Tab"); }
+/* Coordinator sub-tabs: setup (default) · agenda · people · after */
+async function coTab(p, t) { const sel = `.cotabs [data-cotab=${t}]`; if (await p.$(sel + '[aria-selected="true"]')) return; if (await p.$(sel)) { await p.click(sel); await p.waitForSelector(sel + '[aria-selected="true"]'); } }
+async function addMembers(p, names) { await coTab(p, "people"); await p.fill("#memIn", names.join(", ")); await p.click("#memAdd"); await coTab(p, "setup"); }
+async function setRole(p, key, name) { await coTab(p, "setup"); await p.fill(`[data-rp=${key}]`, name); await p.press(`[data-rp=${key}]`, "Tab"); }
 async function eventually(fn, msg, ms = 10000) {
   const t = Date.now(); let last;
   while (Date.now() - t < ms) { try { const v = await fn(); if (v) return v; } catch (e) { last = e; } await sleep(250); }
@@ -67,4 +69,4 @@ async function eventually(fn, msg, ms = 10000) {
 function noErrors(...pages) { for (const p of pages) assert.deepStrictEqual(p._errors, [], "page errors"); }
 function stored(p) { return p.evaluate(() => localStorage.getItem("speechcraftMeeting.v2") || ""); }
 
-module.exports = { chromium, assert, sleep, ROOT, FILE, URL, startRelay, device, host, join, solo, pickWho, setCoordPin, addMembers, setRole, eventually, noErrors, stored };
+module.exports = { chromium, assert, sleep, ROOT, FILE, URL, startRelay, device, host, join, solo, pickWho, setCoordPin, coTab, addMembers, setRole, eventually, noErrors, stored };

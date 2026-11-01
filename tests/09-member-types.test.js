@@ -5,11 +5,11 @@ module.exports = async (b) => {
   const code = await T.host(C, "Naveen", ["coord"]);
   await T.setCoordPin(C);
   await T.addMembers(C, ["SC Afraa Faleel", "SC Rashmi Maneesha", "TM Nalin De Abrew"]);
-  await C.fill("#memIn", "Kasun Perera"); await C.selectOption("#memKind", "guest"); await C.click("#memAdd");
+  await T.coTab(C, "people"); await C.fill("#memIn", "Kasun Perera"); await C.selectOption("#memKind", "guest"); await C.click("#memAdd");
   const groups = await C.$$eval(".kgroup", (g) => g.map((x) => x.innerText.replace(/\s+/g, " ")));
   T.assert.ok(groups.some((g) => /Toastmasters 1 TM Nalin De Abrew/.test(g)), "TM… detected as a Toastmaster: " + groups);
   T.assert.ok(groups.some((g) => /Guests 1 Kasun Perera/.test(g)), "guest group");
-  await C.click('[data-medit]:has-text("Nalin")'); await C.fill("#mClub", "Dialog TMC"); await C.press("#mClub", "Tab");
+  await T.coTab(C, "people"); await C.click('[data-medit]:has-text("Nalin")'); await C.fill("#mClub", "Dialog TMC"); await C.press("#mClub", "Tab");
   await T.eventually(async () => /Dialog TMC/.test((await C.$$eval(".kgroup", (g) => g.map((x) => x.innerText))).join(" ")), "club shown");
   // the Toastmaster gives the keynote and a prepared speech; awards ballot leaves them out by default
   await T.setRole(C, "keynote", "TM Nalin De Abrew");
@@ -24,7 +24,7 @@ module.exports = async (b) => {
   await T.eventually(() => P.isVisible("#openVote"), "voting open on the phone");
   const b1 = await ballot();
   T.assert.ok(/Afraa/.test(b1) && !/Nalin/.test(b1), "Toastmaster not on the ballot by default");
-  await C.check("#tmAwards");
+  await T.coTab(C, "people"); await C.check("#tmAwards");
   await T.eventually(async () => /Nalin/.test(await ballot()), "switch puts Toastmasters on the ballot (synced)");
   T.noErrors(C, P, G);
 };

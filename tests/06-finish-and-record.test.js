@@ -7,7 +7,7 @@ module.exports = async (b) => {
   await T.setCoordPin(C); await T.addMembers(C, ["Misfar", "Afraa"]);
   await T.setRole(C, "timer", "Misfar"); await T.setRole(C, "ah", "Afraa");
   const M = await T.device(b); await T.join(M, code, "Misfar", ["timer"]);
-  await C.click("#finStart");
+  await T.coTab(C, "after"); await C.click("#finStart");
   await T.eventually(async () => /The Coordinator is finishing the meeting/.test(await M.innerText("#finSheet")), "Timer gets the finish prompt");
   T.assert.match(await M.innerText("#finSheet"), /No times recorded/, "simple check shown");
   await M.click("[data-findone=timer]");
