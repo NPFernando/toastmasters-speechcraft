@@ -256,6 +256,8 @@ tr.queued:not(.nextup) .btn.go{background:transparent;color:var(--g);border-colo
 .agacts{display:flex;gap:2px}
 .cotabs{display:flex;gap:2px;flex-wrap:nowrap;overflow-x:auto;margin:12px 0 4px;border-bottom:1px solid var(--line)}.cotabs button{white-space:nowrap;border:0;background:transparent;color:var(--muted);font:inherit;font-weight:600;padding:8px 10px;border-bottom:3px solid transparent;cursor:pointer;margin-bottom:-1px}.cotabs button.on{color:var(--ink);border-bottom-color:var(--b,#004165)}
 details.fold{margin-top:14px;border:1px solid var(--line);border-radius:10px;padding:8px 12px}details.fold>summary{cursor:pointer;font-weight:600;padding:2px 0}details.fold[open]>summary{margin-bottom:8px}
+.drybanner{background:repeating-linear-gradient(45deg,rgba(245,166,35,.22) 0 12px,rgba(245,166,35,.1) 12px 24px);border:1px solid rgba(245,166,35,.6);border-radius:10px;padding:8px 12px;margin-bottom:12px;color:var(--ink)}
+.health>summary{cursor:pointer;list-style:none}.health>summary::-webkit-details-marker{display:none}
 .agtools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px}.agst{display:flex;gap:6px;align-items:center;font-weight:600}.agst input{width:136px}
 .livectl{margin-top:10px;padding:10px;border:1px dashed var(--line);border-radius:12px}.lc-h{font-weight:700;margin-bottom:6px}.lc-over{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px;padding:8px 10px;border-radius:10px;background:rgba(245,166,35,.18);color:var(--ink)}
 .lcadj{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:space-between;margin-top:8px;padding:8px 10px;border:1px dashed var(--line);border-radius:10px}
@@ -1122,7 +1124,7 @@ function renderAll(){
   document.body.classList.toggle("focus",inFocus());
   if(curView()!=="role") v.innerHTML=curView()==="now"?dashHTML():agendaViewHTML();
   else if(inFocus()) v.innerHTML=focusHTML();
-  else if(L.role==="coord"){ var cu=coordUnlocked(), won=cu&&S.wrap.on; var ct=coTab(); v.innerHTML=(won?endMeetingHTML():"")+coordHTML()+(cu?(ct==="setup"?availabilityHTML():ct==="people"?coorgHTML()+attendanceHTML()+feedbackPinsHTML():ct==="after"?(won?"":endMeetingHTML())+progressHTML()+ideasHTML():""):""); }
+  else if(L.role==="coord"){ var cu=coordUnlocked(), won=cu&&S.wrap.on; var ct=coTab(); v.innerHTML=(won?endMeetingHTML():"")+coordHTML()+(cu?(ct==="setup"?healthHTML()+availabilityHTML():ct==="people"?coorgHTML()+attendanceHTML()+feedbackPinsHTML():ct==="after"?(won?"":endMeetingHTML())+autoRecHTML()+progressHTML()+ideasHTML():""):""); }
   else if(L.role==="tmod") v.innerHTML=(S.vote.state!=="closed"?'<section class="card" style="margin-bottom:12px">'+voteControlHTML(false,true)+'</section>':'')+tmodHTML();
   else if(L.role==="ge") v.innerHTML=geHTML();
   else if(L.role==="seval"||L.role==="tteval") v.innerHTML=evalHTML();
@@ -1136,6 +1138,7 @@ function renderAll(){
   else if(L.role==="ah") v.innerHTML=ahHTML();
   else v.innerHTML=gramHTML();
   var tp=tipsHTML(); if(tp) v.insertAdjacentHTML("afterbegin",tp);
+  var db=dryBannerHTML(); if(db) v.insertAdjacentHTML("afterbegin",db);
   if(curView()==="role" && !inFocus() && L.role!=="coord" && !(S.run&&S.run.cur)){ var up=upcomingHTML(false); if(up) v.insertAdjacentHTML("afterbegin",up); }
   if(L.role==="speaker"||L.role==="member"){ try{ histCapture(L.role==="speaker"?myName():(L.cardName||"")); }catch(e){} }
   if(document.getElementById("stage").classList.contains("on")) renderStage();
@@ -1723,6 +1726,98 @@ function membersEditorHTML(){
 })();
 /* ---------- coordinator view ---------- */
 function memberNames(){ return S.members.list.map(function(m){return m.name;}); }
+/* ---------- before the meeting: health check, reminders, dry run; automatic meeting-record copies ---------- */
+var RKEY="speechcraftRecords"+NS, autoLastSig="";
+function recLoad(){ try{ return JSON.parse(localStorage.getItem(RKEY)||"[]")||[]; }catch(e){ return []; } }
+function meetingHasContent(st){ st=st||S; var n=0; SESSIONS.forEach(function(x){ n+=(st.rows[x.id]||[]).filter(function(r){return rowState(r)!=="idle";}).length; }); return n>0||st.topics.length>0||st.evals.length>0||Object.keys((st.run&&st.run.started)||{}).length>0; }
+function autoSaveRecord(why){
+  try{
+    if(!myRoles().some(function(r){return r==="coord";})||!meetingHasContent()) return false;
+    var sig=stable(S); if(sig===autoLastSig) return false; autoLastSig=sig;
+    var list=recLoad().filter(function(r){ return r.sig!==sig.length+":"+S.mid+":"+(S.u||0); });
+    var data=JSON.stringify({app:"speechcraft-meeting",version:2,savedAt:new Date().toISOString(),state:S});
+    list.unshift({at:now(),why:why||"",mid:S.mid,label:(S.meta.week||"")+(S.meta.date?" · "+fmtDate(S.meta.date):"")+(S.meta.test?" · dry run":""),sig:sig.length+":"+S.mid+":"+(S.u||0),data:data});
+    /* one copy per meeting for the newest moment, max 5 */
+    var seen={}; list=list.filter(function(r){ var k=r.mid+"|"+r.why; if(seen[k]) return false; seen[k]=1; return true; }).slice(0,5);
+    for(var tries=0;tries<5;tries++){ try{ localStorage.setItem(RKEY,JSON.stringify(list)); return true; }catch(e){ list.pop(); if(!list.length) return false; } }
+  }catch(e){}
+  return false;
+}
+setInterval(function(){ if(L.role==="coord"||myRoles().indexOf("coord")>=0) autoSaveRecord("Every 10 minutes"); },600000);
+window.addEventListener("pagehide",function(){ autoSaveRecord("App closed"); });
+function autoRecHTML(){
+  var list=recLoad();
+  return '<section class="card" style="margin-top:12px"><h2 class="sec" style="margin-top:0">🗄 Automatic copies on this device</h2><div class="saved" style="margin-bottom:6px">This device keeps the last 5 meeting records by itself: every 10 minutes during a meeting, when you tap Finish meeting, before New meeting, and when the app closes. Still save the meeting record each week.</div>'+
+    (list.length?list.map(function(r,i){ return '<div class="grow"><div><b>'+esc(r.label||"Meeting")+'</b><div class="saved">'+esc(new Date(r.at).toLocaleString("en-AU",{dateStyle:"medium",timeStyle:"short"}))+(r.why?' · '+esc(r.why):'')+' · '+Math.round(r.data.length/1024)+' KB</div></div><span class="row"><button class="btn sm" data-arec-dl="'+i+'">⤓ Download</button><button class="btn sm" data-arec-rs="'+i+'">⤒ Restore</button></span></div>'; }).join(""):'<div class="muted">None yet. Copies start once the meeting has some timing or results.</div>')+'</section>';
+}
+function remNames(){
+  var out=[], seen={}; function add(n){ if(n&&!seen[nkey(n)]){ seen[nkey(n)]=1; out.push(n); } }
+  AROLES.forEach(function(a){ if(a.k!=="coord") asList(a.k).forEach(add); }); S.assigns.forEach(function(a){ add(a.speaker); add(a.evaluator); });
+  return out;
+}
+function remindersText(){
+  var first=itemsSorted()[0], A=S.agenda;
+  var t=["📣 "+(A.title||"Speechcraft")+" – "+GROUP+(S.meta.week?" ("+S.meta.week+")":""),
+    (S.meta.date?agDateLong(S.meta.date):"Date to be confirmed")+(first?" · "+fmtHM(first.time):"")+(A.venue?" · "+A.venue:""),"","Role players — please check your part:"];
+  remNames().forEach(function(n){ var u=myUpcoming(n); if(!u) return; t.push("• "+n+": "+u.parts.map(function(p){ return p.t+(p.d?" ("+p.d+")":""); }).join("; ")); });
+  var miss=healthRows().filter(function(r){return r.key==="roles";});
+  if(miss.length&&miss[0].st!=="ok") t.push("","Still needed: "+miss[0].list.join(", ")+". Reply if you can take one.");
+  t.push("","Open the app before the meeting: https://npfernando.github.io/toastmasters-speechcraft/");
+  return t.join("\n");
+}
+function healthRows(){
+  var rows=[], today=todayISO(), its=itemsSorted();
+  rows.push(S.meta.date?(S.meta.date<today?{st:"warn",t:"Meeting date",d:fmtDate(S.meta.date)+" is in the past — set this week’s date (top of the page)"}:{st:"ok",t:"Meeting date",d:fmtDate(S.meta.date)+(S.meta.week?" · "+S.meta.week:"")}):{st:"no",t:"Meeting date",d:"Not set (top of the page)"});
+  var ms=memberNames().length; rows.push({st:ms?"ok":"no",t:"Members",d:ms?ms+" on the list":"None yet — add them on 👥 People",tab:ms?"":"people"});
+  var used={}; its.forEach(function(it){ used[it.role]=1; });
+  var need=AROLES.filter(function(a){ return !a.multi&&a.k!=="coord"&&(used[a.k]||["timer","ah","gram","saa"].indexOf(a.k)>=0)&&!asList(a.k).length; }).map(function(a){return a.n;});
+  rows.push({key:"roles",st:need.length?"warn":"ok",t:"Role players",d:need.length?"Not filled: "+need.join(", "):"Every role on the agenda has someone",list:need,tab:need.length?"setup":""});
+  var sp=asList("speakers"), noEv=sp.filter(function(n){return !evaluatorOf(n);});
+  if(sp.length) rows.push({st:noEv.length?"warn":"ok",t:"Speakers and evaluators",d:noEv.length?"No evaluator yet for "+noEv.join(", "):sp.length+" speaker"+(sp.length===1?"":"s")+", each with an evaluator",tab:noEv.length?"setup":""});
+  else rows.push({st:"warn",t:"Prepared speakers",d:"None on the agenda yet",tab:"setup"});
+  var empty=its.filter(function(it){return !String(it.text||"").trim();}).length, zero=its.filter(function(it,i){return agDur(its,i)===0;}).length;
+  rows.push({st:(empty||zero)?"warn":"ok",t:"Agenda",d:its.length+" items · "+(agSpanText()||"no times")+(empty?" · "+empty+" without an activity":"")+(zero?" · "+zero+" with 0 min":""),tab:(empty||zero)?"agenda":""});
+  if(!NET.room) rows.push({st:"warn",t:"Meeting code",d:"Not hosting yet — tap Host meeting (🏠 Home) and share the code or QR"});
+  else {
+    var rs=relayStatus(); rows.push({st:rs.open?"ok":"no",t:"Connection",d:rs.open?"Hosting "+fmtCode(NET.code)+" · relays reachable":"Relays not reachable — try another network"});
+    var peers=Object.keys(NET.info).map(function(id){return NET.info[id];}).filter(function(p){return now()-p.last<20000;});
+    var old=peers.filter(function(p){return p.v&&p.v!==APP_VERSION;}), unk=peers.filter(function(p){return !p.v;});
+    rows.push({st:(old.length||unk.length)?"warn":"ok",t:"Devices",d:peers.length+" other device"+(peers.length===1?"":"s")+" connected"+(old.length||unk.length?" · on an older copy: "+old.concat(unk).map(function(p){return p.name||roleName(p.role);}).join(", ")+" — close and reopen the app":(peers.length?" · all on v"+APP_VERSION.split(" ")[0]:""))});
+  }
+  rows.push(S.meta.test?{st:"warn",t:"Dry run",d:"Test mode is on — tap Finish dry run & clean up before the real meeting"}:{st:"ok",t:"Dry run",d:"Not in test mode"});
+  return rows;
+}
+function healthHTML(){
+  var rows=healthRows(), bad=rows.filter(function(r){return r.st!=="ok";}).length, ic={ok:"✅",warn:"⚠️",no:"❌"};
+  return '<details class="card health"'+(bad?' open':'')+'><summary><h2 class="sec" style="margin:0;display:inline">🩺 Ready for the meeting?</h2> <span class="'+(bad?'st-o':'st-q')+'"><b>'+(bad?bad+' to check':'All set')+'</b></span></summary>'+
+    '<table class="sumtable cct" style="margin-top:8px"><tbody>'+rows.map(function(r){ return '<tr><td>'+ic[r.st]+'</td><td><b>'+esc(r.t)+'</b></td><td>'+esc(r.d)+(r.tab&&r.tab!==coTab()?' <button class="linkbtn" data-cotab="'+r.tab+'">Fix</button>':'')+'</td></tr>'; }).join("")+'</tbody></table>'+
+    '<div class="row" style="margin-top:10px"><button class="btn" id="remCopy">📋 Copy reminders for the group chat</button>'+(S.meta.test?'<button class="btn go" id="dryEnd">✓ Finish dry run & clean up</button>':'<button class="btn" id="dryStart">🧪 Start a dry run</button>')+'</div>'+
+    '<div class="saved" style="margin-top:6px">'+(S.meta.test?'Dry run: every device shows a test banner, feedback history isn’t kept, and members you add now are marked as test members.':'A dry run marks this meeting as a test so it can be cleared in one tap afterwards (see the 15-minute checklist in the repo).')+'</div></details>';
+}
+function refreshHealth(){ try{ var el=document.querySelector("#view .health"); if(!el) return; var open=el.open; var d=document.createElement("div"); d.innerHTML=healthHTML(); var n=d.firstChild; n.open=open; el.replaceWith(n); }catch(e){} }
+function dryBannerHTML(){ return S.meta&&S.meta.test?'<div class="drybanner" role="status">🧪 <b>Dry run</b> — test data. The organiser clears it with “Finish dry run & clean up”.</div>':''; }
+(function(){
+  var V=document.getElementById("view");
+  V.addEventListener("click",function(e){
+    var t=e.target, b;
+    if((b=t.closest("[data-arec-dl]"))){ var r=recLoad()[+b.dataset.arecDl]; if(!r) return; var a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([r.data],{type:"application/json"})); a.download="Speechcraft-meeting-record-auto-"+new Date(r.at).toISOString().slice(0,16).replace(/[:T]/g,"-")+".json"; document.body.appendChild(a); a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },1000); return; }
+    if((b=t.closest("[data-arec-rs]"))){ var r2=recLoad()[+b.dataset.arecRs]; if(!r2) return; try{ restoreData(JSON.parse(r2.data)); }catch(x){ alert("That copy couldn't be read."); } return; }
+    if(L.role!=="coord"||!coordUnlocked()) return;
+    if(t.closest("#remCopy")){ copyText(remindersText()); setSaved("Reminders copied — paste them in the group chat"); return; }
+    if(t.closest("#dryStart")){ if(!confirm("Start a dry run?\n\nThis meeting is marked as a test on every connected device. When you finish, one tap clears it.")) return; S.meta.test=true; tick(S.meta); commit(); return; }
+    if(t.closest("#dryEnd")){
+      var tm=S.members.list.filter(function(m){return m.test;});
+      if(!confirm("Finish the dry run and clean up?\n\n• Clears this meeting’s speakers, times, topics, counts, feedback and votes on every connected device\n• Removes today’s test attendance"+(tm.length?"\n• Removes "+tm.length+" test member"+(tm.length===1?"":"s")+" ("+tm.map(function(m){return m.name;}).join(", ")+")":"")+"\n\nMembers, PIN, agenda, role players and settings are kept.")) return;
+      var mid=S.mid;
+      S.attend.forEach(function(a){ if(a.mid===mid){ a.void=true; a.present=false; a.u=Math.max(now(),(a.u||0)+1); } });
+      if(tm.length){ S.members.list=S.members.list.filter(function(m){return !m.test;}); tick(S.members); }
+      var keepAssign=clone(S.agenda.assign), keepAssigns=clone(S.assigns||[]), keepMeta={date:S.meta.date,week:S.meta.week}, keepNo=S.agenda.no, keepNext=S.agenda.next;
+      newMeetingCore(false);
+      S.agenda.assign=keepAssign; S.agenda.no=keepNo; S.agenda.next=keepNext; S.assigns=keepAssigns; S.meta.date=keepMeta.date; S.meta.week=keepMeta.week; delete S.meta.test; tick(S.meta); tick(S.agenda); applyAgenda(); commit();
+      setSaved("Dry run cleared — ready for the real meeting"); return;
+    }
+  });
+})();
 /* Coordinator area split into sub-tabs */
 var CO_TABS=[["setup","⚙️","Set-up"],["agenda","📋","Agenda"],["people","👥","People"],["after","🏁","After"]];
 function coTab(){ return CO_TABS.some(function(t){return t[0]===L.coTab;})?L.coTab:"setup"; }
@@ -2147,6 +2242,7 @@ function rrCall(name){
 }
 
 /* ---------- Member: check-in, notes, feedback card ---------- */
+function attendLive(){ return S.attend.filter(function(a){return !a.void;}); }
 function present(name,mid){ return S.attend.some(function(a){ return a.mid===(mid||S.mid) && nkey(a.name)===nkey(name) && a.present; }); }
 function setPresent(name,on){
   var id=S.mid+"|"+nkey(name), a=S.attend.find(function(x){return x.id===id;});
@@ -2185,7 +2281,7 @@ function buildCard(name){
   h+='<h4>🗣 Evaluation <span style="font-weight:400;font-size:12px;color:#666">🔒 private</span></h4><div id="cardEvals"><div class="none">Decrypting…</div></div>';
   h+='<h4>💌 Notes from the audience <span style="font-weight:400;font-size:12px;color:#666">🔒 private</span></h4><div id="cardNotes"><div class="none">Decrypting…</div></div>';
   if(S.vote.state==="shown"){ var won=VCATS.filter(function(c){ return tally(c.k).winners.some(function(w){return nkey(w.name)===nkey(name);}); }).map(function(c){return c.n;}); if(won.length) h+='<h4>🏆 Awards</h4><div><b>'+esc(won.join(", "))+'</b></div>'; }
-  var mids=uniq(S.attend.map(function(a){return a.mid;})), mine=S.attend.filter(function(a){return a.present&&nkey(a.name)===nkey(name);}).length;
+  var mids=uniq(attendLive().map(function(a){return a.mid;})), mine=attendLive().filter(function(a){return a.present&&nkey(a.name)===nkey(name);}).length;
   if(mids.length) h+='<h4>✅ Attendance</h4><div>Attended '+mine+' of '+mids.length+' recorded meeting'+(mids.length===1?'':'s')+'.</div>';
   h+='<div class="sign"><span></span><span>Generated '+new Date().toLocaleString("en-AU",{dateStyle:"medium",timeStyle:"short"})+'</span></div>';
   document.getElementById("report").innerHTML=h;
@@ -2207,9 +2303,9 @@ function buildCard(name){
 /* ---------- attendance grid for the Coordinator ---------- */
 function attendanceHTML(){
   var mids=[], seen={};
-  S.attend.slice().sort(function(a,b){ return String(a.date).localeCompare(String(b.date)); }).forEach(function(a){ if(!seen[a.mid]){ seen[a.mid]={mid:a.mid,label:a.week?a.week.replace(" of 10",""):(a.date||"?")}; mids.push(seen[a.mid]); } });
+  attendLive().slice().sort(function(a,b){ return String(a.date).localeCompare(String(b.date)); }).forEach(function(a){ if(!seen[a.mid]){ seen[a.mid]={mid:a.mid,label:a.week?a.week.replace(" of 10",""):(a.date||"?")}; mids.push(seen[a.mid]); } });
   if(!seen[S.mid]) mids.push({mid:S.mid,label:(S.meta.week||"Today").replace(" of 10","")});
-  var ms=uniq(memberNames().concat(S.attend.map(function(a){return a.name;})));
+  var ms=uniq(memberNames().concat(attendLive().map(function(a){return a.name;})));
   var h='<section class="card" style="margin-top:12px"><h2 class="sec" style="margin-top:0">✅ Attendance <span class="cnt">tap a name in the last column to mark today</span></h2><div style="overflow-x:auto"><table class="sumtable"><thead><tr><th>Member</th>'+mids.map(function(m){return '<th>'+esc(m.label)+'</th>';}).join("")+'<th>Total</th></tr></thead><tbody>';
   ms.forEach(function(n){
     var tot=0;
@@ -2673,7 +2769,7 @@ document.addEventListener("fullscreenchange",function(){ if(!document.fullscreen
     if(t.closest("#memAdd")){
       var inp=document.getElementById("memIn"), names=inp.value.split(/[,;\n]+/).map(function(x){return x.trim();}).filter(Boolean), added=0;
       var mk=(document.getElementById("memKind")||{}).value||"auto";
-      names.forEach(function(n){ if(!S.members.list.some(function(m){return m.name.toLowerCase()===n.toLowerCase();})){ S.members.list.push({id:uid(),name:n,kind:mk==="auto"?guessKind(n):mk}); added++; } });
+      names.forEach(function(n){ if(!S.members.list.some(function(m){return m.name.toLowerCase()===n.toLowerCase();})){ S.members.list.push(Object.assign({id:uid(),name:n,kind:mk==="auto"?guessKind(n):mk},S.meta.test?{test:true}:{})); added++; } });
       if(added){ tick(S.members); commit(); } var again=document.getElementById("memIn"); if(again){ again.value=""; again.focus(); } return;
     }
     var kr=t.closest("[data-keyreset]"); if(kr){ var nm=kr.dataset.keyreset; if(!confirm("Reset "+nm+"'s feedback PIN?\n\nThey can set a new one, but feedback encrypted for the old PIN can't be read any more.")) return; var rec=S.keys.find(function(k){return k.id==="k|"+nkey(nm);}); if(rec){ rec.pub=null; rec.wrapped=""; tick(rec); commit(); } return; }
@@ -2719,11 +2815,10 @@ document.addEventListener("fullscreenchange",function(){ if(!document.fullscreen
 function addDaysISO(iso,d){ var m=String(iso).match(/^(\d{4})-(\d{2})-(\d{2})/); if(!m) return ""; var x=new Date(+m[1],+m[2]-1,+m[3]+d); return x.getFullYear()+"-"+String(x.getMonth()+1).padStart(2,"0")+"-"+String(x.getDate()).padStart(2,"0"); }
 function nextWeek(w){ var m=String(w).match(/^Week (\d+) of (\d+)$/); if(!m) return ""; return +m[1]<+m[2]?"Week "+(+m[1]+1)+" of "+m[2]:"Graduation"; }
 function bumpNum(t){ var m=String(t).match(/^(.*?)(\d+)(\D*)$/); if(!m) return t; var n=String(+m[2]+1); while(n.length<m[2].length) n="0"+n; return m[1]+n+m[3]; }
-document.getElementById("newMeeting").addEventListener("click",function(){
-  if(!confirm("Start a new meeting?\n\nThis clears speakers, times, topics, counts and this week's role players"+(NET.mode?" on all connected devices":"")+". The member list, agenda layout, time limits and word lists are kept.")) return;
+function newMeetingCore(carry){
+  autoSaveRecord("Before new meeting");
   var keep={people:S.people,peopleU:S.peopleU,limits:S.limits,fill:S.fill,members:S.members,pin:S.pin,agenda:S.agenda};
   var n=blank(); n.people=keep.people; n.peopleU=keep.peopleU; n.limits=keep.limits; n.fill=keep.fill; n.members=keep.members; n.pin=keep.pin; n.attend=S.attend; n.keys=S.keys; n.coorg=S.coorg; n.ideas=S.ideas; n.tpls=S.tpls;
-  var carry=confirm("Carry this week over as next week's draft?\n\nOK = keep the role players and speaker/evaluator pairs to edit, and move the date, week and meeting number on\nCancel = start with empty role players");
   n.agenda=clone(keep.agenda); n.agenda.ktopic=""; n.agenda.korg=""; n.agenda.u=now();
   if(carry){
     n.assigns=clone(S.assigns||[]);
@@ -2731,6 +2826,11 @@ document.getElementById("newMeeting").addEventListener("click",function(){
     n.meta.week=nextWeek(S.meta.week||""); n.agenda.no=bumpNum(S.agenda.no||""); n.agenda.next=nd?addDaysISO(nd,7):""; n.meta.u=now();
   } else { n.agenda.assign={}; n.agenda.no=""; n.agenda.next=""; }
   S=n; L.ahSel=null; L.gramSel=null; saveL(); lastSig={}; commit(); wake();
+}
+document.getElementById("newMeeting").addEventListener("click",function(){
+  if(!confirm("Start a new meeting?\n\nThis clears speakers, times, topics, counts and this week's role players"+(NET.mode?" on all connected devices":"")+". The member list, agenda layout, time limits and word lists are kept.")) return;
+  var carry=confirm("Carry this week over as next week's draft?\n\nOK = keep the role players and speaker/evaluator pairs to edit, and move the date, week and meeting number on\nCancel = start with empty role players");
+  newMeetingCore(carry);
 });
 document.getElementById("backupBtn").addEventListener("click",function(){
   var data={app:"speechcraft-meeting",version:2,savedAt:new Date().toISOString(),state:S};
@@ -2745,6 +2845,11 @@ document.getElementById("restoreFile").addEventListener("change",function(){
   var f=this.files&&this.files[0]; if(!f) return; var rd=new FileReader();
   rd.onload=function(){
     var data; try{ data=JSON.parse(rd.result); }catch(e){ alert("That file isn't a Speechcraft backup."); return; }
+    restoreData(data);
+  };
+  rd.readAsText(f);
+});
+function restoreData(data){ (function(){
     var st=null;
     if(data&&data.app==="speechcraft-meeting"&&data.state) st=data.state;
     else if(data&&data.app==="speechcraft-timer"&&data.state){ var o=data.state; st=blank(); st.meta.week=(o.meta&&o.meta.session)||""; st.meta.date=(o.meta&&o.meta.date)||todayISO(); st.people.timer=(o.meta&&o.meta.timer)||""; if(o.limits) st.limits=Object.assign(st.limits,o.limits); ["tt","ps","rr"].forEach(function(k){ st.rows[k]=((o.rows&&o.rows[k])||[]).map(function(r,i){return Object.assign({},r,{id:String(r.id),ord:i+1,u:1});}); }); st.names=data.names||[]; }
@@ -2754,10 +2859,8 @@ document.getElementById("restoreFile").addEventListener("change",function(){
     var when=data.savedAt?new Date(data.savedAt).toLocaleString("en-AU",{dateStyle:"medium",timeStyle:"short"}):"unknown date";
     if(!confirm("Restore backup saved "+when+" ("+(st.meta.week||"no week set")+", "+cnt+" timed speakers, "+st.topics.length+" topics)?\n\nThis replaces the current meeting"+(NET.mode?" on all connected devices":"")+". Saved names are merged.")) return;
     var names=S.names; st.mid=uid(); st.midU=now(); S=st; names.forEach(function(n){ addName(S,n); });
-    lastSig={}; commit(); wake(); setSaved("Backup restored");
-  };
-  rd.readAsText(f);
-});
+    lastSig={}; commit(); wake(); setSaved("Meeting record restored");
+  })(); }
 
 /* ---------- report ---------- */
 function fmtDate(iso){ if(!iso) return ""; var p=iso.split("-"); if(p.length!==3) return iso; return new Date(+p[0],+p[1]-1,+p[2]).toLocaleDateString("en-AU",{weekday:"long",day:"numeric",month:"long",year:"numeric"}); }
@@ -2886,7 +2989,7 @@ document.addEventListener("keydown",function(e){ if(e.key==="Escape"){ document.
 var APP_ID="dijitalteam-speechcraft-v2";
 var NET={room:null,act:null,mode:null,code:"",status:"off",msg:"",info:{},peers:[],synced:false,decided:false,pushT:null,relayT:null,
   push:function(){ if(!NET.room) return; clearTimeout(NET.pushT); NET.pushT=setTimeout(function(){ sendAll({t:"state",state:S}); },120); },
-  hello:function(){ if(!NET.room) return; sendAll({t:"who",role:L.role,roles:myRoles(),name:myName()}); refreshPeers(); }
+  hello:function(){ if(!NET.room) return; sendAll({t:"who",role:L.role,roles:myRoles(),name:myName(),v:APP_VERSION}); refreshPeers(); }
 };
 function flags(m){ m.host=NET.mode==="host"; m.synced=NET.synced||NET.mode==="host"; return m; }
 function sendAll(m){ try{ if(NET.act) NET.act.send(flags(m)); }catch(e){} }
@@ -2912,7 +3015,7 @@ function peopleRoleNames(g){ return g.roles.map(roleName).join(" + "); }
 function refreshPeers(){
   var t=now(), list=[{role:L.role,roles:myRoles(),name:myName(),host:NET.mode==="host",me:true}];
   Object.keys(NET.info).forEach(function(id){ var p=NET.info[id]; if(t-p.last<20000) list.push(p); });
-  NET.peers=list;
+  NET.peers=list; refreshHealth();
   if(NET.room){
     if(list.length>1 || NET.mode==="host") setStatus("on");
     else if(NET.status!=="wait") setStatus("wait", NET.synced?"Waiting for the others to reconnect…":"Looking for meeting "+fmtCode(NET.code)+"…");
@@ -2931,7 +3034,7 @@ function startMeeting(code,asHost){
   catch(e){ setStatus("err","Couldn't start the connection: "+(e&&e.message||e)); return; }
   NET.act=NET.room.makeAction("m");
   NET.act.onMessage=function(data,ctx){ onMsg(ctx&&ctx.peerId,data); };
-  NET.room.onPeerJoin=function(pid){ sendTo(pid,{t:"hello",role:L.role,roles:myRoles(),name:myName(),state:S}); };
+  NET.room.onPeerJoin=function(pid){ sendTo(pid,{t:"hello",role:L.role,roles:myRoles(),name:myName(),v:APP_VERSION,state:S}); };
   NET.room.onPeerLeave=function(pid){ delete NET.info[pid]; refreshPeers(); };
   setStatus(asHost?"on":"wait", asHost?"":"Looking for meeting "+fmtCode(code)+"…");
   refreshPeers();
@@ -2957,8 +3060,8 @@ function onMsg(pid,m){
   var known=NET.info[pid];
   if(m.t==="bye"){ delete NET.info[pid]; refreshPeers(); return; }
   if(m.t==="hello"||m.t==="who"||m.t==="ping"||!known){
-    NET.info[pid]={roles:Array.isArray(m.roles)?m.roles.slice(0,12).map(String):(known&&known.roles)||null,role:String(m.role||(known&&known.role)||"").slice(0,10),name:String(m.name!=null?m.name:(known&&known.name)||"").slice(0,60),host:!!m.host,last:now()};
-    if(!known && m.t!=="hello") sendTo(pid,{t:"hello",role:L.role,roles:myRoles(),name:myName(),state:S});
+    NET.info[pid]={roles:Array.isArray(m.roles)?m.roles.slice(0,12).map(String):(known&&known.roles)||null,role:String(m.role||(known&&known.role)||"").slice(0,10),name:String(m.name!=null?m.name:(known&&known.name)||"").slice(0,60),host:!!m.host,v:String(m.v||(known&&known.v)||"").slice(0,40),last:now()};
+    if(!known && m.t!=="hello") sendTo(pid,{t:"hello",role:L.role,roles:myRoles(),name:myName(),v:APP_VERSION,state:S});
     refreshPeers();
   } else { known.last=now(); known.host=!!m.host; if(Array.isArray(m.roles)) known.roles=m.roles.slice(0,12).map(String); }
   if(m.t==="pingrt"){ sendTo(pid,{t:"pongrt",ts:m.ts}); return; }
@@ -3503,7 +3606,7 @@ function renderFin(){
     if(L.role!=="coord"||!coordUnlocked()) return;
     if(e.target.closest("#endSave")) document.getElementById("backupBtn").click();
     else if(e.target.closest("#endImport")) document.getElementById("restoreBtn").click();
-    else if(e.target.closest("#finStart")){ S.wrap.on=true; S.wrap.at=now(); tick(S.wrap); commit(); window.scrollTo(0,0); }
+    else if(e.target.closest("#finStart")){ autoSaveRecord("Finish meeting"); S.wrap.on=true; S.wrap.at=now(); tick(S.wrap); commit(); window.scrollTo(0,0); }
     else if(e.target.closest("#finStop")){ if(!confirm("Stop asking roles to finish? Their prompts close; answers so far are kept.")) return; S.wrap.on=false; tick(S.wrap); commit(); }
   });
   var F=document.getElementById("finSheet");
@@ -3825,7 +3928,7 @@ var FKEY="speechcraftFeedback"+NS;
 function histLoad(){ try{ return JSON.parse(lsGet(FKEY)||"{}")||{}; }catch(e){ return {}; } }
 function histSave(h){ lsSet(FKEY,JSON.stringify(h)); }
 function histCapture(name){
-  if(!name) return; var k=nkey(name), H=histLoad(), mine=H[k]=H[k]||{name:name,meetings:{}};
+  if(!name||S.meta.test) return; var k=nkey(name), H=histLoad(), mine=H[k]=H[k]||{name:name,meetings:{}};
   var ev=submittedEvals(name).map(function(e){ return {by:e.by||"",kind:e.kind||"",enc:e.enc}; });
   var nt=S.notes.filter(function(n){return nkey(n.to)===k&&n.enc;}).map(function(n){ return {enc:n.enc}; });
   var tm=timesFor(name).filter(function(x){return rowState(x.r)==="done";}).map(function(x){ return {s:x.s.name,sec:x.sec,res:x.st.text}; });
@@ -4235,10 +4338,10 @@ function tplHTML(){
 })();
 
 /* ---------- 4. your roles at the next meeting + calendar ---------- */
-function myUpcoming(){
-  var nm=L.me||myName(); if(!nm||!S.meta.date) return null;
-  var today=todayISO(); if(S.meta.date<today) return null;
-  if(S.meta.date===today && S.run && S.run.cur) return null;
+function myUpcoming(forName){
+  var nm=forName||L.me||myName(); if(!nm||(!S.meta.date&&!forName)) return null;
+  var today=todayISO();
+  if(!forName){ if(S.meta.date<today) return null; if(S.meta.date===today && S.run && S.run.cur) return null; }
   var k=nkey(nm), parts=[];
   agendaRolesFor(nm).forEach(function(r){
     if(r==="speaker"){ var sr=speechRec(nm)||{}, ev=evaluatorOf(nm); parts.push({icon:"🎙",t:"Prepared speech"+(sr.title?" — “"+sr.title+"”":""),d:(sr.lim?"Time "+String(sr.lim).replace("-","–")+" min · ":"")+(ev?"Evaluator: "+ev:"Evaluator not assigned yet")+(sr.title?"":" · add your title and objectives")}); }
@@ -4322,7 +4425,7 @@ applyDisplay();
   document.addEventListener("keydown",function(e){ if(e.key==="Escape") setOpen(false); });
 })();
 /* ---------- home, about and clean-up ---------- */
-var APP_VERSION="3.8 · November 2026";
+var APP_VERSION="3.9 · November 2026";
 function aboutHTML(){
   var on=!!NET.mode, coord=L.role==="coord";
   return '<div class="finhead"><h2 class="sec" style="margin:0">ℹ️ About</h2><button class="btn ghost" id="aboutClose">Close</button></div>'+

@@ -32,7 +32,7 @@ Tick each box as you go. If something fails, use **⋯ More → 💬 Report a pr
 
 ## 3. Set up as the Coordinator (3 min)
 
-- [ ] **A** goes to the Coordinator screen, sets a PIN (note the recovery code), adds the 4 names as members on **👥 People**, and on **⚙️ Set-up** sets **B** as Timer, **C** as Ah-Counter and Table Topics Evaluator, **D** as a prepared speaker.
+- [ ] **A** goes to the Coordinator screen, sets a PIN (note the recovery code), taps **🩺 Ready for the meeting? → 🧪 Start a dry run** (every device shows a test banner), adds the 4 names as members on **👥 People**, and on **⚙️ Set-up** sets **B** as Timer, **C** as Ah-Counter and Table Topics Evaluator, **D** as a prepared speaker.
 - [ ] On **C**: Home → **Change name or role** → tapping their name pre-ticks both roles.
 - [ ] **A** taps **📄 Print agenda**: one page, correct names.
 
@@ -53,7 +53,8 @@ Tick each box as you go. If something fails, use **⋯ More → 💬 Report a pr
 - [ ] **A** opens **🏁 After** and taps **🏁 Finish meeting**. Each phone gets the finish prompt; everyone taps **Yes, done**. **A** sees every role as ✓ Complete.
 - [ ] **A** taps **⤓ Save meeting record** and keeps the file.
 - [ ] **D** opens **My feedback card**, unlocks with their PIN, and sees their time and Ah-Counter count. **A** (with ＋ Role → 🙋 Participant) unlocks theirs and reads C's Table Topics evaluation; nobody else can.
-- [ ] **A**: **⋯ More → New meeting** to clear the test (or **About → Reset device** on any phone used only for testing).
+- [ ] **A**: ⚙️ Set-up → **✓ Finish dry run & clean up**. Every device drops the test data; role players and the agenda stay for the real meeting. (Phones used only for testing: **About → Reset device**.)
+- [ ] **A**: check **🩺 Ready for the meeting?** shows the remaining items, and use **📋 Copy reminders** to post the role list in the group chat.
 
 ---
 
