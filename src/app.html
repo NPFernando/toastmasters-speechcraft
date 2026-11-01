@@ -592,6 +592,11 @@ table.prog{width:100%;border-collapse:collapse;font-size:13px} table.prog th,tab
 /* connection check */
 .ccverdict{margin:10px 0;padding:10px 12px;border-radius:10px;font-weight:800} .ccverdict.ok{background:var(--g-bg)} .ccverdict.warn{background:var(--a-bg)} .ccverdict.no{background:var(--r-bg)}
 .cct td{vertical-align:top;text-align:left} .cct td:first-child{width:28px}
+
+.kgroup{margin-top:6px} .kgh{font-size:12px;font-weight:800;color:var(--muted);margin:4px 0}
+.chip .kname{border:0;background:transparent;font:inherit;color:inherit;padding:0;cursor:pointer} .chip .kname small{color:var(--muted)} .chip.active .kname small{color:inherit;opacity:.85}
+.kbadge{display:inline-block;font-size:10.5px;font-weight:800;border-radius:999px;padding:0 6px;margin-left:4px;vertical-align:middle;white-space:nowrap} .kbadge.k-tm{background:var(--hy);color:var(--hy-ink)} .kbadge.k-guest{background:var(--chip);color:var(--muted);border:1px solid var(--line)}
+.medit{margin-top:8px}
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#004165">
@@ -799,7 +804,7 @@ function normalize(st){
   o.notes=o.notes.filter(function(n){ return n&&n.enc; });
   o.attend=Array.isArray(st.attend)?st.attend.filter(function(a){return a&&a.id&&a.name;}).map(function(a){ a.u=+a.u||1; a.ord=+a.ord||1; return a; }):[];
   o.vote=Object.assign(b.vote, st.vote||{}); o.genotes=Object.assign(b.genotes, st.genotes||{}); o.rrcur=Object.assign(b.rrcur, st.rrcur||{}); o.wrap=Object.assign(b.wrap, st.wrap||{}); o.pres=Object.assign(b.pres, st.pres||{}); o.saa=Object.assign(b.saa, st.saa||{}); if(!o.pres.chk||typeof o.pres.chk!=="object") o.pres.chk={}; if(!o.saa.chk||typeof o.saa.chk!=="object") o.saa.chk={};
-  o.members=(st.members&&Array.isArray(st.members.list))?{list:st.members.list.filter(function(m){return m&&m.name;}),u:+st.members.u||0,fu:(st.members.fu&&typeof st.members.fu==="object")?st.members.fu:{}}:b.members;
+  o.members=(st.members&&Array.isArray(st.members.list))?{list:st.members.list.filter(function(m){return m&&m.name;}),u:+st.members.u||0,fu:(st.members.fu&&typeof st.members.fu==="object")?st.members.fu:{},tmAwards:!!st.members.tmAwards}:b.members;
   o.ideas=Array.isArray(st.ideas)?st.ideas.filter(function(x){return x&&x.id;}).map(function(x){ x.u=+x.u||1; x.ord=+x.ord||1; return x; }):[];
   o.coorg=Array.isArray(st.coorg)?st.coorg.filter(function(c){return c&&c.id&&c.hash;}).map(function(c){ c.u=+c.u||1; c.ord=+c.ord||1; return c; }):[];
   o.pin=Object.assign(b.pin, st.pin||{});
@@ -874,7 +879,7 @@ function agParts(ag){
   ((ag&&ag.items)||[]).forEach(function(it){ p["it."+it.id]=js(it); });
   return p;
 }
-function memParts(m){ var p={}; ((m&&m.list)||[]).forEach(function(x){ p["m."+x.id]=js(x); }); return p; }
+function memParts(m){ var p={"o.tmAwards":js(!!(m&&m.tmAwards))}; ((m&&m.list)||[]).forEach(function(x){ p["m."+x.id]=js(x); }); return p; }
 function stampObj(obj,parts,shadow){
   if(!shadow) return false; obj.fu=obj.fu||{}; var t=now(), ch=false;
   Object.keys(parts).concat(Object.keys(shadow)).forEach(function(k){ if(parts[k]!==shadow[k]){ obj.fu[k]=Math.max(t,(obj.fu[k]||0)+1); ch=true; } });
@@ -902,6 +907,7 @@ function mergeMembers(A,B){
   var a=A.members, b=B.members, fa=a.fu=a.fu||{}, fb=b.fu||{};
   Object.keys(fb).forEach(function(k){
     if(!((fb[k]||0)>(fa[k]||0))) return; fa[k]=fb[k];
+    if(k==="o.tmAwards"){ a.tmAwards=!!b.tmAwards; return; }
     var id=k.slice(2), bi=(b.list||[]).find(function(x){return x.id===id;}), ai=a.list.findIndex(function(x){return x.id===id;});
     if(bi){ if(ai>=0) a.list[ai]=clone(bi); else a.list.push(clone(bi)); } else if(ai>=0) a.list.splice(ai,1);
   });
@@ -1469,6 +1475,47 @@ function coorgHTML(){
   });
   V.addEventListener("keydown",function(e){ if(e.key!=="Enter") return; if(e.target.id==="coName"){ e.preventDefault(); document.getElementById("coInvite").click(); } else if(e.target.id==="coCode"){ e.preventDefault(); document.getElementById("coUnlock").click(); } });
 })();
+/* ---------- member types: Speechcrafter, Toastmaster (graduated / visiting), Guest ---------- */
+var KINDS={sc:{i:"🎓",n:"Speechcrafter",p:"Speechcrafters"},tm:{i:"⭐",n:"Toastmaster",p:"Toastmasters"},guest:{i:"👋",n:"Guest",p:"Guests"}};
+function guessKind(name){ var n=String(name||"").trim(); return /^tm[\s.-]/i.test(n)?"tm":"sc"; }
+function memberRec(name){ var k=nkey(name); return S.members.list.find(function(m){ return nkey(m.name)===k; }); }
+function memberKind(name){ var m=memberRec(name); if(m) return m.kind||guessKind(m.name); if(/^tm[\s.-]/i.test(String(name||""))) return "tm"; return S.guests.some(function(g){return nkey(g.name)===nkey(name);})?"guest":"sc"; }
+function kindBadge(name,long){ var k=memberKind(name); if(k==="sc") return ""; var m=memberRec(name); return ' <span class="kbadge k-'+k+'" title="'+KINDS[k].n+(m&&m.club?' · '+esc(m.club):'')+'">'+(k==="tm"?"⭐ TM":"👋 Guest")+(long&&m&&m.club?' · '+esc(m.club):'')+'</span>'; }
+function speechcrafterNames(){ return S.members.list.filter(function(m){ return (m.kind||guessKind(m.name))==="sc"; }).map(function(m){return m.name;}); }
+function awardEligible(name){ return memberKind(name)!=="tm" || !!S.members.tmAwards; }
+function membersEditorHTML(){
+  var groups={sc:[],tm:[],guest:[]};
+  S.members.list.forEach(function(m){ (groups[m.kind||guessKind(m.name)]||groups.sc).push(m); });
+  var h='';
+  ["sc","tm","guest"].forEach(function(k){
+    if(!groups[k].length&&k!=="sc") return;
+    h+='<div class="kgroup"><div class="kgh">'+KINDS[k].i+' '+KINDS[k].p+' <span class="cnt">'+groups[k].length+'</span></div><div class="chips">'+
+      (groups[k].length?groups[k].map(function(m){ return '<span class="chip word'+(L.memEdit===m.id?' active':'')+'"><button class="kname" data-medit="'+esc(m.id)+'" title="Change type or club">'+esc(m.name)+(m.club?' <small>· '+esc(m.club)+'</small>':'')+'</button><button data-mdel="'+esc(m.id)+'" title="Remove member" aria-label="Remove '+esc(m.name)+'">✕</button></span>'; }).join(""):'<span class="muted">No members yet.</span>')+'</div></div>';
+  });
+  var ed=L.memEdit&&S.members.list.find(function(m){return m.id===L.memEdit;});
+  if(ed){ var ek=ed.kind||guessKind(ed.name);
+    h+='<div class="selcard medit"><b>'+esc(ed.name)+'</b><div class="row" style="margin-top:6px"><div class="seg" role="group" aria-label="Member type">'+["sc","tm","guest"].map(function(k){ return '<button data-mkind="'+k+'" class="'+(ek===k?'on':'')+'">'+KINDS[k].i+' '+KINDS[k].n+'</button>'; }).join("")+'</div>'+
+      (ek==="tm"?'<input class="t" id="mClub" style="max-width:240px" placeholder="Club, e.g. Dialog TMC" value="'+esc(ed.club||"")+'" aria-label="Club">':'')+'<button class="btn sm" data-mdone>Done</button></div>'+
+      '<div class="saved" style="margin-top:4px">'+(ek==="sc"?'Takes part in the 10-week programme: tracked in 📈 Progress and eligible for awards.':ek==="tm"?'Already a Toastmaster (graduated or from another club): can take any role or be the keynote; not tracked in Progress'+(S.members.tmAwards?'.':' and not on the awards ballot.'):'Visiting: can take part and vote; not tracked in Progress.')+'</div></div>';
+  }
+  h+='<div class="row" style="margin-top:8px"><input class="t" id="memIn" placeholder="Add names, separated by commas (e.g. SC Upeksha Perera, TM Nalin De Abrew)"><select class="t" id="memKind" style="max-width:170px" aria-label="Type for new names"><option value="auto">Type: auto (TM… = Toastmaster)</option><option value="sc">🎓 Speechcrafter</option><option value="tm">⭐ Toastmaster</option><option value="guest">👋 Guest</option></select><button class="btn primary" id="memAdd">+ Add members</button></div>'+
+    '<label class="tgl" style="margin-top:8px"><input type="checkbox" id="tmAwards"'+(S.members.tmAwards?' checked':'')+'> <span>Toastmasters can win awards <span class="saved">(off: Speechcraft awards are for Speechcrafters and guests)</span></span></label>';
+  return h;
+}
+(function(){
+  var V=document.getElementById("view");
+  V.addEventListener("click",function(e){
+    var t=e.target, b; if(L.role!=="coord"||!coordUnlocked()) return;
+    if((b=t.closest("[data-medit]"))){ L.memEdit=L.memEdit===b.dataset.medit?null:b.dataset.medit; saveL(); renderAll(); return; }
+    if((b=t.closest("[data-mkind]"))){ var m=S.members.list.find(function(x){return x.id===L.memEdit;}); if(m){ m.kind=b.dataset.mkind; if(m.kind!=="tm") delete m.club; tick(S.members); commit(); } return; }
+    if(t.closest("[data-mdone]")){ L.memEdit=null; saveL(); renderAll(); return; }
+  });
+  V.addEventListener("change",function(e){
+    if(L.role!=="coord"||!coordUnlocked()) return;
+    if(e.target.id==="mClub"){ var m=S.members.list.find(function(x){return x.id===L.memEdit;}); if(m){ m.club=e.target.value.trim(); tick(S.members); commit(); } }
+    if(e.target.id==="tmAwards"){ S.members.tmAwards=e.target.checked; tick(S.members); commit(); }
+  });
+})();
 /* ---------- coordinator view ---------- */
 function memberNames(){ return S.members.list.map(function(m){return m.name;}); }
 function coordHTML(){
@@ -1506,9 +1553,7 @@ function coordHTML(){
      '<label class="f">Next meeting date<input class="t" type="date" data-ag="next" value="'+esc(A.next)+'"></label></div>';
   /* members */
   var ms=memberNames();
-  h+='<h2 class="sec">👥 Members <span class="cnt">('+ms.length+') · remembered for every meeting</span></h2><div class="chips">'+
-     (ms.length?S.members.list.map(function(m){ return '<span class="chip word">'+esc(m.name)+'<button data-mdel="'+esc(m.id)+'" title="Remove member">✕</button></span>'; }).join(""):'<span class="muted">No members yet.</span>')+
-     '</div><div class="row" style="margin-top:8px"><input class="t" id="memIn" placeholder="Add names, separated by commas (e.g. SC Upeksha Perera, SC Afraa Faleel)"><button class="btn primary" id="memAdd">+ Add members</button></div>';
+  h+='<h2 class="sec">👥 Members <span class="cnt">('+ms.length+') · remembered for every meeting · tap a name to set Speechcrafter / Toastmaster / Guest</span></h2>'+membersEditorHTML();
   /* role players */
   h+='<h2 class="sec">🎭 Role players</h2><div class="rp">';
   AROLES.forEach(function(a){
@@ -1688,10 +1733,10 @@ function rolePlayerList(){
   return out;
 }
 var VCATS=[
-  {k:"ps",n:"Best Prepared Speaker",c:function(){ return preparedSpeakers().map(function(n){return {name:n};}); }},
-  {k:"tt",n:"Best Table Topics Speaker",c:function(){ return ttSpeakers().map(function(n){return {name:n};}); }},
-  {k:"ev",n:"Best Evaluator",c:function(){ return evaluatorNames().map(function(n){return {name:n};}); }},
-  {k:"role",n:"Best Role Player",c:function(){ return rolePlayerList().map(function(p){return {name:p.name,sub:p.roles.join(", ")};}); }}
+  {k:"ps",n:"Best Prepared Speaker",c:function(){ return preparedSpeakers().filter(awardEligible).map(function(n){return {name:n};}); }},
+  {k:"tt",n:"Best Table Topics Speaker",c:function(){ return ttSpeakers().filter(awardEligible).map(function(n){return {name:n};}); }},
+  {k:"ev",n:"Best Evaluator",c:function(){ return evaluatorNames().filter(awardEligible).map(function(n){return {name:n};}); }},
+  {k:"role",n:"Best Role Player",c:function(){ return rolePlayerList().filter(function(p){return awardEligible(p.name);}).map(function(p){return {name:p.name,sub:p.roles.join(", ")};}); }}
 ];
 function myVote(cat){ var v=S.votes.find(function(x){return x.id==="v|"+cat+"|"+devId();}); return v?v.choice:""; }
 function tally(cat){
@@ -2399,7 +2444,8 @@ document.addEventListener("fullscreenchange",function(){ if(!document.fullscreen
     if(!coordUnlocked()) return;
     if(t.closest("#memAdd")){
       var inp=document.getElementById("memIn"), names=inp.value.split(/[,;\n]+/).map(function(x){return x.trim();}).filter(Boolean), added=0;
-      names.forEach(function(n){ if(!S.members.list.some(function(m){return m.name.toLowerCase()===n.toLowerCase();})){ S.members.list.push({id:uid(),name:n}); added++; } });
+      var mk=(document.getElementById("memKind")||{}).value||"auto";
+      names.forEach(function(n){ if(!S.members.list.some(function(m){return m.name.toLowerCase()===n.toLowerCase();})){ S.members.list.push({id:uid(),name:n,kind:mk==="auto"?guessKind(n):mk}); added++; } });
       if(added){ tick(S.members); commit(); } var again=document.getElementById("memIn"); if(again){ again.value=""; again.focus(); } return;
     }
     var kr=t.closest("[data-keyreset]"); if(kr){ var nm=kr.dataset.keyreset; if(!confirm("Reset "+nm+"'s feedback PIN?\n\nThey can set a new one, but feedback encrypted for the old PIN can't be read any more.")) return; var rec=S.keys.find(function(k){return k.id==="k|"+nkey(nm);}); if(rec){ rec.pub=null; rec.wrapped=""; tick(rec); commit(); } return; }
@@ -2811,7 +2857,9 @@ function wStartLabel(){
 function wNamesHTML(){
   var ms=memberNames(), nm=wName();
   var h='<div class="wlbl">Your name</div>';
-  if(ms.length) h+='<div class="chips wnames">'+ms.map(function(n){ return '<button class="chip'+(nkey(n)===nkey(nm)?' active':'')+'" data-wname="'+esc(n)+'">'+esc(n)+'</button>'; }).join("")+'</div>';
+  if(ms.length){ var nb=function(n){ return '<button class="chip'+(nkey(n)===nkey(nm)?' active':'')+'" data-wname="'+esc(n)+'">'+esc(n)+kindBadge(n)+'</button>'; };
+    var scs=ms.filter(function(n){return memberKind(n)==="sc";}), others=ms.filter(function(n){return memberKind(n)!=="sc";});
+    h+='<div class="chips wnames">'+scs.map(nb).join("")+'</div>'+(others.length?'<div class="wlbl" style="margin-top:2px">⭐ Toastmasters · 👋 Guests</div><div class="chips wnames">'+others.map(nb).join("")+'</div>':''); }
   h+='<input class="t" id="wName" list="roster" autocomplete="off" placeholder="'+(ms.length?'Not on the list? Type your name':'Type your name')+'" value="'+esc(ms.some(function(n){return nkey(n)===nkey(nm);})?"":nm)+'">';
   return h;
 }
@@ -3267,7 +3315,7 @@ function dashHTML(){
   var ppl=onlinePeople();
   h+='<section class="card"><h2 class="sec" style="margin-top:0">🟢 Online <span class="cnt">'+(NET.mode?ppl.length:0)+'</span></h2>'+(NET.mode&&ppl.length?'<div class="chips">'+ppl.map(function(p){ return '<span class="chip word">'+p.roles.map(function(r){var o=roleObj(r);return o?o.icon:"";}).join("")+' '+esc(p.name||peopleRoleNames(p))+(p.devices>1?' <small>· '+p.devices+'</small>':'')+'</span>'; }).join("")+'</div>':'<div class="note" style="margin:0">Not connected. Tap the connection button at the top to join the meeting.</div>')+'</section>';
   var rp=AG_SIDE.filter(function(a){return asList(a[0]).length;});
-  h+='<section class="card"><h2 class="sec" style="margin-top:0">👥 Role players</h2>'+(rp.length?'<div class="dplayers">'+rp.map(function(a){ return '<div><span class="muted">'+esc(a[1])+'</span><b>'+asList(a[0]).map(function(n){ return (isOnlineName(n)?'<i class="dotg" title="online"></i>':'')+esc(n); }).join(", ")+'</b></div>'; }).join("")+'</div>':'<div class="note" style="margin:0">The Coordinator hasn’t set the role players yet.</div>')+'</section>';
+  h+='<section class="card"><h2 class="sec" style="margin-top:0">👥 Role players</h2>'+(rp.length?'<div class="dplayers">'+rp.map(function(a){ return '<div><span class="muted">'+esc(a[1])+'</span><b>'+asList(a[0]).map(function(n){ return (isOnlineName(n)?'<i class="dotg" title="online"></i>':'')+esc(n)+kindBadge(n); }).join(", ")+'</b></div>'; }).join("")+'</div>':'<div class="note" style="margin:0">The Coordinator hasn’t set the role players yet.</div>')+'</section>';
   h+='<section class="card"><h2 class="sec" style="margin-top:0">📝 Word of the Day</h2>'+(S.gram.wotd?'<div class="dwotd">'+esc(S.gram.wotd)+'</div>'+(S.gram.meaning?'<div class="muted">'+esc(S.gram.meaning)+'</div>':''):'<div class="note" style="margin:0">The Grammarian hasn’t set it yet.</div>')+
      '<h2 class="sec">🗳 Voting</h2><div>'+voteStateText()+'</div>'+(S.vote.state==="shown"?winnersLine():'')+'</section>';
   h+='</div>';
@@ -3473,14 +3521,14 @@ function progPeople(ms){
     Object.keys(m.ah).forEach(function(n){ var p=get(n); if(p) p.fillers+=m.ah[n]; });
     Object.keys(m.wotd).forEach(function(n){ var p=get(n); if(p) p.wotd+=m.wotd[n]; });
   });
-  return Object.keys(ppl).map(function(k){return ppl[k];}).sort(function(a,b){return a.name.localeCompare(b.name);});
+  return Object.keys(ppl).map(function(k){return ppl[k];}).filter(function(p){ return L.progAll || memberKind(p.name)==="sc"; }).sort(function(a,b){return a.name.localeCompare(b.name);});
 }
 var ROLE_ICON={president:"🔔",saa:"🛎",tmod:"🎩",ge:"🧭",timer:"⏱",ah:"🔢",gram:"📝",ttm:"🎤",rrm:"🔁",speaker:"🎙",evaluator:"🗣"};
 function progTableHTML(ms,ppl,print){
   var h='<table class="prog"><thead><tr><th>Name</th>'+ms.map(function(m,i){ return '<th class="c" title="'+esc(m.date)+'">'+esc((m.week||"").replace(/^Week (\d+).*$/,"W$1")||("#"+(i+1)))+'</th>'; }).join("")+'<th>Prepared speeches</th><th class="c">Table Topics</th><th>Awards</th>'+(print?'':'<th>Still to try</th>')+'</tr></thead><tbody>';
   ppl.forEach(function(p){
     var todo=PROG_TRY.filter(function(r){ return r==="speaker"?!p.speeches.length&&!p.roles.speaker:!p.roles[r]; });
-    h+='<tr><td><b>'+esc(p.name)+'</b><div class="saved">'+Object.keys(p.weeks).length+' of '+ms.length+' meetings</div></td>'+
+    h+='<tr><td><b>'+esc(p.name)+'</b>'+kindBadge(p.name)+'<div class="saved">'+Object.keys(p.weeks).length+' of '+ms.length+' meetings</div></td>'+
       ms.map(function(m,i){ var w=p.weeks[i]; return '<td class="c pw">'+(w?(w.length?uniq(w).map(function(r){return '<span title="'+esc(PROG_TRY_N[r]||r)+'">'+(ROLE_ICON[r]||"•")+'</span>';}).join(""):'✓'):'<span class="muted">·</span>')+'</td>'; }).join("")+
       '<td>'+(p.speeches.length?p.speeches.map(function(s){ return esc(s.w)+(s.title?' “'+esc(s.title)+'”':'')+' '+fmt(s.sec)+(s.ok?' ✓':' ✗'); }).join('<br>'):'<span class="muted">—</span>')+'</td>'+
       '<td class="c">'+(p.tt||'<span class="muted">—</span>')+'</td><td>'+(p.awards.length?'🏆 '+esc(p.awards.join(", ")):'<span class="muted">—</span>')+'</td>'+
@@ -3492,7 +3540,7 @@ function progressHTML(){
   var ms=progMeetings(), ppl=progPeople(ms);
   var h='<details class="card" id="progCard" style="margin-top:12px"'+(L.progOpen?' open':'')+'><summary><h2 class="sec" style="margin:0;display:inline-flex">📈 Speechcraft progress <span class="cnt">'+ms.length+' meeting'+(ms.length===1?'':'s')+'</span></h2></summary>';
   h+='<div class="note" style="margin-top:8px">Add each week’s saved meeting record (🏁 End of meeting → Save meeting record). This meeting is included automatically. Records are kept on this device only.</div>';
-  h+='<div class="row" style="margin:8px 0"><button class="btn primary" id="progAdd">⤒ Add meeting records</button><input type="file" id="progFile" accept=".json,application/json" multiple hidden>'+(ms.length?'<button class="btn" id="progPrint">📄 Print progress</button>':'')+'</div>';
+  h+='<div class="row" style="margin:8px 0"><button class="btn primary" id="progAdd">⤒ Add meeting records</button><input type="file" id="progFile" accept=".json,application/json" multiple hidden>'+(ms.length?'<button class="btn" id="progPrint">📄 Print progress</button>':'')+'<label class="tgl"><input type="checkbox" id="progAll"'+(L.progAll?' checked':'')+'> <span>Include Toastmasters &amp; guests</span></label></div>';
   if(ms.length) h+='<div class="chips">'+ms.map(function(m){ return '<span class="chip word">'+esc(m.week||"Meeting")+' · '+esc(m.date)+(m.current?' <i>(this meeting)</i>':'<button data-progdel="'+esc(m.mid)+'" title="Remove this record">✕</button>')+'</span>'; }).join("")+'</div>';
   if(ms.length && ppl.length) h+='<div class="progwrap">'+progTableHTML(ms,ppl,false)+'</div><div class="saved" style="margin-top:6px">'+Object.keys(ROLE_ICON).map(function(k){return ROLE_ICON[k]+' '+(PROG_TRY_N[k]||{president:"President",saa:"Sergeant at Arms",rrm:"Round Robin Master"}[k]);}).join(" · ")+' · ✓ attended</div>';
   return h+'</details>';
@@ -3514,6 +3562,7 @@ function progPrint(){
     if((b=t.closest("[data-progdel]"))){ var p=progLoad(); delete p[b.dataset.progdel]; progSave(p); renderAll(); return; }
   });
   V.addEventListener("change",function(e){
+    if(e.target.id==="progAll"){ L.progAll=e.target.checked; saveL(); renderAll(); return; }
     if(e.target.id!=="progFile") return; var files=Array.prototype.slice.call(e.target.files||[]); if(!files.length) return;
     var p=progLoad(), added=0, bad=0, n=files.length;
     files.forEach(function(file){ var rd=new FileReader(); rd.onload=function(){ try{ var d=JSON.parse(rd.result), st=d&&d.app==="speechcraft-meeting"&&d.state; var sm=st&&summarise(st); if(sm){ delete sm.current; p[sm.mid]=sm; added++; } else bad++; }catch(err){ bad++; } if(--n===0){ progSave(p); L.progOpen=true; saveL(); renderAll(); showToastMsg("📈 Added "+added+" meeting record"+(added===1?"":"s")+(bad?" · "+bad+(bad===1?" file wasn’t a meeting record":" files weren’t meeting records"):"")); } }; rd.readAsText(file); });
@@ -3898,7 +3947,7 @@ applyDisplay();
   document.addEventListener("keydown",function(e){ if(e.key==="Escape") setOpen(false); });
 })();
 /* ---------- home, about and clean-up ---------- */
-var APP_VERSION="3.2 · November 2026";
+var APP_VERSION="3.3 · November 2026";
 function aboutHTML(){
   var on=!!NET.mode, coord=L.role==="coord";
   return '<div class="finhead"><h2 class="sec" style="margin:0">ℹ️ About</h2><button class="btn ghost" id="aboutClose">Close</button></div>'+
