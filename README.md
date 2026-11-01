@@ -34,6 +34,7 @@ One **Meeting report** combines every role and can be saved as a PDF.
 - **📘 Role guides** (⋯ More, or 📘 Full guide on a role's tips): one printable page per role — what it does before, during and after the meeting, and which buttons to use.
 - **🔌 Connection check** (⋯ More): whether this device reaches the connection relays and the other devices (with round-trip time), and supports encryption, keeping the screen awake, vibration and saving. **Copy results** to include in a problem report.
 - **💬 Report a problem or idea** (⋯ More): see [Issues and ideas](#issues-and-ideas).
+- **Signals readable without colour:** every signal also has its own shape (● Green, ▲ Amber, ■ Red) on the Timer, the live bar, the speaker's card and the projector, and the Timer's time boxes change border (solid, dashed, double), so colour-blind role players and anyone far from the screen can tell them apart.
 - **Accessibility:** every screen passes an automated WCAG 2.1 AA check (axe-core) in light and dark mode: labelled form fields, contrast, a visible keyboard focus ring, and reduced motion when the device asks for it.
 - **Look:** Toastmasters brand colours (Loyal Blue, True Maroon, Happy Yellow). **⋯ More → Display** sets Auto / Light / Dark and **Bigger text** for this device.
 - **Sections:** **My role · Now · Agenda** (plus Report and More). On phones this is a bottom tab bar.
