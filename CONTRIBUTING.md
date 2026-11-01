@@ -44,6 +44,7 @@ Every push runs the **Tests** workflow (Actions tab): it checks that `index.html
 | `06-finish-and-record` | Finish meeting prompts and statuses; meeting record restores everything on a new device |
 | `07-practice-and-reset` | Practice meeting is separate from real data; Reset device clears everything |
 | `08-accessibility` | WCAG 2.1 AA (axe-core) on the main screens in light and dark |
+| `10-guests-nudges-templates` | Agenda templates; speaker reminder and calendar file; guest self check-in incl. a guest speaker; "you're up next" nudges |
 | `09-member-types` | Speechcrafter / Toastmaster / Guest types, club, start-screen groups, awards eligibility and its switch syncing |
 
 ## Tips

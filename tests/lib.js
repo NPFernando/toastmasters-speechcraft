@@ -24,7 +24,7 @@ async function device(b, opts = {}) {
   p._errors = [];
   p._dialogs = [];
   p.on("pageerror", (e) => p._errors.push(e.message));
-  p.on("dialog", (d) => { p._dialogs.push(d.message()); d.accept(); });
+  p.on("dialog", (d) => { p._dialogs.push(d.message()); d.type() === "prompt" ? d.accept(p._answer || "") : d.accept(); });
   p.setDefaultTimeout(15000);
   await p.goto(opts.url || URL);
   return p;
