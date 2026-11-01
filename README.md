@@ -47,6 +47,12 @@ When the General Evaluator opens voting, a vote bar appears on every connected d
 
 Evaluations and audience notes can only be read by the speaker they are for. Each speaker sets a **feedback PIN** once (Member / Audience → My feedback card). This creates a personal key: the public part is shared with the meeting and the private part is locked with the PIN (PBKDF2 + AES-GCM), so the speaker can open their card on any device. Evaluations stay as a draft on the evaluator's device until they tap **Submit**. Evaluators' and members' devices then encrypt feedback for that speaker (ECDH P-256 + AES-GCM) before it is synced, so every other device only holds unreadable data. The General Evaluator and the meeting report show only who evaluated whom. If a speaker hasn't set a PIN yet, feedback waits on the writer's device and is sent automatically once they do. The Coordinator can reset a forgotten PIN, but feedback encrypted for the old PIN can't be recovered.
 
+### Co-organisers (more than one Coordinator)
+
+The Coordinator can invite teammates to help, for example one person sets up next session's roles and another handles sudden changes on the day. In the Coordinator area, **👥 Co-organisers → type a name → + Invite** shows a QR code, an invite link and an 8-character invite code (shown once). The co-organiser scans the QR (or joins the meeting as 🗂 Coordinator and types the code) and the set-up unlocks on their device without the PIN. Co-organisers can edit the agenda, role players and members, but can't change the PIN or invite others. The Coordinator sees who is editing now and can **Remove access** at any time. Only a hash of each invite code is shared with the meeting.
+
+Edits sync field by field: each agenda detail, role player, agenda item and member has its own change time, so two organisers editing different things at the same moment both keep their changes. If both change the same field, the later change wins.
+
 ### Coordinator PIN
 
 The Coordinator area is locked with a 4–8 digit PIN. When it is first set, a one-time **recovery code** is shown: keep it with the coordinator handover notes. To hand over, share the PIN or unlock and use **Change PIN**. This is a lock against casual changes; because everything runs in the browser without a server, it isn't strong security.

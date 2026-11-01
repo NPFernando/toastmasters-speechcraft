@@ -715,7 +715,7 @@ function blank(){
     meta:{week:"",date:todayISO(),u:0},
     people:{coord:"",president:"",saa:"",tmod:"",ge:"",rrm:"",timer:"",ttm:"",ah:"",gram:""}, peopleU:{coord:0,president:0,saa:0,tmod:0,ge:0,rrm:0,timer:0,ttm:0,ah:0,gram:0},
     limits:{tt:{g:60,a:90,r:120},ps:{g:240,a:300,r:360},rr:{b:20},ev:{g:90,a:105,r:120},rep:{g:30,a:45,r:60},u:0},
-    members:{list:[],u:0}, pin:{hash:"",rhash:"",salt:"",u:0}, agenda:defaultAgenda(), run:{cur:null,started:{},u:0},
+    members:{list:[],u:0,fu:{}}, coorg:[], pin:{hash:"",rhash:"",salt:"",u:0}, agenda:defaultAgenda(), run:{cur:null,started:{},u:0},
     evals:[], notes:[], votes:[], rrq:[], speeches:[], assigns:[], rsvp:[], attend:[], keys:[], fin:[], guests:[], wrap:{on:false,at:0,u:0}, pres:{chk:{},notes:"",u:0}, saa:{chk:{},u:0}, vote:{state:"closed",u:0}, genotes:{good:"",improve:"",u:0}, rrcur:{id:null,u:0},
     rows:{tt:[],ps:[],rr:[],ev:[],rep:[]}, topics:[], cur:{id:null,u:0},
     fill:{words:FILLERS.slice(),u:0}, ahRows:[],
@@ -738,7 +738,8 @@ function normalize(st){
   o.notes=o.notes.filter(function(n){ return n&&n.enc; });
   o.attend=Array.isArray(st.attend)?st.attend.filter(function(a){return a&&a.id&&a.name;}).map(function(a){ a.u=+a.u||1; a.ord=+a.ord||1; return a; }):[];
   o.vote=Object.assign(b.vote, st.vote||{}); o.genotes=Object.assign(b.genotes, st.genotes||{}); o.rrcur=Object.assign(b.rrcur, st.rrcur||{}); o.wrap=Object.assign(b.wrap, st.wrap||{}); o.pres=Object.assign(b.pres, st.pres||{}); o.saa=Object.assign(b.saa, st.saa||{}); if(!o.pres.chk||typeof o.pres.chk!=="object") o.pres.chk={}; if(!o.saa.chk||typeof o.saa.chk!=="object") o.saa.chk={};
-  o.members=(st.members&&Array.isArray(st.members.list))?{list:st.members.list.filter(function(m){return m&&m.name;}),u:+st.members.u||0}:b.members;
+  o.members=(st.members&&Array.isArray(st.members.list))?{list:st.members.list.filter(function(m){return m&&m.name;}),u:+st.members.u||0,fu:(st.members.fu&&typeof st.members.fu==="object")?st.members.fu:{}}:b.members;
+  o.coorg=Array.isArray(st.coorg)?st.coorg.filter(function(c){return c&&c.id&&c.hash;}).map(function(c){ c.u=+c.u||1; c.ord=+c.ord||1; return c; }):[];
   o.pin=Object.assign(b.pin, st.pin||{});
   o.agenda=Object.assign(b.agenda, st.agenda||{}); if(!Array.isArray(o.agenda.items)) o.agenda.items=defaultItems(); if(!o.agenda.assign||typeof o.agenda.assign!=="object") o.agenda.assign={};
   o.run=Object.assign(b.run, st.run||{}); if(!o.run.started||typeof o.run.started!=="object") o.run.started={};
@@ -772,8 +773,8 @@ var resetting=false;
 function saveL(){ if(resetting) return; lsSet(LKEY,JSON.stringify(L)); }
 function save(){ if(resetting) return; setSaved(lsSet(KEY,JSON.stringify(S))?"Saved on this device":"Auto-save unavailable in this browser"); }
 function setSaved(t){ var el=document.getElementById("saved"); if(el) el.textContent=t; }
-function commit(){ save(); NET.push(); renderAll(); }
-function commitQuiet(){ save(); NET.push(); }
+function commit(){ stampFields(); save(); NET.push(); renderAll(); }
+function commitQuiet(){ stampFields(); save(); NET.push(); }
 
 function addName(st,name){
   name=String(name||"").trim(); if(!name) return false;
@@ -800,14 +801,62 @@ function mergeColl(a,b,dead){
   return out;
 }
 function meetingEmpty(st){ return !COLLS.some(function(p){return getColl(st,p).length;}) && !st.gram.wotd; }
+/* ---------- field-level sync for the agenda and member list ----------
+   Each agenda field, role player, agenda item and member carries its own change time
+   (agenda.fu / members.fu), so two organisers editing different things never overwrite each other. */
+var shadowAg=null, shadowMem=null;
+function js(x){ return JSON.stringify(x===undefined?null:x); }
+function agParts(ag){
+  var p={}; Object.keys(ag||{}).forEach(function(f){ if(f!=="items"&&f!=="assign"&&f!=="u"&&f!=="fu") p["f."+f]=js(ag[f]); });
+  Object.keys((ag&&ag.assign)||{}).forEach(function(k){ p["as."+k]=js(ag.assign[k]); });
+  ((ag&&ag.items)||[]).forEach(function(it){ p["it."+it.id]=js(it); });
+  return p;
+}
+function memParts(m){ var p={}; ((m&&m.list)||[]).forEach(function(x){ p["m."+x.id]=js(x); }); return p; }
+function stampObj(obj,parts,shadow){
+  if(!shadow) return false; obj.fu=obj.fu||{}; var t=now(), ch=false;
+  Object.keys(parts).concat(Object.keys(shadow)).forEach(function(k){ if(parts[k]!==shadow[k]){ obj.fu[k]=Math.max(t,(obj.fu[k]||0)+1); ch=true; } });
+  if(ch) obj.u=Math.max(t,(obj.u||0)+1);
+  return ch;
+}
+function stampFields(){ stampObj(S.agenda,agParts(S.agenda),shadowAg); stampObj(S.members,memParts(S.members),shadowMem); shadowSync(); }
+function shadowSync(){ shadowAg=agParts(S.agenda); shadowMem=memParts(S.members); }
+function hasFu(o){ return !!(o&&o.fu&&Object.keys(o.fu).length); }
+function mergeAgenda(A,B){
+  if(!hasFu(A.agenda)&&!hasFu(B.agenda)){ if((B.agenda.u||0)>(A.agenda.u||0)) A.agenda=clone(B.agenda); return; }
+  var a=A.agenda, b=B.agenda, fa=a.fu=a.fu||{}, fb=b.fu||{};
+  Object.keys(fb).forEach(function(k){
+    if(!((fb[k]||0)>(fa[k]||0))) return; fa[k]=fb[k];
+    var key=k.slice(k.indexOf(".")+1), kind=k.slice(0,k.indexOf("."));
+    if(kind==="f"){ if(key in b) a[key]=clone(b[key]); else delete a[key]; }
+    else if(kind==="as"){ if(b.assign&&key in b.assign) a.assign[key]=clone(b.assign[key]); else delete a.assign[key]; }
+    else if(kind==="it"){ var bi=(b.items||[]).find(function(x){return x.id===key;}), ai=a.items.findIndex(function(x){return x.id===key;});
+      if(bi){ if(ai>=0) a.items[ai]=clone(bi); else a.items.push(clone(bi)); } else if(ai>=0) a.items.splice(ai,1); }
+  });
+  a.u=Math.max(a.u||0,b.u||0);
+}
+function mergeMembers(A,B){
+  if(!hasFu(A.members)&&!hasFu(B.members)){ if((B.members.u||0)>(A.members.u||0)) A.members=clone(B.members); return; }
+  var a=A.members, b=B.members, fa=a.fu=a.fu||{}, fb=b.fu||{};
+  Object.keys(fb).forEach(function(k){
+    if(!((fb[k]||0)>(fa[k]||0))) return; fa[k]=fb[k];
+    var id=k.slice(2), bi=(b.list||[]).find(function(x){return x.id===id;}), ai=a.list.findIndex(function(x){return x.id===id;});
+    if(bi){ if(ai>=0) a.list[ai]=clone(bi); else a.list.push(clone(bi)); } else if(ai>=0) a.list.splice(ai,1);
+  });
+  /* the same name added on two devices at once: keep one */
+  var seen={}; a.list=a.list.filter(function(m){ var n=nkey(m.name); if(seen[n]) return false; seen[n]=1; return true; });
+  a.u=Math.max(a.u||0,b.u||0);
+}
 /* mode: undefined = normal; "keep" = ignore the other meeting's data; "adopt" = take the other meeting; "absorb" = join the other meeting and keep our items too */
 function mergeInto(A,B,mode){
+  if(A===S) stampFields();
   var before=stable(A);
   B.names.forEach(function(n){ addName(A,n); });
   A.attend=mergeColl(A.attend,B.attend,{}); A.keys=mergeColl(A.keys,B.keys,{});
-  KEEP_LWW.forEach(function(k){ if((B[k].u||0)>(A[k].u||0)) A[k]=clone(B[k]); });
+  KEEP_LWW.forEach(function(k){ if(k==="members") mergeMembers(A,B); else if((B[k].u||0)>(A[k].u||0)) A[k]=clone(B[k]); });
+  A.coorg=mergeColl(A.coorg,B.coorg,{});
   Object.keys(A.people).forEach(function(k){ if((B.peopleU[k]||0)>(A.peopleU[k]||0)){ A.people[k]=B.people[k]; A.peopleU[k]=B.peopleU[k]; } });
-  if(B.mid!==A.mid && mode==="keep"){ return stable(A)!==before; }
+  if(B.mid!==A.mid && mode==="keep"){ if(A===S) shadowSync(); return stable(A)!==before; }
   if(B.mid!==A.mid && mode==="absorb"){ A.mid=B.mid; A.midU=B.midU; }
   var bNewer = mode==="adopt" || B.midU>A.midU || (B.midU===A.midU && B.mid>A.mid);
   if(B.mid!==A.mid && bNewer){
@@ -816,9 +865,10 @@ function mergeInto(A,B,mode){
     COLLS.forEach(function(p){ setColl(A,p,clone(getColl(B,p))); });
   } else if(B.mid===A.mid){
     Object.keys(B.dead).forEach(function(id){ if(!(A.dead[id]>=B.dead[id])) A.dead[id]=B.dead[id]; });
-    MEETING_LWW.forEach(function(k){ if((B[k].u||0)>(A[k].u||0)) A[k]=clone(B[k]); });
+    MEETING_LWW.forEach(function(k){ if(k==="agenda") mergeAgenda(A,B); else if((B[k].u||0)>(A[k].u||0)) A[k]=clone(B[k]); });
     COLLS.forEach(function(p){ setColl(A,p,mergeColl(getColl(A,p),getColl(B,p),A.dead)); });
   }
+  if(A===S) shadowSync();
   return stable(A)!==before;
 }
 
@@ -925,7 +975,7 @@ function renderAll(){
   document.body.classList.toggle("focus",inFocus());
   if(curView()!=="role") v.innerHTML=curView()==="now"?dashHTML():agendaViewHTML();
   else if(inFocus()) v.innerHTML=focusHTML();
-  else if(L.role==="coord"){ var cu=coordUnlocked(), won=cu&&S.wrap.on; v.innerHTML=(won?endMeetingHTML():"")+(cu?availabilityHTML():"")+coordHTML()+(cu?attendanceHTML()+feedbackPinsHTML()+(won?"":endMeetingHTML()):""); }
+  else if(L.role==="coord"){ var cu=coordUnlocked(), won=cu&&S.wrap.on; v.innerHTML=(won?endMeetingHTML():"")+(cu?availabilityHTML():"")+coordHTML()+(cu?coorgHTML()+attendanceHTML()+feedbackPinsHTML()+(won?"":endMeetingHTML()):""); }
   else if(L.role==="tmod") v.innerHTML=(S.vote.state!=="closed"?'<section class="card" style="margin-bottom:12px">'+voteControlHTML(false,true)+'</section>':'')+tmodHTML();
   else if(L.role==="ge") v.innerHTML=geHTML();
   else if(L.role==="seval"||L.role==="tteval") v.innerHTML=evalHTML();
@@ -1272,7 +1322,7 @@ function sha(s){
   if(!(window.crypto&&crypto.subtle)) return Promise.reject(new Error("This browser can't check PINs here. Open the page from the website link."));
   return crypto.subtle.digest("SHA-256",new TextEncoder().encode(s)).then(function(b){ return Array.from(new Uint8Array(b)).map(function(x){return x.toString(16).padStart(2,"0");}).join(""); });
 }
-function coordUnlocked(){ return !!(S.pin.hash && L.coordOK===S.pin.hash); }
+function coordUnlocked(){ return !!(S.pin.hash && L.coordOK===S.pin.hash) || !!myCo(); }
 function setPin(pin){
   var salt=uid(), rec=(makeCode()+makeCode()).slice(0,8);
   return Promise.all([sha("pin|"+salt+"|"+pin),sha("rec|"+salt+"|"+rec)]).then(function(h){
@@ -1288,10 +1338,79 @@ function tryUnlock(val,isRec){
   }).catch(function(e){ alert(e.message||e); });
 }
 
+/* ---------- co-organisers: invite someone to edit the meeting set-up with you ----------
+   The Coordinator creates a personal invite code for each co-organiser. Only a hash of it is shared
+   with the meeting. Their device unlocks the Coordinator area with it, without knowing the PIN,
+   and the Coordinator can remove that access at any time. */
+var lastInvite=null;
+function coRec(id){ return S.coorg.find(function(c){return c.id===id;}); }
+function coActive(){ return S.coorg.filter(function(c){return !c.revoked;}); }
+function myCo(){ var m=/^co:([^:]+):(.+)$/.exec(L.coordOK||""); if(!m) return null; var c=coRec(m[1]); return c&&!c.revoked&&c.hash===m[2]?c:null; }
+function isMainCoord(){ return !!(S.pin.hash && L.coordOK===S.pin.hash); }
+function inviteCodeFmt(c){ return c.slice(0,4)+"-"+c.slice(4); }
+function createInvite(name){
+  var code=(makeCode()+makeCode()).slice(0,8), salt=uid();
+  return sha("co|"+salt+"|"+code).then(function(h){
+    var rec={id:uid(),name:name,salt:salt,hash:h,by:myName()||"Coordinator",at:now(),revoked:false,ord:maxOrd(S.coorg)+1,u:now()};
+    S.coorg.push(rec); lastInvite={id:rec.id,name:name,code:code}; commit();
+  }).catch(function(e){ alert(e.message||e); });
+}
+function tryCoCode(code){
+  code=cleanCode(code); if(code.length!==8) return Promise.resolve(false);
+  var list=coActive(); if(!list.length) return Promise.resolve(false);
+  return Promise.all(list.map(function(c){ return sha("co|"+c.salt+"|"+code).then(function(h){ return h===c.hash?c:null; }); })).then(function(r){
+    var c=r.filter(Boolean)[0]; if(!c) return false;
+    L.coordOK="co:"+c.id+":"+c.hash; delete L.pendingCo; if(!L.me&&c.name) L.me=c.name; saveL(); NET.hello(); renderAll(); showToastMsg("✓ You're a co-organiser — you can edit the meeting set-up"); return true;
+  }).catch(function(){ return false; });
+}
+/* an invite link opened before the meeting data has arrived: keep trying as it syncs */
+setInterval(function(){ if(L.pendingCo && !coordUnlocked() && coActive().length) tryCoCode(L.pendingCo); },1500);
+function coLink(code){ return NET.code ? roleLink(NET.code,"coord")+"&co="+code : ""; }
+function coorgHTML(){
+  var main=isMainCoord(), me=myCo(), h='<section class="card" style="margin-top:12px"><h2 class="sec" style="margin-top:0">👥 Co-organisers <span class="cnt">edit the agenda, role players and members with you</span></h2>';
+  if(me) h+='<div class="note" style="margin-top:0">You’re a co-organiser'+(me.by?' (invited by '+esc(me.by)+')':'')+'. Changes you make sync to everyone.</div>';
+  var list=S.coorg;
+  if(list.length) h+='<div class="glist">'+list.map(function(c){
+    var on=!c.revoked && (NET.peers||[]).some(function(p){ var rl=Array.isArray(p.roles)?p.roles:[p.role]; return rl.indexOf("coord")>=0 && nkey(p.name)===nkey(c.name); });
+    return '<div class="grow'+(c.revoked?'':' on')+'"><div><b>'+esc(c.name)+'</b> <span class="saved">'+(c.revoked?'· access removed':on?'· <span class="dotg"></span>editing now':'· invited')+'</span></div>'+
+      (main&&!c.revoked?'<button class="btn sm ghost" data-corevoke="'+c.id+'">Remove access</button>':'')+'</div>';
+  }).join("")+'</div>';
+  else if(main) h+='<div class="note" style="margin-top:0">No co-organisers yet.</div>';
+  if(main){
+    if(lastInvite && coRec(lastInvite.id) && !coRec(lastInvite.id).revoked){
+      var link=coLink(lastInvite.code);
+      h+='<div class="selcard" style="margin-top:10px;text-align:center"><b>Invite for '+esc(lastInvite.name)+'</b>'+
+        (link?'<div class="qrwrap">'+qrSvg(link)+'<div class="saved">They scan this with their phone camera. It opens the meeting and unlocks the set-up for them.</div></div><div class="row" style="justify-content:center"><button class="btn" data-cocopy="link">Copy invite link</button></div>':
+              '<div class="note">Start or join the meeting first (connection button at the top) so their device can sync with yours.</div>')+
+        '<div class="saved" style="margin-top:8px">Or they open the page, choose 🗂 Coordinator, join the meeting and type this invite code:</div><div class="code" style="font-size:26px">'+inviteCodeFmt(lastInvite.code)+'</div>'+
+        '<div class="saved">The code is shown only now. They don’t need your PIN.</div><button class="linkbtn" data-codone style="margin-top:6px">Done</button></div>';
+    }
+    h+='<div class="row" style="margin-top:10px"><input class="t" id="coName" list="memberlist" autocomplete="off" placeholder="Co-organiser’s name"><button class="btn primary" id="coInvite">+ Invite</button></div>';
+  }
+  return h+'</section>';
+}
+(function(){
+  var V=document.getElementById("view");
+  V.addEventListener("click",function(e){
+    var t=e.target, b;
+    if(L.role!=="coord") return;
+    if(t.closest("#coUnlock")){ var v=document.getElementById("coCode").value; tryCoCode(v).then(function(ok){ if(!ok){ if(!coActive().length){ L.pendingCo=cleanCode(v); saveL(); showToastMsg("Waiting for the meeting data… join the meeting so the invite can be checked"); } else alert("That invite code doesn’t match. Ask the Coordinator for a new one."); } }); return; }
+    if(!coordUnlocked()) return;
+    if(t.closest("#coInvite")){ var n=(document.getElementById("coName").value||"").trim(); if(!n){ document.getElementById("coName").focus(); return; } if(coActive().some(function(c){return nkey(c.name)===nkey(n);})&&!confirm(n+" already has access. Create a new invite for them?")) return; createInvite(n); return; }
+    if((b=t.closest("[data-corevoke]"))){ var c=coRec(b.dataset.corevoke); if(c&&confirm("Remove "+c.name+"’s access to the meeting set-up?")){ c.revoked=true; tick(c); if(lastInvite&&lastInvite.id===c.id) lastInvite=null; commit(); } return; }
+    if((b=t.closest("[data-cocopy]"))){ if(lastInvite) copyText(coLink(lastInvite.code)); return; }
+    if(t.closest("[data-codone]")){ lastInvite=null; renderAll(); return; }
+  });
+  V.addEventListener("keydown",function(e){ if(e.key!=="Enter") return; if(e.target.id==="coName"){ e.preventDefault(); document.getElementById("coInvite").click(); } else if(e.target.id==="coCode"){ e.preventDefault(); document.getElementById("coUnlock").click(); } });
+})();
 /* ---------- coordinator view ---------- */
 function memberNames(){ return S.members.list.map(function(m){return m.name;}); }
 function coordHTML(){
   var h='<section class="card">';
+  if(!S.pin.hash && (L.pendingCo || (NET.mode && !NET.synced))){
+    h+='<h2 class="sec" style="margin-top:0">⏳ Getting the meeting set-up…</h2><p class="muted" style="margin:0">'+(L.pendingCo?'Your invite will unlock the set-up as soon as the meeting data arrives.':'Waiting for the meeting data from the other devices.')+'</p></section>';
+    return h;
+  }
   if(!S.pin.hash){
     h+='<h2 class="sec" style="margin-top:0">🔒 Set a coordinator PIN</h2><p class="muted" style="margin-top:0">Only someone with this PIN can change the agenda, role players and member list. If the coordinator changes, hand over the PIN or set a new one here.</p>'+
        '<div class="row"><input class="t" id="pin1" type="password" inputmode="numeric" placeholder="New PIN (4–8 digits)" maxlength="8" style="max-width:220px"><input class="t" id="pin2" type="password" inputmode="numeric" placeholder="Repeat PIN" maxlength="8" style="max-width:220px"><button class="btn primary" id="pinSet">Set PIN</button></div></section>';
@@ -1300,6 +1419,7 @@ function coordHTML(){
   if(!coordUnlocked()){
     h+='<h2 class="sec" style="margin-top:0">🔒 Coordinator area is locked</h2><p class="muted" style="margin-top:0">Enter the coordinator PIN to edit the agenda, role players and members.</p>'+
        '<div class="row"><input class="t" id="pinIn" type="password" inputmode="numeric" placeholder="PIN" maxlength="8" style="max-width:200px"><button class="btn primary" id="pinUnlock">Unlock</button></div>'+
+       '<div class="selcard" style="margin-top:12px"><b>👥 Invited as a co-organiser?</b><div class="saved" style="margin:2px 0 8px">Type the invite code the Coordinator gave you.</div><div class="row"><input class="t" id="coCode" placeholder="Invite code (8 characters)" maxlength="10" style="max-width:220px;text-transform:uppercase" value="'+esc(L.pendingCo?inviteCodeFmt(L.pendingCo):'')+'"><button class="btn primary" id="coUnlock">Unlock</button></div></div>'+
        '<details style="margin-top:12px"><summary class="saved" style="cursor:pointer">Forgot the PIN? Use the recovery code</summary><div class="row" style="margin-top:8px"><input class="t" id="recIn" placeholder="Recovery code (8 characters)" maxlength="10" style="max-width:240px;text-transform:uppercase;letter-spacing:2px"><button class="btn" id="recUnlock">Unlock</button></div></details>'+
        '</section>'+agendaPreviewHTML();
     return h;
@@ -1311,7 +1431,7 @@ function coordHTML(){
     h+='<div class="selcard" style="border-color:var(--a)"><b>Set a new PIN</b><div class="saved" style="margin:4px 0 8px">You unlocked with the recovery code. Choose a new PIN now.</div><div class="row"><input class="t" id="pin1" type="password" inputmode="numeric" placeholder="New PIN" maxlength="8" style="max-width:200px"><input class="t" id="pin2" type="password" inputmode="numeric" placeholder="Repeat PIN" maxlength="8" style="max-width:200px"><button class="btn primary" id="pinSet">Save new PIN</button></div></div>';
   }
   var A=S.agenda;
-  h+='<div class="row" style="justify-content:space-between"><h2 class="sec" style="margin:0">🗂 Meeting set-up</h2><div class="row"><button class="btn" id="agPrint">📄 Print agenda</button><button class="btn" id="pinChange">Change PIN</button><button class="btn" id="coordLock">🔒 Lock</button></div></div>';
+  h+='<div class="row" style="justify-content:space-between"><h2 class="sec" style="margin:0">🗂 Meeting set-up</h2><div class="row"><button class="btn" id="agPrint">📄 Print agenda</button>'+(isMainCoord()?'<button class="btn" id="pinChange">Change PIN</button>':'<span class="badge on" style="align-self:center">Co-organiser</span>')+'<button class="btn" id="coordLock">🔒 Lock</button></div></div>';
   if(!NET.room) h+='<div class="note" style="margin-bottom:8px">Tip: start a meeting (top of the page) and share its code or QR in your group chat before the meeting. Everyone who joins gets this agenda and their names automatically.</div>';
   h+='<div class="meta" style="margin-top:10px">'+
      '<label class="f">Program title<input class="t" data-ag="title" value="'+esc(A.title)+'"></label>'+
@@ -1475,8 +1595,9 @@ setInterval(function(){
 
 /* ---------- Stage 2: evaluators, General Evaluator, voting, Round Robin, members ---------- */
 var MULTI_ROLES={seval:1,tteval:1,member:1,speaker:1};
-function myName(){ return MULTI_ROLES[L.role] ? ((L.myNames||{})[L.role]||L.me||"") : (S.people[L.role]||""); }
-function setMyName(v){
+function myName(){ if(L.role==="coord"){ var mc=myCo(); if(mc) return mc.name; } return MULTI_ROLES[L.role] ? ((L.myNames||{})[L.role]||L.me||"") : (S.people[L.role]||""); }
+function setMyName(v){ if(L.role==="coord"&&myCo()){ var mc=myCo(); mc.name=String(v||"").trim()||mc.name; tick(mc); commitQuiet(); return; } return setMyName0(v); }
+function setMyName0(v){
   if(v) L.me=v;
   if(MULTI_ROLES[L.role]){ L.myNames=L.myNames||{}; L.myNames[L.role]=v; saveL(); renderRoles(); NET.hello(); }
   else { S.people[L.role]=v; S.peopleU[L.role]=Math.max(now(),(S.peopleU[L.role]||0)+1); commitQuiet(); }
@@ -2173,7 +2294,7 @@ document.addEventListener("fullscreenchange",function(){ if(!document.fullscreen
       return;
     }
     if(L.role!=="coord") return;
-    if(t.closest("#pinSet")){
+    if(t.closest("#pinSet")){ if(S.pin.hash && !isMainCoord() && !L.coordForcePin){ return; }
       var a=document.getElementById("pin1").value.trim(), b=document.getElementById("pin2").value.trim();
       if(!/^\d{4,8}$/.test(a)){ alert("Use 4 to 8 digits for the PIN."); return; }
       if(a!==b){ alert("The two PINs don't match."); return; }
@@ -2183,7 +2304,7 @@ document.addEventListener("fullscreenchange",function(){ if(!document.fullscreen
     if(t.closest("#recUnlock")){ tryUnlock(document.getElementById("recIn").value,true); return; }
     if(t.closest("#recDone")){ coordRecovery=null; renderAll(); return; }
     if(t.closest("#coordLock")){ L.coordOK=null; saveL(); renderAll(); return; }
-    if(t.closest("#pinChange")){ L.coordForcePin=true; saveL(); renderAll(); var p=document.getElementById("pin1"); if(p) p.focus(); return; }
+    if(t.closest("#pinChange")){ if(!isMainCoord()) return; L.coordForcePin=true; saveL(); renderAll(); var p=document.getElementById("pin1"); if(p) p.focus(); return; }
     if(!coordUnlocked()) return;
     if(t.closest("#memAdd")){
       var inp=document.getElementById("memIn"), names=inp.value.split(/[,;\n]+/).map(function(x){return x.trim();}).filter(Boolean), added=0;
@@ -2229,7 +2350,7 @@ document.addEventListener("fullscreenchange",function(){ if(!document.fullscreen
 document.getElementById("newMeeting").addEventListener("click",function(){
   if(!confirm("Start a new meeting?\n\nThis clears speakers, times, topics, counts and this week's role players"+(NET.mode?" on all connected devices":"")+". The member list, agenda layout, time limits and word lists are kept.")) return;
   var keep={people:S.people,peopleU:S.peopleU,limits:S.limits,fill:S.fill,members:S.members,pin:S.pin,agenda:S.agenda};
-  var n=blank(); n.people=keep.people; n.peopleU=keep.peopleU; n.limits=keep.limits; n.fill=keep.fill; n.members=keep.members; n.pin=keep.pin; n.attend=S.attend; n.keys=S.keys;
+  var n=blank(); n.people=keep.people; n.peopleU=keep.peopleU; n.limits=keep.limits; n.fill=keep.fill; n.members=keep.members; n.pin=keep.pin; n.attend=S.attend; n.keys=S.keys; n.coorg=S.coorg;
   n.agenda=clone(keep.agenda); n.agenda.assign={}; n.agenda.no=""; n.agenda.next=""; n.agenda.ktopic=""; n.agenda.korg=""; n.agenda.u=now();
   S=n; L.ahSel=null; L.gramSel=null; saveL(); lastSig={}; commit(); wake();
 });
@@ -2456,7 +2577,7 @@ function onMsg(pid,m){
   if(!pid||!m||typeof m!=="object") return;
   var known=NET.info[pid];
   if(m.t==="bye"){ delete NET.info[pid]; refreshPeers(); return; }
-  if(m.t==="hello"||m.t==="who"||!known){
+  if(m.t==="hello"||m.t==="who"||m.t==="ping"||!known){
     NET.info[pid]={roles:Array.isArray(m.roles)?m.roles.slice(0,12).map(String):(known&&known.roles)||null,role:String(m.role||(known&&known.role)||"").slice(0,10),name:String(m.name!=null?m.name:(known&&known.name)||"").slice(0,60),host:!!m.host,last:now()};
     if(!known && m.t!=="hello") sendTo(pid,{t:"hello",role:L.role,roles:myRoles(),name:myName(),state:S});
     refreshPeers();
@@ -3235,14 +3356,15 @@ document.addEventListener("keydown",function(e){ if(e.key==="Escape"&&document.g
 if(!sessionOf(L.tab)) L.tab="tt";
 if(!ROLES.some(function(r){return r.id===L.role;})) L.role="timer";
 if(!Array.isArray(L.roles)||!L.roles.length) L.roles=[L.role]; L.roles=L.roles.filter(function(r){return ROLES.some(function(x){return x.id===r;});}); if(L.roles.indexOf(L.role)<0) L.roles.push(L.role);
-renderAll(); wake(); save();
+shadowSync(); renderAll(); wake(); save();
 var hashCode=""; try{ var hm=location.hash.match(/join=([A-Za-z0-9-]+)/); if(hm) hashCode=cleanCode(hm[1]); }catch(e){}
+try{ var hc=location.hash.match(/co=([A-Za-z0-9-]+)/); if(hc){ L.pendingCo=cleanCode(hc[1]); saveL(); } }catch(e){}
 var hashRole=""; try{ var hr=location.hash.match(/role=([a-z]+)/); if(hr&&ROLES.some(function(r){return r.id===hr[1];})) hashRole=hr[1]; }catch(e){}
 if(hashCode.length===6){ try{ history.replaceState(null,"",location.pathname+location.search); }catch(e){} }
 var resumeCode = L.conn&&L.conn.code;
 if(hashCode.length===6 && hashRole){
   /* scanned "my role on my phone": take that role, join the meeting and continue once connected */
-  L.role=hashRole; L.setup=true; saveL(); renderAll();
+  if(!L.setup) L.roles=[hashRole]; L.role=hashRole; L.setup=true; saveL(); renderAll();
   W.code=hashCode; W.auto=true; startJoin(hashCode); openWelcome("connect");
 }
 else if(hashCode.length===6 && !(resumeCode===hashCode)){ W.code=hashCode; openWelcome(L.setup?"connect":"role"); W.code=hashCode; renderWelcome(); }
