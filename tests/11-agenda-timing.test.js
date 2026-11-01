@@ -45,6 +45,19 @@ module.exports = async (b) => {
   await C.click(`[data-iid="${r2[1].id}"] [data-itdel]`);
   await T.eventually(async () => JSON.stringify((await rows(C)).map((r) => r.id + r.time)) === JSON.stringify(r1.map((r) => r.id + r.time)), "removing the item moves the rest back up");
 
+  // ↩ Undo after removing an item; drag the ▲▼ handle to move an item (laptop)
+  const before = JSON.stringify((await rows(C)).map((r) => r.id + r.time));
+  await C.click(`[data-iid="${r1[3].id}"] [data-itdel]`);
+  await T.eventually(async () => (await rows(C)).length === r1.length - 1, "removed");
+  await T.eventually(async () => /Change saved/.test(await C.innerText("#toast")), "undo offered");
+  await C.click("#toastUndo");
+  await T.eventually(async () => JSON.stringify((await rows(C)).map((r) => r.id + r.time)) === before, "undo restores the item and times");
+  await C.dragAndDrop(`[data-iid="${r1[0].id}"] .agmv`, `[data-iid="${r1[2].id}"] .agtext`, { sourcePosition: { x: 15, y: 20 }, targetPosition: { x: 20, y: 60 } });
+  await T.eventually(async () => (await rows(C))[2].id === r1[0].id, "dragged item lands below the third row");
+  T.assert.strictEqual((await rows(C))[0].time, r1[0].time, "first slot keeps the start time");
+  await C.click("#toastUndo");
+  await T.eventually(async () => JSON.stringify((await rows(C)).map((r) => r.id + r.time)) === before, "drag undone");
+
   // the Toastmaster: running late → +5 min for the rest; printed agenda keeps the planned times
   const M = await T.device(b, { phone: true });
   await T.join(M, code, "SC Nimega Dilshara", ["tmod"]);
@@ -73,6 +86,13 @@ module.exports = async (b) => {
   await C.click('[data-nav="now"]');
   await C.click('[data-lc="prev"]');
   await T.eventually(async () => (await M.innerText(".curtopic")) === nowBefore, "organiser's Back works too");
+  // how the agenda ran: the organiser sees planned vs actual for each started item
+  await C.click('[data-nav="role"]');
+  await T.eventually(async () => /How the agenda ran/.test(await C.innerText("#view")), "overrun summary for the organiser");
+  T.assert.match(await C.innerText(".ovsum"), /Planned[\s\S]*Actual[\s\S]*President/i);
+  await M.click('[data-run="' + r1[r1.length - 1].id + '"]'); await M.click("#runEnd");
+  await T.eventually(async () => /Meeting finished at/.test(await M.innerText("#view")) && /How the agenda ran/.test(await M.innerText("#view")), "Toastmaster sees the summary after finishing");
+  await T.eventually(async () => /finished /.test(await C.innerText(".ovsum")), "finish time synced");
   const X = await T.device(b, { phone: true });
   await T.join(X, code, "Guest One", ["member"]);
   await X.click('[data-nav="now"]');
