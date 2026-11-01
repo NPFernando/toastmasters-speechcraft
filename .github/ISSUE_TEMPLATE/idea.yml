@@ -1,0 +1,29 @@
+name: "💡 Idea"
+description: Suggest a new feature or an improvement
+title: "[Idea] "
+labels: ["idea", "from-app"]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: Your idea
+      description: What would you like the app to do?
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why it would help
+      placeholder: e.g. "As Grammarian I lose track of who used the Word of the Day..."
+  - type: input
+    id: role
+    attributes:
+      label: Role(s) it's for
+  - type: input
+    id: version
+    attributes:
+      label: App version
+  - type: input
+    id: from
+    attributes:
+      label: Suggested by (optional)

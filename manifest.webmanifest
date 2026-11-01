@@ -1,0 +1,16 @@
+{
+  "name": "Speechcraft Meeting Roles – Dijital Team Colombo",
+  "short_name": "Speechcraft",
+  "description": "Every Speechcraft meeting role on one page: timer, reports, agenda, evaluations and voting, connected by a meeting code.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#004165",
+  "theme_color": "#004165",
+  "icons": [
+    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}

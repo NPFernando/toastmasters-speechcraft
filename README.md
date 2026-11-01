@@ -23,6 +23,13 @@ One **Meeting report** combines every role and can be saved as a PDF.
 ### Real meetings change on the day
 
 - **One person, several roles:** tap **＋ Role** to hold more than one role on a device and switch with one tap. If the agenda lists you in several roles, the page offers to add them. Small panels keep your other jobs at hand: Ah-Counter buttons and the Grammarian's Word of the Day +1 for whoever is speaking, and the Timer's live bar.
+- **⏸ Pause / ▶ Resume** (Timer): stop the clock for a microphone or Zoom problem. The pause doesn't count toward the speaker's time, every screen shows "⏸ Paused", and the report notes it, e.g. "(paused 0:35)".
+- **🎓 Practice meeting** (⋯ More, or "Try a practice meeting first" on the start screen): a sample meeting with ten example members, role players, speeches, topics and a Word of the Day, so new Speechcrafters can try every role. It's kept separately on the device (Coordinator PIN 1234) and never touches the real meeting; **Start over** or **Leave practice** at any time.
+- **📲 Install as an app** (⋯ More on Android / Chrome / Edge; on iPhone: Share → Add to Home Screen): home-screen icon, opens full screen, and loads even with weak or no signal. Connecting devices still needs internet.
+- **📈 Speechcraft progress** (Coordinator): add each week's saved meeting record to see, for every member, the meetings attended, roles taken per week, prepared speeches with time and result, Table Topics, awards and the roles they haven't tried yet. **Print progress** for the graduation file. Kept on the Coordinator's device only.
+- **📚 My feedback history** (Speaker / Member feedback card): every meeting where you spoke or got feedback is kept on your device — times, filler count, Word of the Day, phrases, awards, and your evaluations and notes. Evaluations stay encrypted in the history and are readable only after unlocking with your feedback PIN.
+- **💬 Report a problem or idea** (⋯ More): see [Issues and ideas](#issues-and-ideas).
+- **Accessibility:** every screen passes an automated WCAG 2.1 AA check (axe-core) in light and dark mode: labelled form fields, contrast, a visible keyboard focus ring, and reduced motion when the device asks for it.
 - **Look:** Toastmasters brand colours (Loyal Blue, True Maroon, Happy Yellow). **⋯ More → Display** sets Auto / Light / Dark and **Bigger text** for this device.
 - **Sections:** **My role · Now · Agenda** (plus Report and More). On phones this is a bottom tab bar.
   - **📡 Now** — the meeting at a glance: Now / Next from the Toastmaster's run-sheet, progress through the agenda, timing so far, who's online, role players (● online), Word of the Day and voting.
@@ -46,6 +53,10 @@ When the General Evaluator opens voting, a vote bar appears on every connected d
 ### Private feedback
 
 Evaluations and audience notes can only be read by the speaker they are for. Each speaker sets a **feedback PIN** once (Member / Audience → My feedback card). This creates a personal key: the public part is shared with the meeting and the private part is locked with the PIN (PBKDF2 + AES-GCM), so the speaker can open their card on any device. Evaluations stay as a draft on the evaluator's device until they tap **Submit**. Evaluators' and members' devices then encrypt feedback for that speaker (ECDH P-256 + AES-GCM) before it is synced, so every other device only holds unreadable data. The General Evaluator and the meeting report show only who evaluated whom. If a speaker hasn't set a PIN yet, feedback waits on the writer's device and is sent automatically once they do. The Coordinator can reset a forgotten PIN, but feedback encrypted for the old PIN can't be recovered.
+
+### Issues and ideas
+
+Members tap **⋯ More → 💬 Report a problem or idea**, choose 🐞 Problem, 💡 Idea or 👍 I like this, and tap **Send to the organisers**. No account is needed: it syncs with the meeting (or the next time the device joins one) into **💬 Issues & ideas** in the Coordinator area. The Coordinator or a co-organiser reviews each one and taps **Create GitHub issue**, which opens this repository's [issue form](https://github.com/NPFernando/toastmasters-speechcraft/issues/new/choose) already filled in (what happened, steps, role, device, app version, who sent it). Issues are labelled `bug` or `idea` plus `from-app`, so they can be tracked, discussed and closed when fixed; mark the item ✓ Done in the app. Members with a GitHub account can also tap **Post on GitHub** to file it directly.
 
 ### Co-organisers (more than one Coordinator)
 

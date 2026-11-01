@@ -1,0 +1,38 @@
+name: "🐞 Problem"
+description: Something in the app didn't work as expected
+title: "[Problem] "
+labels: ["bug", "from-app"]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for reporting! Reports sent from inside the app arrive here already filled in.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you see, and what did you expect instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: How to make it happen again (if you know)
+      placeholder: "1. Open the Timer role\n2. Start a speaker\n3. ..."
+  - type: input
+    id: role
+    attributes:
+      label: Role(s) you were using
+      placeholder: e.g. Timer, Ah-Counter
+  - type: input
+    id: device
+    attributes:
+      label: Device and browser
+      placeholder: e.g. Android phone, Chrome
+  - type: input
+    id: version
+    attributes:
+      label: App version
+  - type: input
+    id: from
+    attributes:
+      label: Reported by (optional)
