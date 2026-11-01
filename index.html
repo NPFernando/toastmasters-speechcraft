@@ -578,6 +578,10 @@ table.prog{width:100%;border-collapse:collapse;font-size:13px} table.prog th,tab
 .wfoot.sticky .big1{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 @media (max-width:520px){ .wfoot.sticky .big1{font-size:15px;padding:12px 14px} }
 @media (min-width:900px){ #welcome .wbox{max-width:860px} #wGrid .rolegrid{grid-template-columns:repeat(3,1fr)} }
+
+.linkbar{width:100%;display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;font-size:13px;background:color-mix(in srgb,var(--brand) 9%,var(--card));border:1px solid color-mix(in srgb,var(--brand) 30%,var(--line));border-radius:10px;padding:5px 6px 5px 10px;margin-bottom:6px} .linkbar .iconbtn{margin-left:auto}
+
+.evprog{font-size:13px;margin:-2px 0 8px;color:var(--muted)} .evprog b{color:var(--ink)} .ttevsel{width:auto;max-width:170px;height:32px;padding:3px 6px;font-size:13px}
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#004165">
@@ -730,7 +734,7 @@ var KEY="speechcraftMeeting.v2"+NS, LKEY="speechcraftMeeting.local"+NS, OLDKEY="
 var SESSIONS=[{id:"tt",name:"Table Topics",type:"std"},{id:"ps",name:"Prepared Speech",type:"std"},{id:"rr",name:"Round Robin",type:"rr"},{id:"ev",name:"Evaluations",type:"std"},{id:"rep",name:"Role reports",type:"rep"}];
 var ROLES=[{id:"coord",name:"Speechcraft Coordinator",icon:"🗂"},{id:"president",name:"President",icon:"🔔"},{id:"tmod",name:"Toastmaster of the Day",icon:"🎩"},{id:"ge",name:"General Evaluator",icon:"🧭"},{id:"timer",name:"Timer",icon:"⏱"},{id:"ttm",name:"Table Topics Master",icon:"🎤"},{id:"rrm",name:"Round Robin Master",icon:"🔁"},{id:"ah",name:"Ah-Counter",icon:"🔢"},{id:"gram",name:"Grammarian",icon:"📝"},{id:"saa",name:"Sergeant at Arms",icon:"🛎"},{id:"speaker",name:"Speaker",icon:"🎙"},{id:"seval",name:"Speech Evaluator",icon:"🗣"},{id:"tteval",name:"Table Topic Evaluator",icon:"💬"},{id:"member",name:"Member / Audience",icon:"🙋"}];
 var FILLERS=["Um","Ah","Er","So","Like","And","You know","Repeat"];
-var COLLS=[["rows","tt"],["rows","ps"],["rows","rr"],["rows","ev"],["rows","rep"],["topics"],["ahRows"],["gramRows"],["evals"],["notes"],["votes"],["rrq"],["speeches"],["assigns"],["rsvp"],["fin"],["guests"]];
+var COLLS=[["rows","tt"],["rows","ps"],["rows","rr"],["rows","ev"],["rows","rep"],["topics"],["ahRows"],["gramRows"],["evals"],["notes"],["votes"],["rrq"],["speeches"],["assigns"],["rsvp"],["fin"],["guests"],["ttassign"]];
 var MEETING_LWW=["meta","cur","gram","agenda","run","vote","genotes","rrcur","wrap","pres","saa"], KEEP_LWW=["limits","fill","members","pin"];
 
 /* ---------- helpers ---------- */
@@ -768,7 +772,7 @@ function blank(){
     people:{coord:"",president:"",saa:"",tmod:"",ge:"",rrm:"",timer:"",ttm:"",ah:"",gram:""}, peopleU:{coord:0,president:0,saa:0,tmod:0,ge:0,rrm:0,timer:0,ttm:0,ah:0,gram:0},
     limits:{tt:{g:60,a:90,r:120},ps:{g:240,a:300,r:360},rr:{b:20},ev:{g:90,a:105,r:120},rep:{g:30,a:45,r:60},u:0},
     members:{list:[],u:0,fu:{}}, coorg:[], ideas:[], pin:{hash:"",rhash:"",salt:"",u:0}, agenda:defaultAgenda(), run:{cur:null,started:{},u:0},
-    evals:[], notes:[], votes:[], rrq:[], speeches:[], assigns:[], rsvp:[], attend:[], keys:[], fin:[], guests:[], wrap:{on:false,at:0,u:0}, pres:{chk:{},notes:"",u:0}, saa:{chk:{},u:0}, vote:{state:"closed",u:0}, genotes:{good:"",improve:"",u:0}, rrcur:{id:null,u:0},
+    evals:[], notes:[], votes:[], rrq:[], speeches:[], assigns:[], rsvp:[], attend:[], keys:[], fin:[], guests:[], ttassign:[], wrap:{on:false,at:0,u:0}, pres:{chk:{},notes:"",u:0}, saa:{chk:{},u:0}, vote:{state:"closed",u:0}, genotes:{good:"",improve:"",u:0}, rrcur:{id:null,u:0},
     rows:{tt:[],ps:[],rr:[],ev:[],rep:[]}, topics:[], cur:{id:null,u:0},
     fill:{words:FILLERS.slice(),u:0}, ahRows:[],
     gram:{wotd:"",meaning:"",u:0}, gramRows:[],
@@ -784,7 +788,7 @@ function normalize(st){
   if(!Array.isArray(o.fill.words)) o.fill.words=FILLERS.slice();
   SESSIONS.forEach(function(s){ var k=s.id; o.rows[k]=Array.isArray(st.rows&&st.rows[k])?st.rows[k]:[]; });
   ["ev","rep"].forEach(function(k){ if(!o.limits[k]) o.limits[k]=blank().limits[k]; });
-  ["evals","notes","votes","rrq","speeches","assigns","rsvp","fin","guests"].forEach(function(k){ o[k]=Array.isArray(st[k])?st[k]:[]; });
+  ["evals","notes","votes","rrq","speeches","assigns","rsvp","fin","guests","ttassign"].forEach(function(k){ o[k]=Array.isArray(st[k])?st[k]:[]; });
   o.keys=Array.isArray(st.keys)?st.keys.filter(function(k){return k&&k.id;}).map(function(k){ k.u=+k.u||1; k.ord=+k.ord||1; return k; }):[];
   o.evals.forEach(function(e){ if(e&&(e.c1!=null||e.r!=null||e.c2!=null||e.rate)){ if(e.done==null) e.done=!!(e.c1||e.r||e.c2); delete e.c1; delete e.r; delete e.c2; delete e.rate; } });
   o.notes=o.notes.filter(function(n){ return n&&n.enc; });
@@ -1071,7 +1075,7 @@ function renderRoles(){
     sub='<span class="dotg"></span><b>'+ppl.length+' online</b> · '+online.join(" · ");
   } else if(NET.mode){ sub='<span class="doty"></span>'+esc(NET.msg||"Connecting…"); }
   else sub=team.length?'Team: '+team.join(" · ")+' · <i>not connected</i>':'Your role on this device · not connected';
-  document.getElementById("roles").innerHTML=roleTabsHTML()+'<div class="me">'+r.icon+' <b>'+r.name+'</b>'+(myName()?' · '+esc(myName()):'')+
+  document.getElementById("roles").innerHTML=roleTabsHTML()+linkBarHTML()+'<div class="me">'+r.icon+' <b>'+r.name+'</b>'+(myName()?' · '+esc(myName()):'')+
     '<small>'+sub+'</small></div><button class="btn sm" data-open-phone title="Show a QR code to open your role on your phone">📱 Open on phone</button>'+(FOCUS_ROLES[L.role]?'<button class="btn sm" data-focus="on" title="Show only what this role needs right now">🎯 Focus</button>':'')+(TIPS[L.role]?'<button class="btn sm" data-tips title="Show the tips for this role again">💡 Tips</button>':'')+'<button class="btn sm" data-change-role>Change role</button>';
 }
 /* the speaker's own live card: big clock and the Timer's signal colour on their device */
@@ -1202,7 +1206,7 @@ function ttmHTML(){
   h+='</ul><h2 class="sec">Used <span class="cnt">('+used.length+')</span></h2><ul class="tlist used">';
   if(!used.length) h+='<li class="muted">No topics used yet.</li>';
   used.slice().sort(function(a,b){return (a.usedAt||0)-(b.usedAt||0);}).forEach(function(x,i){
-    h+='<li data-tid="'+x.id+'"><span class="n">'+(i+1)+'</span><span class="txt">'+esc(x.text)+'</span><input class="name spk" data-edit="tspeaker" list="roster" autocomplete="off" value="'+esc(x.speaker||"")+'" placeholder="Speaker">'+
+    h+='<li data-tid="'+x.id+'"><span class="n">'+(i+1)+'</span><span class="txt">'+esc(x.text)+'</span><input class="name spk" data-edit="tspeaker" list="roster" autocomplete="off" value="'+esc(x.speaker||"")+'" placeholder="Speaker">'+(x.speaker&&asList("ttevals").length?'<select class="t ttevsel" data-ttev="'+esc(x.speaker)+'" aria-label="Evaluator for '+esc(x.speaker)+'"><option value="">Evaluator…</option>'+uniq(asList("ttevals").concat(ttEvaluatorOf(x.speaker)?[ttEvaluatorOf(x.speaker)]:[])).map(function(ev){ return '<option'+(nkey(ev)===nkey(ttEvaluatorOf(x.speaker))?' selected':'')+'>'+esc(ev)+'</option>'; }).join("")+'</select>':'')+
        '<button class="btn sm" data-tact="show">📺</button><button class="btn sm" data-tact="back" title="Move back to Remaining">↺ Put back</button><button class="iconbtn" data-tact="del" title="Remove topic">✕</button></li>';
   });
   h+='</ul></section>';
@@ -1218,7 +1222,7 @@ function callSpeaker(){
   var cur=topicById(S.cur.id); if(!cur) return;
   var nm=(document.getElementById("callName").value||"").trim();
   if(!nm){ alert("Type who is taking this topic first."); document.getElementById("callName").focus(); return; }
-  cur.speaker=nm; cur.used=true; cur.usedAt=now(); tick(cur); remember(nm);
+  cur.speaker=nm; cur.used=true; cur.usedAt=now(); tick(cur); remember(nm); autoAssignTT(nm); if(linkRoles().length) selectPerson(nm,"ttm");
   /* queue them on the Timer's Table Topics list */
   var r=cur.rowId && findRow("tt",cur.rowId);
   if(r){ if(rowState(r)==="idle"){ r.name=nm; tick(r); } }
@@ -1290,10 +1294,8 @@ function gramHTML(){
 }
 function addCounterSpeaker(kind,name){
   name=String(name||"").trim(); if(!name) return;
-  var arr=kind==="ah"?S.ahRows:S.gramRows;
-  var ex=arr.find(function(r){return r.name.toLowerCase()===name.toLowerCase();});
-  if(!ex){ ex = kind==="ah" ? {id:uid(),name:name,c:{},ord:maxOrd(arr)+1,u:now()} : {id:uid(),name:name,w:0,good:[],slips:[],ord:maxOrd(arr)+1,u:now()}; arr.push(ex); }
-  if(kind==="ah") L.ahSel=ex.id; else L.gramSel=ex.id; saveL(); remember(name); commit();
+  var ex=counterRow(kind,name);
+  if(kind==="ah") L.ahSel=ex.id; else L.gramSel=ex.id; selectPerson(name,kind); saveL(); remember(name); commit();
 }
 
 /* ---------- agenda, role players, coordinator, toastmaster run-sheet ---------- */
@@ -1552,7 +1554,7 @@ function agExtraHTML(x){
     if(rep.length) h+='<div class="agsub"><div class="agh">Call for reports:</div>'+agLines(rep)+'</div>';
     var pairs=(S.assigns||[]).filter(function(a){return a.evaluator;}), se=pairs.length?pairs.map(function(a){ return esc(a.evaluator)+' <span class="agev">(for '+esc(a.speaker)+')</span>'; }):asList("sevals").map(esc);
     if(se.length) h+='<div class="agsub"><div class="agh">Prepared Speech evaluations –</div>'+agLines(se)+'</div>';
-    var te=asList("ttevals"); if(te.length) h+='<div class="agsub"><div class="agh">Table Topic speeches evaluations –</div>'+agLines(te.map(esc))+'</div>';
+    var te=asList("ttevals"); if(te.length) h+='<div class="agsub"><div class="agh">Table Topic speeches evaluations –</div>'+agLines(te.map(function(ev){ var sp=S.ttassign.filter(function(a){return nkey(a.evaluator)===nkey(ev);}).map(function(a){return a.speaker;}); return esc(ev)+(sp.length?' <span class="agev">(for '+esc(sp.join(", "))+')</span>':''); }))+'</div>';
     return h;
   }
   return "";
@@ -1706,6 +1708,27 @@ function timesFor(name){
 }
 function evaluatorOf(speaker){ var a=S.assigns.find(function(x){return x.id==="as|"+nkey(speaker);}); return a&&a.evaluator?a.evaluator:""; }
 function setAssign(speaker,evaluator){ var a=upsert(["assigns"],"as|"+nkey(speaker),{speaker:speaker,evaluator:""}); a.speaker=speaker; a.evaluator=evaluator||""; tick(a); applyAgenda(); commit(); }
+/* Table Topics: each speaker can be given to one Table Topic Evaluator; an evaluator can have several speakers */
+function ttEvaluatorOf(speaker){ var a=S.ttassign.find(function(x){return x.id==="tta|"+nkey(speaker);}); return a&&a.evaluator?a.evaluator:""; }
+function setTTAssign(speaker,evaluator){ var a=upsert(["ttassign"],"tta|"+nkey(speaker),{speaker:speaker,evaluator:""}); a.speaker=speaker; a.evaluator=evaluator||""; tick(a); commit(); }
+function ttLoad(ev){ return S.ttassign.filter(function(a){return nkey(a.evaluator)===nkey(ev);}).length; }
+function autoAssignTT(speaker){
+  if(!speaker||ttEvaluatorOf(speaker)) return; var evs=asList("ttevals").filter(function(e){return nkey(e)!==nkey(speaker);}); if(!evs.length) return;
+  var best=evs.slice().sort(function(a,b){ return ttLoad(a)-ttLoad(b) || evs.indexOf(a)-evs.indexOf(b); })[0];
+  var a=upsert(["ttassign"],"tta|"+nkey(speaker),{speaker:speaker,evaluator:""}); a.speaker=speaker; a.evaluator=best; tick(a);
+}
+function anyEvaluatorOf(kind,n){ return kind==="ps"?evaluatorOf(n):ttEvaluatorOf(n); }
+function evStatusOf(kind,n,me){ var dd=(L.evDrafts||{})[evId(kind,n,me)]; if((dd&&dd.submitted)||S.evals.some(function(e){return e.id===evId(kind,n,me)&&e.done&&e.state!=="writing";})) return "done"; if(dd&&(dd.c1||dd.r||dd.c2)) return "writing"; return "todo"; }
+function evalProgressHTML(kind,list,me){
+  if(!list.length) return "";
+  var c={done:0,writing:0,todo:0}; list.forEach(function(n){ c[evStatusOf(kind,n,me)]++; });
+  return '<div class="evprog"><b>'+list.length+' speaker'+(list.length===1?'':'s')+'</b> · <span class="st-q">✓ '+c.done+' submitted</span> · ✏️ '+c.writing+' writing · '+c.todo+' to do</div>';
+}
+function refreshEvProg(){
+  var el=document.querySelector("#view .evprog"); if(!el) return; var kind=evKind(), me=myName();
+  var list=kind==="ps"?preparedSpeakers().filter(function(n){return me&&nkey(evaluatorOf(n))===nkey(me);}):ttSpeakers().filter(function(n){return me&&nkey(ttEvaluatorOf(n))===nkey(me);});
+  var tmp=document.createElement("div"); tmp.innerHTML=evalProgressHTML(kind,list,me); if(tmp.firstChild) el.innerHTML=tmp.firstChild.innerHTML;
+}
 function evaluatorChoices(){ return uniq(asList("sevals").concat(memberNames())); }
 function assignTableHTML(){
   var sp=preparedSpeakers(); if(!sp.length) return "";
@@ -1720,16 +1743,16 @@ function evalHTML(){
   L.evSel=L.evSel||{}; var sel=L.evSel[kind];
   var h='<section class="card">';
   if(!me) h+='<div class="note" style="margin:0 0 10px">Type your name in <b>Your name</b> above, so each speaker knows who evaluated them.</div>';
-  var chip=function(n){ var dd=(L.evDrafts||{})[evId(kind,n,me)], done=!!(dd&&dd.submitted)||S.evals.some(function(e){return e.id===evId(kind,n,me)&&e.done;}), t=kind==="ps"?speechTitle(n):"", ev=kind==="ps"?evaluatorOf(n):"";
+  var chip=function(n){ var dd=(L.evDrafts||{})[evId(kind,n,me)], done=!!(dd&&dd.submitted)||S.evals.some(function(e){return e.id===evId(kind,n,me)&&e.done;}), t=kind==="ps"?speechTitle(n):"", ev=anyEvaluatorOf(kind,n);
     return '<button class="chip spchip'+(nkey(sel)===nkey(n)?' active':'')+'" data-evsel="'+esc(n)+'">'+(done?'✓ ':'')+esc(n)+(t?'<span class="c">“'+esc(t)+'”</span>':'')+(ev&&nkey(ev)!==nkey(me)?'<span class="c">evaluator: '+esc(ev)+'</span>':'')+'</button>'; };
   if(kind==="ps"){
     var mine=list.filter(function(n){return me&&nkey(evaluatorOf(n))===nkey(me);}), rest=list.filter(function(n){return mine.indexOf(n)<0;});
-    h+='<h2 class="sec" style="margin-top:0">⭐ Your speakers</h2><div class="chips">'+(mine.length?mine.map(chip).join(""):'<span class="muted">No one assigned to you yet. Tap a speaker below and choose <b>Assign to me</b>, or ask the Coordinator.</span>')+'</div>';
+    h+='<h2 class="sec" style="margin-top:0">⭐ Your speakers</h2>'+evalProgressHTML("ps",mine,me)+'<div class="chips">'+(mine.length?mine.map(chip).join(""):'<span class="muted">No one assigned to you yet. Tap a speaker below and choose <b>Assign to me</b>, or ask the Coordinator.</span>')+'</div>';
     h+='<h2 class="sec">Other prepared speakers</h2><div class="chips">'+(rest.length?rest.map(chip).join(""):'<span class="muted">'+(list.length?'—':'The Coordinator\'s prepared speakers appear here.')+'</span>');
   } else {
-    h+='<h2 class="sec" style="margin-top:0">Table Topics speakers</h2><div class="chips">';
-    if(!list.length) h+='<span class="muted">Speakers appear here as the Table Topics Master calls them.</span>';
-    h+=list.map(chip).join("");
+    var tmine=list.filter(function(n){return me&&nkey(ttEvaluatorOf(n))===nkey(me);}), trest=list.filter(function(n){return tmine.indexOf(n)<0;});
+    h+='<h2 class="sec" style="margin-top:0">⭐ Your Table Topics speakers</h2>'+evalProgressHTML("tt",tmine,me)+'<div class="chips">'+(tmine.length?tmine.map(chip).join(""):'<span class="muted">'+(list.length?'None given to you yet. Tap a speaker below and choose <b>Assign to me</b>.':'Speakers appear here as the Table Topics Master calls them, shared out between the evaluators.')+'</span>')+'</div>';
+    h+='<h2 class="sec">Other Table Topics speakers</h2><div class="chips">'+(trest.length?trest.map(chip).join(""):'<span class="muted">—</span>');
   }
   h+='</div><div class="row" style="margin-top:8px"><input class="t" id="evAddIn" list="roster" autocomplete="off" placeholder="Someone else? Type a name"><button class="btn" id="evAdd">+ Add</button></div>';
   if(sel){
@@ -1737,9 +1760,9 @@ function evalHTML(){
     var other=!((L.evDrafts||{})[evId(kind,sel,me)]) && S.evals.some(function(x){return x.id===evId(kind,sel,me)&&x.done;});
     var stl=speechTitle(sel), sob=(speechRec(sel)||{}).obj;
     var tm=timesFor(sel).filter(function(x){ return kind==="ps"?x.s.id==="ps":x.s.id==="tt"; });
-    var asg=kind==="ps"?evaluatorOf(sel):"";
+    var asg=anyEvaluatorOf(kind,sel);
     h+='<div class="selcard"><div class="hd"><b>'+esc(sel)+(stl&&kind==="ps"?' <span class="spt">“'+esc(stl)+'”</span>':'')+'</b>'+(tm.length?'<span class="pill">⏱ '+fmt(tm[0].sec)+' · '+esc(tm[0].st.text)+'</span>':'')+'</div>'+
-       (kind==="ps"?'<div class="row" style="margin:-4px 0 8px"><span class="saved">'+(asg?'Assigned evaluator: <b>'+esc(asg)+'</b>':'No evaluator assigned')+'</span>'+(me&&nkey(asg)!==nkey(me)?'<button class="btn sm" id="assignMe">Assign to me</button>':'')+(me&&nkey(asg)===nkey(me)?'<button class="btn sm" id="unassignMe">Unassign me</button>':'')+'</div>':'')+
+       (true?'<div class="row" style="margin:-4px 0 8px"><span class="saved">'+(asg?'Assigned evaluator: <b>'+esc(asg)+'</b>':'No evaluator assigned')+'</span>'+(me&&nkey(asg)!==nkey(me)?'<button class="btn sm" id="assignMe">Assign to me</button>':'')+(me&&nkey(asg)===nkey(me)?'<button class="btn sm" id="unassignMe">Unassign me</button>':'')+'</div>':'')+
        (sob&&kind==="ps"?'<div class="note" style="margin:0 0 6px"><b>Speaker\'s objectives:</b> '+esc(sob)+'</div>':'')+
        evBox("c1","👍 Commend","What worked well? Be specific, e.g. a strong opening story, good eye contact.",e.c1)+
        evBox("r","💡 Recommend","One or two things to try next time, e.g. pause before the key point.",e.r)+
@@ -1775,7 +1798,7 @@ function geHTML(){
   h+='<h2 class="sec">🗣 Evaluations</h2><table class="sumtable"><thead><tr><th>Speaker</th><th>Type</th><th>Assigned</th><th>Status</th></tr></thead><tbody>';
   var rows=preparedSpeakers().map(function(n){return [n,"ps"];}).concat(ttSpeakers().map(function(n){return [n,"tt"];}));
   if(!rows.length) h+='<tr><td colspan="4" class="muted">No speakers yet.</td></tr>';
-  rows.forEach(function(x){ var by=S.evals.filter(function(e){return e.kind===x[1]&&nkey(e.speaker)===nkey(x[0])&&(e.done||e.state==="writing");}).map(function(e){return e.by+" — "+evalStatusLabel(e);}); h+='<tr><td>'+esc(x[0])+(x[1]==="ps"&&speechTitle(x[0])?'<div class="spt" style="padding:0">“'+esc(speechTitle(x[0]))+'”</div>':'')+'</td><td>'+(x[1]==="ps"?"Prepared":"Table Topics")+'</td><td>'+esc(x[1]==="ps"?(evaluatorOf(x[0])||"—"):"")+'</td><td>'+(by.length?esc(by.join("; ")):'<span class="muted">—</span>')+'</td></tr>'; });
+  rows.forEach(function(x){ var by=S.evals.filter(function(e){return e.kind===x[1]&&nkey(e.speaker)===nkey(x[0])&&(e.done||e.state==="writing");}).map(function(e){return e.by+" — "+evalStatusLabel(e);}); h+='<tr><td>'+esc(x[0])+(x[1]==="ps"&&speechTitle(x[0])?'<div class="spt" style="padding:0">“'+esc(speechTitle(x[0]))+'”</div>':'')+'</td><td>'+(x[1]==="ps"?"Prepared":"Table Topics")+'</td><td>'+esc(anyEvaluatorOf(x[1],x[0])||"—")+'</td><td>'+(by.length?esc(by.join("; ")):'<span class="muted">—</span>')+'</td></tr>'; });
   h+='</tbody></table><div class="note">🔒 Evaluations are encrypted: only each speaker can read their own.</div>';
   h+='<h2 class="sec">🧭 My notes on the meeting</h2><label class="f evbox"><b>What went well</b><textarea class="t" data-ge="good" rows="3" placeholder="e.g. started on time, warm welcome, clear introductions">'+esc(S.genotes.good)+'</textarea></label>'+
      '<label class="f evbox"><b>What could be better</b><textarea class="t" data-ge="improve" rows="3" placeholder="e.g. Table Topics ran over; speak closer to the microphone">'+esc(S.genotes.improve)+'</textarea></label>';
@@ -2113,11 +2136,11 @@ function feedbackPinsHTML(){
     if(t.closest("#geReport")){ document.getElementById("openReport").click(); return; }
     var ck=t.closest("[data-checkin]"); if(ck){ var n=ck.dataset.checkin; setPresent(n,!present(n)); if(L.role==="member"&&!myName()) setMyName(n); return; }
     if(L.role==="seval"||L.role==="tteval"){
-      var es=t.closest("[data-evsel]"); if(es){ L.evSel=L.evSel||{}; L.evSel[evKind()]=es.dataset.evsel; saveL(); renderAll(); return; }
-      if(t.closest("#evAdd")){ var v=(document.getElementById("evAddIn").value||"").trim(); if(v){ L.evSel=L.evSel||{}; L.evSel[evKind()]=v; saveL(); renderAll(); } return; }
+      var es=t.closest("[data-evsel]"); if(es){ L.evSel=L.evSel||{}; L.evSel[evKind()]=es.dataset.evsel; if(selectPerson(es.dataset.evsel,L.role)) commit(); else { saveL(); renderAll(); } return; }
+      if(t.closest("#evAdd")){ var v=(document.getElementById("evAddIn").value||"").trim(); if(v){ L.evSel=L.evSel||{}; L.evSel[evKind()]=v; if(selectPerson(v,L.role)) commit(); else { saveL(); renderAll(); } } return; }
       var rb=t.closest("[data-rate]"); if(rb){ var dr=evDraft(); if(!dr) return; dr.d.rate=dr.d.rate||{}; dr.d.rate[rb.dataset.rate]=(dr.d.rate[rb.dataset.rate]===+rb.dataset.v)?0:+rb.dataset.v; if(dr.d.submitted) dr.d.changed=true; else markWriting(dr.id); saveL(); renderAll(); return; }
-      if(t.closest("#assignMe")){ var sa=(L.evSel||{})[evKind()]; if(!myName()){ alert("Type your name in Your name at the top first."); return; } var cur=evaluatorOf(sa); if(cur&&nkey(cur)!==nkey(myName())&&!confirm(sa+" is assigned to "+cur+". Assign to you instead?")) return; setAssign(sa,myName()); return; }
-      if(t.closest("#unassignMe")){ setAssign((L.evSel||{})[evKind()],""); return; }
+      if(t.closest("#assignMe")){ var sa=(L.evSel||{})[evKind()]; if(!myName()){ alert("Type your name in Your name at the top first."); return; } var cur=anyEvaluatorOf(evKind(),sa); if(cur&&nkey(cur)!==nkey(myName())&&!confirm(sa+" is assigned to "+cur+". Assign to you instead?")) return; if(evKind()==="tt") setTTAssign(sa,myName()); else setAssign(sa,myName()); return; }
+      if(t.closest("#unassignMe")){ var us=(L.evSel||{})[evKind()]; if(evKind()==="tt") setTTAssign(us,""); else setAssign(us,""); return; }
       if(t.closest("#evSubmit")){ var ds=evDraft(); if(!ds) return; var dd2=ds.d; if(!(dd2.c1||dd2.r||dd2.c2)){ alert("Write at least one Commend or Recommend before submitting."); return; } if(!myName()){ alert("Type your name in Your name at the top first, so the speaker knows who evaluated them."); return; } t.disabled=true; submitDraft(ds.id).then(function(){ renderAll(); }); return; }
     }
     if(L.role==="rrm"){
@@ -2148,7 +2171,7 @@ function feedbackPinsHTML(){
   });
   V.addEventListener("input",function(e){
     var t=e.target;
-    if(t.dataset.evf){ var dr=evDraft(); if(!dr) return; dr.d[t.dataset.evf]=t.value; if(dr.d.submitted) dr.d.changed=true; else markWriting(dr.id); saveL(); refreshEvState(); return; }
+    if(t.dataset.evf){ var dr=evDraft(); if(!dr) return; dr.d[t.dataset.evf]=t.value; if(dr.d.submitted) dr.d.changed=true; else markWriting(dr.id); saveL(); refreshEvState(); refreshEvProg(); return; }
     if(t.dataset.ge){ S.genotes[t.dataset.ge]=t.value; tick(S.genotes); commitQuiet(); return; }
     if(L.role==="speaker"&&(t.dataset.sp==="title"||t.dataset.sp==="obj")){ var s=mySpeech(); if(!s) return; s[t.dataset.sp]=t.value; tick(s); commitQuiet(); return; }
   });
@@ -2214,7 +2237,7 @@ document.getElementById("myName").addEventListener("input",function(){ setMyName
 document.getElementById("myName").addEventListener("change",function(){ renderRoles(); });
 document.getElementById("nowStrip").addEventListener("click",function(e){
   var b=e.target.closest("[data-now-add]"); if(!b) return;
-  if(L.role==="seval"||L.role==="tteval"){ L.evSel=L.evSel||{}; L.evSel[evKind()]=baseName(b.dataset.nowAdd); saveL(); renderAll(); return; }
+  if(L.role==="seval"||L.role==="tteval"){ L.evSel=L.evSel||{}; L.evSel[evKind()]=baseName(b.dataset.nowAdd); if(selectPerson(b.dataset.nowAdd,L.role)) commit(); else { saveL(); renderAll(); } return; }
   addCounterSpeaker(L.role,b.dataset.nowAdd);
 });
 var liveEl=document.getElementById("live");
@@ -2285,7 +2308,7 @@ view.addEventListener("click",function(e){
   /* counters */
   var kind=L.role;
   if(t.closest("#spkAdd")){ addCounterSpeaker(kind,document.getElementById("spkInput").value); return; }
-  var ch=t.closest("[data-sel]"); if(ch){ if(kind==="ah") L.ahSel=ch.dataset.sel; else L.gramSel=ch.dataset.sel; saveL(); renderAll(); return; }
+  var ch=t.closest("[data-sel]"); if(ch){ if(kind==="ah") L.ahSel=ch.dataset.sel; else L.gramSel=ch.dataset.sel; var sr0=selRow(kind); if(sr0&&selectPerson(sr0.name,kind)) commit(); else { saveL(); renderAll(); } return; }
   var rd=t.closest("[data-rowdel]"); if(rd){ var sr=selRow(kind); if(sr) removeItem([kind==="ah"?"ahRows":"gramRows"],sr.id,sr.name); return; }
   var mn=t.closest("[data-minus]"); if(mn){ var s1=selRow("ah"), w=mn.dataset.minus; if(s1&&s1.c[w]>0){ s1.c[w]--; tick(s1); commit(); } return; }
   var tp2=t.closest("[data-word]"); if(tp2){ var s2=selRow("ah"), w2=tp2.dataset.word; if(s2){ s2.c[w2]=(s2.c[w2]||0)+1; tick(s2); commit(); var nt=document.querySelector('#view [data-word="'+CSS.escape(w2)+'"]'); if(nt) nt.classList.add("bump"); } return; }
@@ -2312,6 +2335,7 @@ view.addEventListener("input",function(e){
   if(t.dataset.edit==="name"){ var r=findRow(L.tab,t.closest("tr").dataset.id); r.name=t.value; tick(r); commitQuiet();
     var li=document.querySelector('#live .liveitem[data-id="'+r.id+'"] [data-edit="livename"]'); if(li) li.value=t.value; return; }
   if(t.dataset.edit==="topic"){ var tp=topicById(t.closest("[data-tid]").dataset.tid); tp.text=t.value; tick(tp); commitQuiet(); return; }
+  if(t.dataset.ttev!=null){ setTTAssign(t.dataset.ttev,t.value); return; }
   if(t.dataset.edit==="tspeaker"){ var tp2=topicById(t.closest("[data-tid]").dataset.tid); tp2.speaker=t.value; tick(tp2); commitQuiet(); return; }
   if(t.id==="wotd"||t.id==="wotdMeaning"){ S.gram[t.id==="wotd"?"wotd":"meaning"]=t.value; tick(S.gram); commitQuiet(); return; }
 });
@@ -2894,7 +2918,7 @@ function companionHTML(){
        (who?S.fill.words.map(function(w){ return '<button class="cmpb" data-cmpah="'+esc(w)+'" data-who="'+esc(who)+'">'+esc(w)+' <b>'+((rec&&rec.c[w])||0)+'</b></button>'; }).join(""):'')+'</div></div>';
   }
   if(rs.indexOf("gram")>=0 && L.role!=="gram"){
-    var g=speakingNowName(); var gr=g?S.gramRows.find(function(r){return nkey(r.name)===nkey(g);}):null;
+    var g=personNow(); var gr=g?S.gramRows.find(function(r){return nkey(r.name)===nkey(g);}):null;
     h+='<div class="cmp"><b>📝 Grammarian</b> <span class="muted">'+(g?esc(g)+' (speaking now)':'— no one speaking')+'</span><div class="cmpbtns">'+
        (g?'<button class="cmpb" data-cmpgram="'+esc(g)+'">+1 Word of the Day'+(S.gram.wotd?' “'+esc(S.gram.wotd)+'”':'')+' <b>'+((gr&&gr.w)||0)+'</b></button>':'')+'</div></div>';
   }
@@ -3105,6 +3129,7 @@ function finChecks(r){
   } else if(r==="seval"||r==="tteval"){
     var kind=r==="tteval"?"tt":"ps", open=[];
     Object.keys(L.evDrafts||{}).forEach(function(id){ var d=L.evDrafts[id]; if(d.kind===kind && !d.submitted && (d.c1||d.r||d.c2)) open.push(d.speaker); });
+    if(r==="tteval") S.ttassign.forEach(function(a){ if(nkey(a.evaluator)===me && me && evStatusOf("tt",a.speaker,finNameFor(r))!=="done" && open.indexOf(a.speaker)<0) open.push(a.speaker); });
     if(r==="seval") S.assigns.forEach(function(a){ if(nkey(a.evaluator)===me && me){ var sub=S.evals.some(function(e){ return e.kind==="ps" && nkey(e.speaker)===nkey(a.speaker) && e.done && nkey(e.by)===me; }); if(!sub && open.indexOf(a.speaker)<0) open.push(a.speaker); } });
     open.forEach(function(sp){ w.push("Evaluation for "+sp+" not submitted."); });
   }
@@ -3306,7 +3331,7 @@ var fUndo=null;
     if((b=t.closest("[data-ftab]"))){ L.tab=b.dataset.ftab; saveL(); renderAll(); return; }
     if((b=t.closest("[data-fstart]"))){ startRow(L.tab||"tt",b.dataset.fstart); return; }
     if(t.closest("[data-fstartnew]")){ var sid=L.tab||"tt", nm=(document.getElementById("fNewName").value||"").trim(), r=newRow(sid,nm); S.rows[sid].push(r); if(nm) remember(nm); startRow(sid,r.id); return; }
-    if((b=t.closest("[data-fsel]"))){ L.fsel=b.dataset.fsel; saveL(); renderAll(); return; }
+    if((b=t.closest("[data-fsel]"))){ L.fsel=b.dataset.fsel; if(selectPerson(b.dataset.fsel,L.role)) commit(); else { saveL(); renderAll(); } return; }
     if((b=t.closest("[data-fah]"))){ var who=focusWho(); if(!who) return; var rec=fRec("ah",who), w=b.dataset.fah; rec.c[w]=(rec.c[w]||0)+1; tick(rec); fUndo={id:rec.id,w:w}; commit(); return; }
     if(t.closest("[data-fundo]")){ if(!fUndo) return; var r2=S.ahRows.find(function(x){return x.id===fUndo.id;}); if(r2&&r2.c[fUndo.w]>0){ r2.c[fUndo.w]--; tick(r2); commit(); } fUndo=null; return; }
     if(t.closest("[data-fwotd]")){ var g=focusWho(); if(!g) return; var gr=fRec("gram",g); gr.w=(gr.w||0)+1; tick(gr); commit(); return; }
@@ -3318,11 +3343,11 @@ var fUndo=null;
   });
   V.addEventListener("keydown",function(e){
     if(!inFocus()||e.key!=="Enter") return;
-    if(e.target.id==="fselNew"){ var v=(e.target.value||"").trim(); if(v){ L.fsel=v; saveL(); remember(v); renderAll(); } }
+    if(e.target.id==="fselNew"){ var v=(e.target.value||"").trim(); if(v){ L.fsel=v; remember(v); if(selectPerson(v,L.role)) commit(); else { saveL(); renderAll(); } } }
     else if(e.target.id==="fNewName"){ V.querySelector("[data-fstartnew]").click(); }
     else if(e.target.id==="callName"){ V.querySelector("[data-fcall]").click(); }
   });
-  V.addEventListener("change",function(e){ if(inFocus()&&e.target.id==="fselNew"){ var v=(e.target.value||"").trim(); if(v){ L.fsel=v; saveL(); remember(v); renderAll(); } } });
+  V.addEventListener("change",function(e){ if(inFocus()&&e.target.id==="fselNew"){ var v=(e.target.value||"").trim(); if(v){ L.fsel=v; remember(v); if(selectPerson(v,L.role)) commit(); else { saveL(); renderAll(); } } } });
 })();
 document.getElementById("roles").addEventListener("click",function(e){ if(e.target.closest("[data-focus]")){ L.focus=true; L.view="role"; saveL(); renderAll(); window.scrollTo(0,0); } });
 /* ---------- first-time tips for each role ---------- */
@@ -3632,6 +3657,50 @@ function ideasHTML(){
     if(t.closest("#ideasCopy")){ copyText(S.ideas.filter(function(z){return z.status!=="removed";}).map(function(z){ var T=FB_TYPES[z.type]||FB_TYPES.idea; return T.i+" "+T.n+" ["+z.status+"] "+(z.title||"")+(z.text?"\n"+z.text:"")+(z.steps?"\n"+z.steps:"")+"\n— "+[z.by||"Anonymous",z.role,z.device].filter(Boolean).join(" · "); }).join("\n\n")); return; }
   });
 })();
+/* ---------- one person selected across all your roles ----------
+   With several roles on one device (e.g. Ah-Counter + Table Topic Evaluator), choosing a person in
+   any role selects the same person in the others. When the Timer starts someone, every role follows. */
+var LINK_ROLES=["ah","gram","seval","tteval"];
+function linkRoles(){ return myRoles().filter(function(r){ return LINK_ROLES.indexOf(r)>=0; }); }
+function counterRow(kind,name){
+  var arr=kind==="ah"?S.ahRows:S.gramRows, ex=arr.find(function(r){return nkey(r.name)===nkey(name);});
+  if(!ex){ var id=kind+"|"+nkey(name); delete S.dead[id];
+    ex = kind==="ah" ? {id:id,name:name,c:{},ord:maxOrd(arr)+1,u:now()} : {id:id,name:name,w:0,good:[],slips:[],ord:maxOrd(arr)+1,u:now()}; arr.push(ex); }
+  return ex;
+}
+function isPrepared(n){ return preparedSpeakers().some(function(x){return nkey(x)===nkey(n);}); }
+function isTT(n){ return ttSpeakers().some(function(x){return nkey(x)===nkey(n);}); }
+/* returns true if shared data changed (a new Ah/Grammarian row) */
+function selectPerson(name,from){
+  name=baseName(String(name||"").trim()); if(!name) return false;
+  var rs=myRoles(), changed=false;
+  L.person={name:name,at:now(),from:from||""};
+  if(rs.indexOf("ah")>=0){ var n1=S.ahRows.length, r1=counterRow("ah",name); L.ahSel=r1.id; if(S.ahRows.length!==n1) changed=true; }
+  if(rs.indexOf("gram")>=0){ var n2=S.gramRows.length, r2=counterRow("gram",name); L.gramSel=r2.id; if(S.gramRows.length!==n2) changed=true; }
+  L.evSel=L.evSel||{};
+  if(rs.indexOf("seval")>=0 && (isPrepared(name)||from==="seval")) L.evSel.ps=name;
+  if(rs.indexOf("tteval")>=0 && (isTT(name)||from==="tteval")) L.evSel.tt=name;
+  L.fsel=name;
+  saveL(); if(changed){ remember(name); }
+  return changed;
+}
+function personNow(){ return speakingNowName() || (L.person&&L.person.name) || ""; }
+function linkBarHTML(){
+  var lr=linkRoles(); if(lr.length<2 || !L.person || !L.person.name) return "";
+  var live=speakingNowName()&&nkey(speakingNowName())===nkey(L.person.name);
+  var where=lr.filter(function(r){ return r==="ah"||r==="gram"||(r==="seval"&&isPrepared(L.person.name))||(r==="tteval"&&isTT(L.person.name)); });
+  return '<div class="linkbar" role="status">🔗 '+(live?'Speaking now: ':'Following ')+'<b>'+esc(L.person.name)+'</b> in '+where.map(function(r){var o=roleObj(r);return '<span title="'+esc(o.name)+'">'+o.icon+' '+esc(o.name)+'</span>';}).join(" · ")+'<button class="iconbtn" data-unlink title="Stop following this person" aria-label="Stop following">✕</button></div>';
+}
+/* the Timer starting someone moves every linked role to them */
+var lastAutoSpeaker="";
+setInterval(function(){
+  var sp=speakingNowName(); if(!sp){ lastAutoSpeaker=""; return; }
+  if(nkey(sp)===nkey(lastAutoSpeaker)) return; lastAutoSpeaker=sp;
+  if(!linkRoles().length) return;
+  if(L.person&&nkey(L.person.name)===nkey(sp)) return;
+  var ch=selectPerson(sp,"timer"); if(ch) commit(); else softRender();
+},700);
+document.getElementById("roles").addEventListener("click",function(e){ if(e.target.closest("[data-unlink]")){ L.person=null; saveL(); renderAll(); } });
 /* ---------- projector / screen-share view ---------- */
 function projHTML(){
   var t=now(), run=runningList(), ss=scheduleStatus(), tm=document.querySelector(".logo img").src, co=document.querySelector(".logo.co img").src, main="", cls="";
