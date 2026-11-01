@@ -1,4 +1,4 @@
-# Speechcraft Meeting Roles
+# Speechcraft Portal
 
 A single HTML page for running Speechcraft meetings at **Dijital Team Colombo**. It covers every meeting role, connected across phones and laptops with a meeting code:
 
@@ -15,16 +15,16 @@ A single HTML page for running Speechcraft meetings at **Dijital Team Colombo**.
 | 📝 **Grammarian** | Word of the Day, uses per speaker, great phrases and slips |
 | 🔁 **Round Robin Master** | Question list, show the question full screen, tap each person to queue them on the Timer (20-second bell) |
 | 🎙 **Speaker** | Prepared speakers add their speech title, objectives and time limits (used by the Timer), see their result and assigned evaluator, and open their private feedback |
-| 🗣 **Speech Evaluator** / 💬 **Table Topic Evaluator** | "Your speakers" first (assigned by the Coordinator or "Assign to me"), with speech titles and objectives; Commend · Recommend · Commend + ratings kept as a private draft until **Submit** |
-| 🙋 **Member / Audience** | Check in, vote, send anonymous notes to speakers, open a printable personal feedback card |
+| 🗣 **Speech Evaluator** / 💬 **Table Topics Evaluator** | "Your speakers" first (assigned by the Coordinator or "Assign to me"), with speech titles and objectives; Commend · Recommend · Commend + ratings kept as a private draft until **Submit** |
+| 🙋 **Participant** | Check in, vote, send anonymous notes to speakers, open a printable personal feedback card |
 
 One **Meeting report** combines every role and can be saved as a PDF.
 
 ### Real meetings change on the day
 
 - **One person, several roles:** tap **＋ Role** to hold more than one role on a device and switch with one tap. If the agenda lists you in several roles, the page offers to add them. Small panels keep your other jobs at hand: Ah-Counter buttons and the Grammarian's Word of the Day +1 for whoever is speaking, and the Timer's live bar.
-- **One person across all your roles:** with several roles on one device (e.g. Ah-Counter + Table Topic Evaluator), choosing a person in any role selects the same person in your other roles: the Ah-Counter and Grammarian switch to them and the evaluator tab opens their evaluation. When the Timer starts someone, every linked role follows. A **🔗 Following …** bar shows who is selected (✕ to stop). Two devices of the same person never create duplicate rows.
-- **Table Topic Evaluators with several speakers:** when the Table Topics Master calls a speaker, they're shared out to the Table Topic Evaluator with the fewest so far; the TTM can change it from the Used list, and evaluators can **Assign to me**. Each evaluator sees **⭐ Your Table Topics speakers** with progress ("3 speakers · ✓ 1 submitted · ✏️ 1 writing · 1 to do"). The General Evaluator's table, the finish check and the printed agenda show who evaluates whom.
+- **One person across all your roles:** with several roles on one device (e.g. Ah-Counter + Table Topics Evaluator), choosing a person in any role selects the same person in your other roles: the Ah-Counter and Grammarian switch to them and the evaluator tab opens their evaluation. When the Timer starts someone, every linked role follows. A **🔗 Following …** bar shows who is selected (✕ to stop). Two devices of the same person never create duplicate rows.
+- **Table Topics Evaluators with several speakers:** when the Table Topics Master calls a speaker, they're shared out to the Table Topics Evaluator with the fewest so far; the TTM can change it from the Used list, and evaluators can **Assign to me**. Each evaluator sees **⭐ Your Table Topics speakers** with progress ("3 speakers · ✓ 1 submitted · ✏️ 1 writing · 1 to do"). The General Evaluator's table, the finish check and the printed agenda show who evaluates whom.
 - **⏸ Pause / ▶ Resume** (Timer): stop the clock for a microphone or Zoom problem. The pause doesn't count toward the speaker's time, every screen shows "⏸ Paused", and the report notes it, e.g. "(paused 0:35)".
 - **🎓 Practice meeting** (⋯ More, or "Try a practice meeting first" on the start screen): a sample meeting with ten example members, role players, speeches, topics and a Word of the Day, so new Speechcrafters can try every role. It's kept separately on the device (Coordinator PIN 1234) and never touches the real meeting; **Start over** or **Leave practice** at any time.
 - **📲 Install as an app** (⋯ More on Android / Chrome / Edge; on iPhone: Share → Add to Home Screen): home-screen icon, opens full screen, and loads even with weak or no signal. Connecting devices still needs internet.
@@ -56,7 +56,7 @@ When the General Evaluator opens voting, a vote bar appears on every connected d
 
 ### Private feedback
 
-Evaluations and audience notes can only be read by the speaker they are for. Each speaker sets a **feedback PIN** once (Member / Audience → My feedback card). This creates a personal key: the public part is shared with the meeting and the private part is locked with the PIN (PBKDF2 + AES-GCM), so the speaker can open their card on any device. Evaluations stay as a draft on the evaluator's device until they tap **Submit**. Evaluators' and members' devices then encrypt feedback for that speaker (ECDH P-256 + AES-GCM) before it is synced, so every other device only holds unreadable data. The General Evaluator and the meeting report show only who evaluated whom. If a speaker hasn't set a PIN yet, feedback waits on the writer's device and is sent automatically once they do. The Coordinator can reset a forgotten PIN, but feedback encrypted for the old PIN can't be recovered.
+Evaluations and audience notes can only be read by the speaker they are for. Each speaker sets a **feedback PIN** once (Participant → My feedback card). This creates a personal key: the public part is shared with the meeting and the private part is locked with the PIN (PBKDF2 + AES-GCM), so the speaker can open their card on any device. Evaluations stay as a draft on the evaluator's device until they tap **Submit**. Evaluators' and members' devices then encrypt feedback for that speaker (ECDH P-256 + AES-GCM) before it is synced, so every other device only holds unreadable data. The General Evaluator and the meeting report show only who evaluated whom. If a speaker hasn't set a PIN yet, feedback waits on the writer's device and is sent automatically once they do. The Coordinator can reset a forgotten PIN, but feedback encrypted for the old PIN can't be recovered.
 
 ### Issues and ideas
 

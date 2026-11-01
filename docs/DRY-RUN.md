@@ -8,7 +8,7 @@ Do this once with **real phones on the real network** (the venue Wi-Fi if possib
 |---|---|---|
 | A | Laptop | 🗂 Coordinator |
 | B | Phone | ⏱ Timer |
-| C | Phone | 🔢 Ah-Counter **+** 💬 Table Topic Evaluator (tick both) |
+| C | Phone | 🔢 Ah-Counter **+** 💬 Table Topics Evaluator (tick both) |
 | D | Phone | 🎙 Speaker (and later 🎤 Table Topics Master) |
 
 Tick each box as you go. If something fails, use **⋯ More → 💬 Report a problem or idea** on that device, and paste the **Connection check** results into it.
@@ -32,7 +32,7 @@ Tick each box as you go. If something fails, use **⋯ More → 💬 Report a pr
 
 ## 3. Set up as the Coordinator (3 min)
 
-- [ ] **A** goes to the Coordinator screen, sets a PIN (note the recovery code), adds the 4 names as members, and sets **B** as Timer, **C** as Ah-Counter and Table Topic Evaluator, **D** as a prepared speaker.
+- [ ] **A** goes to the Coordinator screen, sets a PIN (note the recovery code), adds the 4 names as members, and sets **B** as Timer, **C** as Ah-Counter and Table Topics Evaluator, **D** as a prepared speaker.
 - [ ] On **C**: Home → **Change name or role** → tapping their name pre-ticks both roles.
 - [ ] **A** taps **📄 Print agenda**: one page, correct names.
 
@@ -45,14 +45,14 @@ Tick each box as you go. If something fails, use **⋯ More → 💬 Report a pr
 - [ ] Let it reach **green** (set the Prepared Speech green to 0:20 on **B** for the test). **B**'s phone **vibrates** (Android); **D**'s screen turns green.
 - [ ] Lock **B**'s phone for 20 seconds and unlock: the timer is still running and correct.
 - [ ] **B** stops the timer.
-- [ ] **D** adds 🎤 Table Topics Master (**＋ Role**), adds two topics and calls **A** as the speaker. On **C**, **A** appears under **⭐ Your Table Topics speakers** (C is the only Table Topic Evaluator, so every speaker is shared to C).
-- [ ] **C** writes a short evaluation for **A** and taps **Submit**. **A** sets a feedback PIN (Member role) and reads it.
+- [ ] **D** adds 🎤 Table Topics Master (**＋ Role**), adds two topics and calls **A** as the speaker. On **C**, **A** appears under **⭐ Your Table Topics speakers** (C is the only Table Topics Evaluator, so every speaker is shared to C).
+- [ ] **C** writes a short evaluation for **A** and taps **Submit**. **A** sets a feedback PIN (Participant role) and reads it.
 
 ## 5. Finish and keep the record (2 min)
 
 - [ ] **A** taps **🏁 Finish meeting**. Each phone gets the finish prompt; everyone taps **Yes, done**. **A** sees every role as ✓ Complete.
 - [ ] **A** taps **⤓ Save meeting record** and keeps the file.
-- [ ] **D** opens **My feedback card**, unlocks with their PIN, and sees their time and Ah-Counter count. **A** (with ＋ Role → 🙋 Member) unlocks theirs and reads C's Table Topics evaluation; nobody else can.
+- [ ] **D** opens **My feedback card**, unlocks with their PIN, and sees their time and Ah-Counter count. **A** (with ＋ Role → 🙋 Participant) unlocks theirs and reads C's Table Topics evaluation; nobody else can.
 - [ ] **A**: **⋯ More → New meeting** to clear the test (or **About → Reset device** on any phone used only for testing).
 
 ---
