@@ -247,7 +247,13 @@ tr.queued:not(.nextup) .btn.go{background:transparent;color:var(--g);border-colo
 .rp{display:grid;gap:6px}
 .rprow{display:grid;grid-template-columns:200px 1fr;gap:10px;align-items:start;border-bottom:1px solid var(--line);padding:6px 0}
 .rpl{font-weight:600;padding-top:8px}
-.agrow{display:grid;grid-template-columns:135px 200px 1fr 200px 34px;gap:6px;align-items:start;border-bottom:1px solid var(--line);padding:6px 0}
+.agrow{display:grid;grid-template-columns:30px 136px 76px 170px 1fr 160px 60px;gap:6px;align-items:start;border-bottom:1px solid var(--line);padding:6px 0}
+.agmv{display:flex;flex-direction:column;gap:2px}.agmv button{width:30px;height:21px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:6px;font-size:11px;line-height:1;cursor:pointer;padding:0}
+.agmv button:disabled{opacity:.3;cursor:default}
+.agdurw{display:flex;align-items:center;gap:4px;font-size:13px;color:var(--muted)}.agdurw .agdur{width:52px;padding-left:6px;padding-right:2px;text-align:right}.agend{padding-top:10px;font-style:italic}
+.agacts{display:flex;gap:2px}
+.agtools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px}.agst{display:flex;gap:6px;align-items:center;font-weight:600}.agst input{width:136px}
+.runadj{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:space-between;margin-top:8px;padding:8px 10px;border:1px dashed var(--line);border-radius:10px}
 .agtext{min-height:38px}
 .agview{display:grid;grid-template-columns:80px 1fr;gap:2px 10px;border-bottom:1px solid var(--line);padding:6px 0}
 .agview .muted{grid-column:2}
@@ -301,7 +307,7 @@ tr.queued:not(.nextup) .btn.go{background:transparent;color:var(--g);border-colo
 #report .agdoc.agmeas .agtab th,#report .agdoc.agmeas .agtab td{padding:4px 6px}
 @media (max-width:640px){
   .rprow{grid-template-columns:1fr} .rpl{padding-top:0}
-  .agrow{grid-template-columns:96px 1fr 34px} .agrow .agtext{grid-column:1 / -1} .agrow .agx{grid-column:1 / 3}
+  .agrow{grid-template-columns:30px 128px 1fr auto} .agrow .agrole,.agrow .agtext,.agrow .agx{grid-column:1 / -1} .agrow .agacts{grid-column:4;grid-row:1}
   #report .aggrid{grid-template-columns:1fr}
 }
 
@@ -1364,6 +1370,51 @@ function asList(k){ var v=assigned(k); return Array.isArray(v)?v:(v?[v]:[]); }
 function hm2min(t){ var m=String(t||"").match(/^(\d{1,2}):(\d{2})/); return m?(+m[1])*60+(+m[2]):null; }
 function fmtHM(t){ var m=hm2min(t); if(m==null) return ""; var h=Math.floor(m/60), mm=m%60; return ((h+11)%12+1)+":"+String(mm).padStart(2,"0")+(h<12?" am":" pm"); }
 function itemsSorted(){ return S.agenda.items.slice().sort(function(a,b){ return (hm2min(a.time)||0)-(hm2min(b.time)||0) || a.ord-b.ord; }); }
+/* ---------- agenda timing: move items, set lengths, shift the whole agenda ---------- */
+function min2hm(m){ m=((Math.round(m)%1440)+1440)%1440; return String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0"); }
+function agDur(list,i){ if(i>=list.length-1) return null; var a=hm2min(list[i].time), b=hm2min(list[i+1].time); return a==null||b==null?null:Math.max(0,b-a); }
+function agRenumber(list){ list.forEach(function(it,i){ it.ord=i+1; }); }
+function agAdd(it,d){ var m=hm2min(it.time); if(m!=null) it.time=min2hm(m+d); }
+function agMove(id,dir){
+  var L1=itemsSorted(), i=L1.findIndex(function(x){return x.id===id;}), j=i+dir; if(i<0||j<0||j>=L1.length) return false;
+  var lo=Math.min(i,j), a=L1[lo], b=L1[lo+1], start=hm2min(a.time);
+  var db=agDur(L1,lo+1); if(db==null) db=agDur(L1,lo)||5;
+  if(start!=null){ b.time=min2hm(start); a.time=min2hm(start+db); }
+  L1[lo]=b; L1[lo+1]=a; agRenumber(L1); return true;
+}
+function agSetDur(id,d){
+  var L1=itemsSorted(), i=L1.findIndex(function(x){return x.id===id;}), old=agDur(L1,i); if(old==null||!(d>=0)) return false;
+  var delta=Math.round(d)-old; if(!delta) return false;
+  L1.slice(i+1).forEach(function(it){ agAdd(it,delta); }); agRenumber(L1); return true;
+}
+function agInsertAfter(id){
+  var L1=itemsSorted(), i=L1.findIndex(function(x){return x.id===id;}); if(i<0) return null;
+  var cur=L1[i], nx=L1[i+1], m=hm2min(cur.time), t=nx?nx.time:(m!=null?min2hm(m+5):cur.time);
+  L1.slice(i+1).forEach(function(it){ agAdd(it,5); });
+  var it={id:uid(),time:t,role:"tmod",text:"",x:"",ord:0}; L1.splice(i+1,0,it); S.agenda.items.push(it); agRenumber(L1); return it;
+}
+function agRemove(id){
+  var L1=itemsSorted(), i=L1.findIndex(function(x){return x.id===id;}); if(i<0) return;
+  var d=agDur(L1,i); if(d) L1.slice(i+1).forEach(function(it){ agAdd(it,-d); });
+  S.agenda.items=S.agenda.items.filter(function(x){return x.id!==id;});
+}
+function agShiftAll(d){ S.agenda.items.forEach(function(it){ agAdd(it,d); }); }
+function agSpanText(){
+  var L1=itemsSorted(); if(!L1.length) return "";
+  var a=hm2min(L1[0].time), b=hm2min(L1[L1.length-1].time); if(a==null||b==null) return "";
+  var len=b-a; return fmtHM(L1[0].time)+" – "+fmtHM(L1[L1.length-1].time)+" · "+(len>=60?Math.floor(len/60)+" h ":"")+(len%60?len%60+" min":"")+" to the last item";
+}
+/* on the day: the Toastmaster can push the rest of the agenda later or earlier without changing the printed times */
+function rt(it){ if(!it) return ""; var a=S.run&&S.run.adj&&S.run.adj[it.id]; if(!a) return it.time; var m=hm2min(it.time); return m==null?it.time:min2hm(m+a); }
+function runAdjust(delta){
+  var c=curItem(), rest=c.i>=0?c.its.slice(c.i+1):c.its; if(!rest.length||!delta) return;
+  S.run.adj=S.run.adj||{};
+  rest.forEach(function(it){ var v=(S.run.adj[it.id]||0)+delta; if(v) S.run.adj[it.id]=v; else delete S.run.adj[it.id]; });
+  tick(S.run); commit();
+}
+function runRetimeNow(){ var c=curItem(), n=c.cur?c.next:nextLive(c.its,0); if(!n) return; var target=Math.ceil(minutesNow()), m=hm2min(rt(n)); if(m==null) return; runAdjust(target-m); }
+function runAdjReset(){ S.run.adj={}; tick(S.run); commit(); }
+function runAdjTotal(){ var c=curItem(), n=c.cur?c.next:null; return n&&S.run.adj?(S.run.adj[n.id]||0):0; }
 function extraText(x){
   if(x==="speakers"){ var sp=uniq(asList("speakers").concat(S.speeches.filter(function(s){return s.type!=="tt";}).map(function(s){return s.name;}))); return sp.length?"Speakers: "+sp.map(function(n){ var t=speechTitle(n); return n+(t?" — “"+t+"”":""); }).join(", "):""; }
   if(x==="keynote"){ var k=assigned("keynote"); return k?(k+(S.agenda.korg?" ("+S.agenda.korg+")":"")+(S.agenda.ktopic?" — "+S.agenda.ktopic:"")):""; }
@@ -1589,13 +1640,21 @@ function coordHTML(){
   h+=assignTableHTML();
   h+='<div class="note">Role players fill in automatically on every device: names for each role, the Timer\'s Prepared Speech, Evaluations and Role reports lists, and the report header.</div>';
   /* agenda items */
-  h+='<h2 class="sec">📋 Agenda</h2>'+tplHTML()+'<div class="agedit">';
-  itemsSorted().forEach(function(it){
-    h+='<div class="agrow" data-iid="'+it.id+'"><input class="t agtime" type="time" data-it="time" aria-label="Time" value="'+esc(it.time)+'">'+
+  var AGL=itemsSorted();
+  h+='<h2 class="sec">📋 Agenda</h2>'+tplHTML()+
+    '<div class="agtools"><label class="agst">Start at <input class="t" type="time" id="agStart" aria-label="Agenda start time" value="'+esc(AGL[0]?AGL[0].time:"")+'"></label>'+
+    '<span class="seg" role="group" aria-label="Move the whole agenda"><button data-agshift="-5" title="Move every item 5 minutes earlier">−5 min</button><button data-agshift="5" title="Move every item 5 minutes later">+5 min</button></span>'+
+    '<span class="saved" id="agSpan">'+esc(agSpanText())+'</span></div>'+
+    '<div class="note" style="margin-top:4px">▲▼ moves an item and keeps how long it runs. Changing the <b>min</b> of an item moves everything after it. <b>＋</b> inserts a 5-minute item below and <b>✕</b> removes one; the items after it move to suit.</div><div class="agedit">';
+  AGL.forEach(function(it,i){
+    var du=agDur(AGL,i);
+    h+='<div class="agrow" data-iid="'+it.id+'"><span class="agmv"><button data-agmv="-1" title="Move up" aria-label="Move up"'+(i?'':' disabled')+'>▲</button><button data-agmv="1" title="Move down" aria-label="Move down"'+(i<AGL.length-1?'':' disabled')+'>▼</button></span>'+
+       '<input class="t agtime" type="time" data-it="time" aria-label="Time" value="'+esc(it.time)+'">'+
+       (du==null?'<span class="agdurw agend">end</span>':'<label class="agdurw"><input class="t agdur" type="number" inputmode="numeric" min="0" max="240" data-agdur value="'+du+'" aria-label="Length in minutes"><span>min</span></label>')+
        '<select class="t agrole" data-it="role" aria-label="Role">'+AROLES.filter(function(a){return !a.multi;}).map(function(a){ return '<option value="'+a.k+'"'+(it.role===a.k?' selected':'')+'>'+a.n+'</option>'; }).join("")+'</select>'+
        '<textarea class="t agtext" data-it="text" rows="2" aria-label="Activity">'+esc(it.text)+'</textarea>'+
        '<select class="t agx" data-it="x" title="Add names automatically" aria-label="Add names automatically">'+XTRAS.map(function(x){ return '<option value="'+x.k+'"'+((it.x||"")===x.k?' selected':'')+'>'+x.n+'</option>'; }).join("")+'</select>'+
-       '<button class="iconbtn" data-itdel title="Remove item">✕</button></div>';
+       '<span class="agacts"><button class="iconbtn" data-agins title="Insert an item below" aria-label="Insert an item below">＋</button><button class="iconbtn" data-itdel title="Remove item" aria-label="Remove item">✕</button></span></div>';
   });
   h+='</div><div class="row" style="margin-top:8px"><button class="btn" id="itAdd">+ Add agenda item</button><button class="linkbtn" id="itReset">Reset to the standard agenda</button></div>';
   h+='</section>';
@@ -1671,9 +1730,9 @@ function curItem(){ var its=runItems(); var i=its.findIndex(function(x){return x
 function minutesNow(){ var d=new Date(); return d.getHours()*60+d.getMinutes()+d.getSeconds()/60; }
 function scheduleStatus(){
   var c=curItem(); if(!c.cur) return null;
-  var st=S.run.started[c.cur.id], plan=hm2min(c.cur.time);
+  var st=S.run.started[c.cur.id], plan=hm2min(rt(c.cur));
   var late = (st!=null&&plan!=null) ? Math.round(((function(){ var d=new Date(st); return d.getHours()*60+d.getMinutes()+d.getSeconds()/60; })())-plan) : 0;
-  var overdue = c.next ? Math.round(minutesNow()-hm2min(c.next.time)) : 0;
+  var overdue = c.next ? Math.round(minutesNow()-hm2min(rt(c.next))) : 0;
   var behind=Math.max(late, overdue>0?overdue:-999);
   var txt, cls;
   if(Math.abs(late)>120 || overdue>180){ return {txt:"Times not checked (meeting isn't running at the agenda times)",cls:"muted",c:c}; }
@@ -1685,7 +1744,7 @@ function scheduleStatus(){
 function itemCard(it,big){
   if(!it) return '<div class="muted">End of agenda.</div>';
   var who=whoFor(it.role), x=extraText(it.x);
-  return '<div class="'+(big?'nowtxt':'nexttxt')+'"><span class="tm">'+fmtHM(it.time)+'</span> <b>'+arole(it.role).n+'</b>'+(who?' · '+esc(who):'')+'</div><div class="'+(big?'nowact':'muted')+'">'+esc(it.text)+'</div>'+(x?'<div class="agx2">'+esc(x).replace(/\n/g,'<br>')+'</div>':'');
+  return '<div class="'+(big?'nowtxt':'nexttxt')+'"><span class="tm">'+fmtHM(rt(it))+'</span> <b>'+arole(it.role).n+'</b>'+(who?' · '+esc(who):'')+'</div><div class="'+(big?'nowact':'muted')+'">'+esc(it.text)+'</div>'+(x?'<div class="agx2">'+esc(x).replace(/\n/g,'<br>')+'</div>':'');
 }
 function tmodHTML(){
   var c=curItem(), ss=scheduleStatus();
@@ -1697,12 +1756,13 @@ function tmodHTML(){
     h+='<div class="curtopic" style="margin-top:12px"><div class="lbl">Now'+(S.run.started[c.cur.id]?' · started '+new Date(S.run.started[c.cur.id]).toLocaleTimeString("en-AU",{hour:"numeric",minute:"2-digit"}):'')+'</div>'+itemCard(c.cur,true)+'</div>';
     h+='<div class="wcard"><div class="lbl saved">NEXT</div>'+itemCard(c.next,false)+'</div>';
     h+='<div class="row"><button class="btn" id="runPrev">◀ Back</button><button class="btn go big1" id="runNext"'+(c.next?'':' disabled')+'>Next ▶</button>'+(c.next?'':'<button class="btn" id="runEnd">Finish</button>')+'</div>';
+    if(c.next){ var adj=runAdjTotal(); h+='<div class="runadj"><span class="saved">Rest of the agenda'+(adj?' · <b>'+(adj>0?adj+' min later':(-adj)+' min earlier')+'</b> than printed':'')+'</span><span class="row"><button class="btn sm" data-runadj="5">+5 min</button><button class="btn sm" data-runadj="-5">−5 min</button><button class="btn sm" id="runRetime" title="Make the next item start now and move the rest with it">⟳ Next starts now</button>'+(Object.keys(S.run.adj||{}).length?'<button class="linkbtn" id="runAdjReset">Printed times</button>':'')+'</span></div>'; }
   }
   h+='<h2 class="sec">Full agenda</h2><ul class="tlist runlist">';
   c.its.forEach(function(it,i){
     var cls=c.i>=0&&i<c.i?"done":i===c.i?"cur":"";
     var sk=isSkipped(it.id), moved=Array.isArray(S.run.order)&&S.run.order.length&&itemsSorted().indexOf(it)!==i;
-    h+='<li data-run="'+it.id+'" class="'+cls+(sk?' skipped':'')+'"><span class="n">'+fmtHM(it.time)+(moved?'<br><span class="badge on">moved</span>':'')+'</span><span style="flex:1"><b>'+arole(it.role).n+'</b>'+(whoFor(it.role)?' · '+esc(whoFor(it.role)):'')+(sk?' <span class="badge no">skipped</span>':'')+'<br><span class="muted">'+esc(it.text)+'</span></span>'+(cls==="done"?'<span class="donetag">✓</span>':'')+
+    h+='<li data-run="'+it.id+'" class="'+cls+(sk?' skipped':'')+'"><span class="n">'+fmtHM(rt(it))+(rt(it)!==it.time?'<br><s class="muted">'+fmtHM(it.time)+'</s>':'')+(moved?'<br><span class="badge on">moved</span>':'')+'</span><span style="flex:1"><b>'+arole(it.role).n+'</b>'+(whoFor(it.role)?' · '+esc(whoFor(it.role)):'')+(sk?' <span class="badge no">skipped</span>':'')+'<br><span class="muted">'+esc(it.text)+'</span></span>'+(cls==="done"?'<span class="donetag">✓</span>':'')+
        (cls!=="done"&&cls!=="cur"?'<span class="runact"><button class="btn sm" data-runend="'+it.id+'" title="Move this item to the end of the meeting">⤵ To end</button><button class="btn sm" data-runskip="'+it.id+'">'+(sk?'↩ Unskip':'⏭ Skip')+'</button></span>':'')+'</li>';
   });
   h+='</ul><div class="note">Tap any item to jump to it. Running late or someone missing? <b>⤵ To end</b> moves an item (e.g. a late keynote) to the end, and <b>⏭ Skip</b> leaves it out. Everyone connected sees the new order. The printed agenda keeps the original plan.</div></section>';
@@ -1715,7 +1775,7 @@ function renderAgendaLine(){
   var ss=scheduleStatus();
   if(!ss||L.role==="tmod"){ el.classList.remove("on"); el.innerHTML=""; return; }
   var who=whoFor(ss.c.cur.role);
-  el.innerHTML='📋 <b>Now:</b> '+arole(ss.c.cur.role).n+(who?' ('+esc(who)+')':'')+(ss.c.next?' · <span class="muted">Next '+fmtHM(ss.c.next.time)+' '+arole(ss.c.next.role).n+'</span>':'')+' · <span class="'+ss.cls+'">'+ss.txt+'</span>';
+  el.innerHTML='📋 <b>Now:</b> '+arole(ss.c.cur.role).n+(who?' ('+esc(who)+')':'')+(ss.c.next?' · <span class="muted">Next '+fmtHM(rt(ss.c.next))+' '+arole(ss.c.next.role).n+'</span>':'')+' · <span class="'+ss.cls+'">'+ss.txt+'</span>';
   el.classList.add("on");
 }
 setInterval(function(){
@@ -2447,6 +2507,9 @@ document.addEventListener("fullscreenchange",function(){ if(!document.fullscreen
       if(t.closest("#runNext")){ if(c.next) runGo(c.next.id); return; }
       if(t.closest("#runPrev")){ if(c.i>0) runGo(c.its[c.i-1].id); return; }
       if(t.closest("#runEnd")){ S.run.cur=null; tick(S.run); commit(); return; }
+      var ra=t.closest("[data-runadj]"); if(ra){ runAdjust(+ra.dataset.runadj); return; }
+      if(t.closest("#runRetime")){ runRetimeNow(); return; }
+      if(t.closest("#runAdjReset")){ runAdjReset(); return; }
       var li=t.closest("[data-run]"); if(li){ runGo(li.dataset.run); return; }
       return;
     }
@@ -2477,7 +2540,10 @@ document.addEventListener("fullscreenchange",function(){ if(!document.fullscreen
       S.agenda.assign[k]=arr; agChanged(); applyAgenda(); commit(); var b2=document.querySelector('[data-rpadd-in="'+k+'"]'); if(b2) b2.focus(); return;
     }
     var rd=t.closest("[data-rpdel]"); if(rd){ var k2=rd.dataset.rpdel, arr2=asList(k2); arr2.splice(+rd.dataset.i,1); S.agenda.assign[k2]=arr2; agChanged(); applyAgenda(); commit(); return; }
-    if(t.closest("[data-itdel]")){ var id=t.closest("[data-iid]").dataset.iid; S.agenda.items=S.agenda.items.filter(function(x){return x.id!==id;}); agChanged(); commit(); return; }
+    if(t.closest("[data-itdel]")){ var id=t.closest("[data-iid]").dataset.iid; agRemove(id); agChanged(); commit(); return; }
+    var mv=t.closest("[data-agmv]"); if(mv){ var r0=mv.closest("[data-iid]").dataset.iid; if(agMove(r0,+mv.dataset.agmv)){ agChanged(); commit(); var nb=document.querySelector('[data-iid="'+r0+'"] [data-agmv="'+mv.dataset.agmv+'"]'); if(nb&&!nb.disabled) nb.focus(); } return; }
+    if(t.closest("[data-agins]")){ var ni=agInsertAfter(t.closest("[data-iid]").dataset.iid); if(ni){ agChanged(); commit(); var ta=document.querySelector('[data-iid="'+ni.id+'"] .agtext'); if(ta) ta.focus(); } return; }
+    var sh=t.closest("[data-agshift]"); if(sh){ agShiftAll(+sh.dataset.agshift); agChanged(); commit(); return; }
     if(t.closest("#itAdd")){ var its=itemsSorted(), last=its[its.length-1]; var tm=last?last.time:"17:30"; S.agenda.items.push({id:uid(),time:tm,role:"tmod",text:"",x:"",ord:maxOrd(S.agenda.items)+1}); agChanged(); commit(); return; }
     if(t.closest("#itReset")){ if(confirm("Replace the agenda items with the standard Speechcraft agenda? Role players and meeting details are kept.")){ S.agenda.items=defaultItems(); agChanged(); commit(); } return; }
   });
@@ -2491,6 +2557,8 @@ document.addEventListener("fullscreenchange",function(){ if(!document.fullscreen
     if(t.dataset.ag){ S.agenda[t.dataset.ag]=t.value; agChanged(); commitQuiet(); return; }
     if(t.dataset.assign!=null){ setAssign(t.dataset.assign,t.value); return; }
     if(t.dataset.rp){ var v=t.value.trim(); if(v) S.agenda.assign[t.dataset.rp]=v; else delete S.agenda.assign[t.dataset.rp]; agChanged(); applyAgenda(); commit(); return; }
+    if(t.dataset.agdur!=null){ if(agSetDur(t.closest("[data-iid]").dataset.iid,parseInt(t.value,10))){ agChanged(); commit(); } else renderAll(); return; }
+    if(t.id==="agStart"){ var f0=itemsSorted()[0], a0=f0&&hm2min(f0.time), b0=hm2min(t.value); if(a0!=null&&b0!=null&&a0!==b0){ agShiftAll(b0-a0); agChanged(); commit(); } return; }
     if(t.dataset.it && t.dataset.it!=="text"){ var it=S.agenda.items.find(function(x){return x.id===t.closest("[data-iid]").dataset.iid;}); if(it){ it[t.dataset.it]=t.value; agChanged(); commit(); } return; }
     if(t.dataset.it==="text"){ laterRender(); }
   });
@@ -3326,8 +3394,8 @@ function dashHTML(){
   h+='<section class="card dash-hero"><div class="dh-top"><div><div class="dh-kicker">'+esc(GROUP)+(S.meta.week?' · '+esc(S.meta.week):'')+'</div><div class="dh-title">'+esc(fmtDate(S.meta.date)||"Today’s meeting")+'</div></div>'+
      '<button class="btn" id="projOpen">📺 Projector view</button></div>';
   if(ss){ var c=ss.c, who=whoFor(c.cur.role);
-    h+='<div class="dh-now"><div class="dh-lbl">Now</div><div class="dh-item"><b>'+esc(fmtHM(c.cur.time))+'</b> '+esc(arole(c.cur.role).n)+(who?' · '+esc(who):'')+'<div class="muted">'+esc(c.cur.text)+'</div></div></div>';
-    if(c.next){ var wn=whoFor(c.next.role); h+='<div class="dh-next"><div class="dh-lbl">Next</div><div class="dh-item"><b>'+esc(fmtHM(c.next.time))+'</b> '+esc(arole(c.next.role).n)+(wn?' · '+esc(wn):'')+'</div></div>'; }
+    h+='<div class="dh-now"><div class="dh-lbl">Now</div><div class="dh-item"><b>'+esc(fmtHM(rt(c.cur)))+'</b> '+esc(arole(c.cur.role).n)+(who?' · '+esc(who):'')+'<div class="muted">'+esc(c.cur.text)+'</div></div></div>';
+    if(c.next){ var wn=whoFor(c.next.role); h+='<div class="dh-next"><div class="dh-lbl">Next</div><div class="dh-item"><b>'+esc(fmtHM(rt(c.next)))+'</b> '+esc(arole(c.next.role).n)+(wn?' · '+esc(wn):'')+'</div></div>'; }
     h+='<div class="'+ss.cls+'" style="margin-top:6px;font-weight:700">'+ss.txt+'</div>';
   } else { var f=runItems()[0]; h+='<div class="dh-now"><div class="dh-lbl">Not started</div><div class="dh-item">The Toastmaster starts the run-sheet when the meeting begins.'+(f?'<div class="muted">First: '+esc(fmtHM(f.time))+' '+esc(arole(f.role).n)+(whoFor(f.role)?' · '+esc(whoFor(f.role)):'')+'</div>':'')+'</div></div>'; }
   if(pr.n) h+='<div class="dh-prog"><div class="bar"><i style="width:'+Math.round(pr.done/pr.n*100)+'%"></i></div><span class="saved">'+pr.done+' of '+pr.n+' agenda items</span></div>';
@@ -3352,7 +3420,7 @@ function agendaViewHTML(){
   runItems().forEach(function(it){
     var who=whoFor(it.role), st=isSkipped(it.id)?"skip":(c.cur&&c.cur.id===it.id)?"cur":(S.run.started&&S.run.started[it.id]!=null)?"done":"";
     var x=agExtraHTML(it.x);
-    h+='<div class="agv2i '+st+'"><div class="agv2t">'+esc(fmtHM(it.time))+'</div><div><div class="agv2r">'+esc(arole(it.role).n)+(who?' · <b>'+esc(who)+'</b>':'')+(st==="cur"?' <span class="badge on">Now</span>':st==="skip"?' <span class="badge no">Skipped</span>':'')+'</div><div class="agv2x">'+agActivityHTML(Object.assign({},it,{x:""}))+'</div>'+(x?'<div class="agv2s">'+x+'</div>':'')+'</div></div>';
+    h+='<div class="agv2i '+st+'"><div class="agv2t">'+esc(fmtHM(rt(it)))+'</div><div><div class="agv2r">'+esc(arole(it.role).n)+(who?' · <b>'+esc(who)+'</b>':'')+(st==="cur"?' <span class="badge on">Now</span>':st==="skip"?' <span class="badge no">Skipped</span>':'')+'</div><div class="agv2x">'+agActivityHTML(Object.assign({},it,{x:""}))+'</div>'+(x?'<div class="agv2s">'+x+'</div>':'')+'</div></div>';
   });
   h+='</div>'+(A.next?'<div class="saved" style="margin-top:10px">Next meeting: '+esc(fmtDate(A.next))+'</div>':'')+'</section>';
   return h;
@@ -3388,9 +3456,9 @@ function focusHTML(){
   } else if(r==="tmod"){
     var c=curItem(), ss=scheduleStatus();
     h+='<section class="card fcard" style="text-align:center">';
-    if(c.cur){ var w1=whoFor(c.cur.role); h+='<div class="flbl">Now · '+esc(fmtHM(c.cur.time))+'</div><div class="fname">'+esc(arole(c.cur.role).n)+'</div>'+(w1?'<div class="fwho2">'+esc(w1)+'</div>':'')+'<div class="muted" style="margin-top:6px">'+esc(c.cur.text)+'</div>'+(ss?'<div class="'+ss.cls+'" style="margin-top:8px;font-weight:800">'+ss.txt+'</div>':''); }
+    if(c.cur){ var w1=whoFor(c.cur.role); h+='<div class="flbl">Now · '+esc(fmtHM(rt(c.cur)))+'</div><div class="fname">'+esc(arole(c.cur.role).n)+'</div>'+(w1?'<div class="fwho2">'+esc(w1)+'</div>':'')+'<div class="muted" style="margin-top:6px">'+esc(c.cur.text)+'</div>'+(ss?'<div class="'+ss.cls+'" style="margin-top:8px;font-weight:800">'+ss.txt+'</div>':''); }
     else h+='<div class="flbl">Ready</div><div class="fname">Start the meeting</div>';
-    if(c.next){ var w2=whoFor(c.next.role); h+='<div class="fnextitem">Next · '+esc(fmtHM(c.next.time))+' '+esc(arole(c.next.role).n)+(w2?' · '+esc(w2):'')+'</div>'; }
+    if(c.next){ var w2=whoFor(c.next.role); h+='<div class="fnextitem">Next · '+esc(fmtHM(rt(c.next)))+' '+esc(arole(c.next.role).n)+(w2?' · '+esc(w2):'')+'</div>'; }
     h+='<button class="btn primary fbig" style="margin-top:12px" data-frun>'+(c.cur?(c.next?'Next ▶':'End of agenda'):'▶ Start the meeting')+'</button></section>';
   } else if(r==="ttm"){
     var cur=topicById(S.cur.id), rem=remaining();
@@ -3435,7 +3503,7 @@ var TIPS={
   coord:["Set your Coordinator PIN, then add the group's members once; they're remembered every week.","Fill in the role players and agenda. Everyone's screens update, and 📄 Print agenda makes the sheet.","At the end, tap 🏁 Finish meeting, then ⤓ Save meeting record."],
   president:["Your agenda times are at the top; tick each opening step as you go.","Add guests as they arrive (or the Sergeant at Arms will) and welcome them by name.","At the close, the award winners appear here once the Toastmaster reveals the votes."],
   saa:["Work through the 'Before the meeting' list while you set up the room.","Add each guest to the shared guest list; the President sees them straight away.","Tick 'After the meeting' when the room is packed up."],
-  tmod:["Tap ▶ Start the meeting when the President hands over; then Next ▶ for each agenda item.","The run-sheet shows if you're on time or behind. Move a late item to the end or skip it.","Open and reveal the votes from here at the end. 🎯 Focus shows just Now / Next."],
+  tmod:["Tap ▶ Start the meeting when the President hands over; then Next ▶ for each agenda item.","The run-sheet shows if you're on time or behind. Running late? +5 min or ⟳ Next starts now moves the rest of the agenda; you can also move a late item to the end or skip it.","Open and reveal the votes from here at the end. 🎯 Focus shows just Now / Next."],
   ge:["Your evaluation team and who evaluates whom are listed for you.","Call for the Timer, Ah-Counter and Grammarian reports; their results appear here.","Open and close voting, and write your overall notes as the meeting goes."],
   timer:["Plan speakers ahead with + Add to list, or just press Start speaker.","Show green, amber and red as the screen tells you; your phone vibrates at each signal.","Copy report text gives your report. 🎯 Focus shows big Start buttons."],
   ttm:["Add your topics before the meeting, one per line.","Pick or 🎲 randomise a topic, show it on screen, then type who takes it and tap Call speaker.","The Timer gets each speaker's name automatically."],
@@ -3941,7 +4009,7 @@ function checkNudge(){
   if(key===lastNudge) return; var first=!lastNudge; lastNudge=key; if(first) return;
   var msg="", buzzP=null;
   if(itemIsMine(c.cur)){ msg="🎤 You're on now: "+itemLabel(c.cur); buzzP=[300,120,300]; }
-  else if(c.next&&itemIsMine(c.next)){ var mins=hm2min(c.next.time), cm=hm2min(c.cur.time); msg="⏭ You're up next: "+itemLabel(c.next)+(mins!=null&&cm!=null&&mins>cm?" (about "+(mins-cm)+" min)":""); buzzP=[120,80,120]; }
+  else if(c.next&&itemIsMine(c.next)){ var mins=hm2min(rt(c.next)), cm=hm2min(rt(c.cur)); msg="⏭ You're up next: "+itemLabel(c.next)+(mins!=null&&cm!=null&&mins>cm?" (about "+(mins-cm)+" min)":""); buzzP=[120,80,120]; }
   if(!msg) return;
   try{ if(navigator.vibrate&&buzzP) navigator.vibrate(buzzP); }catch(e){}
   var el=document.getElementById("nudge"); if(el){ el.textContent=msg; el.classList.add("on"); clearTimeout(el._t); el._t=setTimeout(function(){ el.classList.remove("on"); },15000); }
@@ -4055,7 +4123,7 @@ function projHTML(){
   } else if(S.cur&&S.cur.id&&topicById(S.cur.id)&&!topicById(S.cur.id).used){ var tp=topicById(S.cur.id);
     main='<div class="pj-lbl">Table Topic</div><div class="pj-topic">'+esc(tp.text)+'</div>';
   } else if(ss){ var c=ss.c, who=whoFor(c.cur.role);
-    main='<div class="pj-lbl">Now</div><div class="pj-name">'+esc(arole(c.cur.role).n)+'</div>'+(who?'<div class="pj-who">'+esc(who)+'</div>':'')+'<div class="pj-sub">'+esc(String(c.cur.text||"").split(" — ")[0])+'</div>'+(c.next?'<div class="pj-next">Next · '+esc(fmtHM(c.next.time))+' '+esc(arole(c.next.role).n)+(whoFor(c.next.role)?' · '+esc(whoFor(c.next.role)):'')+'</div>':'');
+    main='<div class="pj-lbl">Now</div><div class="pj-name">'+esc(arole(c.cur.role).n)+'</div>'+(who?'<div class="pj-who">'+esc(who)+'</div>':'')+'<div class="pj-sub">'+esc(String(c.cur.text||"").split(" — ")[0])+'</div>'+(c.next?'<div class="pj-next">Next · '+esc(fmtHM(rt(c.next)))+' '+esc(arole(c.next.role).n)+(whoFor(c.next.role)?' · '+esc(whoFor(c.next.role)):'')+'</div>':'');
   } else {
     main='<div class="pj-lbl">Welcome to</div><div class="pj-name">'+esc(S.agenda.title||GROUP)+'</div><div class="pj-who">Speechcraft'+(S.meta.week?' · '+esc(S.meta.week):'')+'</div><div class="pj-sub">'+esc(fmtDate(S.meta.date)||"")+'</div>'+(guestLink()?'<div class="pj-guest">'+qrSvg(guestLink())+'<div>👋 Guests: scan to check in</div></div>':'');
   }
@@ -4097,7 +4165,7 @@ applyDisplay();
   document.addEventListener("keydown",function(e){ if(e.key==="Escape") setOpen(false); });
 })();
 /* ---------- home, about and clean-up ---------- */
-var APP_VERSION="3.5 · November 2026";
+var APP_VERSION="3.6 · November 2026";
 function aboutHTML(){
   var on=!!NET.mode, coord=L.role==="coord";
   return '<div class="finhead"><h2 class="sec" style="margin:0">ℹ️ About</h2><button class="btn ghost" id="aboutClose">Close</button></div>'+
