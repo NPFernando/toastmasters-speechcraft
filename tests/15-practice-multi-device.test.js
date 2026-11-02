@@ -22,5 +22,11 @@ module.exports = async (b) => {
   T.assert.ok(!/Amal Perera|Dilini Jayasinghe/.test(await T.stored(B)), "real data has no sample names");
   T.assert.ok(realBefore.includes("Real Person") && (await T.stored(B)).includes("Real Person"), "real data kept");
   await T.eventually(async () => /Dilini Jayasinghe/.test(await C.innerText("#roles")), "practice host sees the practice phone");
+  // joiners use the host's practice meeting: no "bring it into this meeting?" question, no duplicated sample topics
+  await T.sleep(1500);
+  const count = (p) => p.evaluate(() => { const s = JSON.parse(localStorage.getItem("speechcraftMeeting.v2.practice")); return s.topics.length + "/" + s.rrq.length + "/" + s.mid; });
+  T.assert.ok(!A._dialogs.concat(B._dialogs).some((d) => /bring it into this meeting/.test(d)), "no merge question in practice");
+  T.assert.strictEqual(await count(A), await count(C)); T.assert.strictEqual(await count(B), await count(C));
+  T.assert.match(await count(C), /^3\/2\//, "sample topics not duplicated");
   T.noErrors(C, A);
 };

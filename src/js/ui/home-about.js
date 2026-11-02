@@ -1,5 +1,5 @@
 /* ---------- home, about and clean-up ---------- */
-var APP_VERSION="3.9.4 · November 2026";
+var APP_VERSION="3.9.5 · November 2026";
 function aboutHTML(){
   var on=!!NET.mode, coord=L.role==="coord";
   return '<div class="finhead"><h2 class="sec" style="margin:0">ℹ️ About</h2><button class="btn ghost" id="aboutClose">Close</button></div>'+

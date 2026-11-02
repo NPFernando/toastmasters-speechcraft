@@ -102,7 +102,8 @@ function onMsg(pid,m){
       if(meSynced && !themSynced) mode="keep";                 /* they'll take our meeting */
       else if(!meSynced && !themSynced) mode="keep";           /* two newcomers: wait for the meeting */
       else if(!meSynced && themSynced){                         /* first contact with the meeting */
-        if(NET.decided || meetingEmpty(S) || (L.syncedMid===S.mid && remote.midU>S.midU)) mode="adopt";
+        /* practice: this device's own sample copy is disposable, so always use the host's practice meeting (no question, no duplicates) */
+        if(PRACTICE || NET.decided || meetingEmpty(S) || (L.syncedMid===S.mid && remote.midU>S.midU)) mode="adopt";
         else mode = confirm(describeMeeting(S)+" is on this device.\n\nOK = bring it into this meeting\nCancel = discard it and use the meeting's data") ? "absorb" : "adopt";
         NET.decided=true;
       }
