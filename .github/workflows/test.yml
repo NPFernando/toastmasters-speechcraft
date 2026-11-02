@@ -28,3 +28,23 @@ jobs:
       - name: Run tests (several simulated devices through a local relay)
         working-directory: tests
         run: npm test
+
+  webkit:
+    name: Same tests in Safari's engine (iPhone)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install test tools
+        working-directory: tests
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps webkit
+      - name: Run tests in WebKit
+        working-directory: tests
+        env:
+          BROWSER: webkit
+        run: npm test

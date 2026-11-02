@@ -32,6 +32,9 @@ function refreshPeers(){
   var t=now(), list=[{role:L.role,roles:myRoles(),name:myName(),host:NET.mode==="host",me:true}];
   Object.keys(NET.info).forEach(function(id){ var p=NET.info[id]; if(t-p.last<20000) list.push(p); });
   NET.peers=list; refreshHealth();
+  /* who's connected changed: refresh the Coordinator's role-player dots */
+  var osig=list.map(function(p){return nkey(p.name||"");}).sort().join("|");
+  if(osig!==NET.onSig){ NET.onSig=osig; if(L.role==="coord"&&curView()==="role"&&coTab()==="setup") laterRender(); }
   if(NET.room){
     if(list.length>1 || NET.mode==="host") setStatus("on");
     else if(NET.status!=="wait") setStatus("wait", NET.synced?"Waiting for the others to reconnect…":"Looking for meeting "+fmtCode(NET.code)+"…");

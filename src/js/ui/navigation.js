@@ -20,6 +20,8 @@ document.getElementById("bnav").addEventListener("click",function(e){
 
 /* the meeting at a glance, for everyone */
 function agendaProgress(){ var its=runItems().filter(function(i){return !isSkipped(i.id);}), done=its.filter(function(i){return S.run.started&&S.run.started[i.id]!=null;}).length; return {done:done,n:its.length}; }
+/* green dot for a connected person (text for screen readers); with label: "online" / "not connected" */
+function onDot(n,label){ if(!NET.room||!n) return ""; var on=isOnlineName(n); return on?'<i class="dotg" role="img" aria-label="online" title="Connected now"></i>'+(label?'<span class="saved">online</span>':''):(label?'<span class="saved">not connected</span>':''); }
 function isOnlineName(n){ return !!n && (NET.peers||[]).some(function(p){ return nkey(p.name)===nkey(n); }); }
 function dashHTML(){
   var ss=scheduleStatus(), pr=agendaProgress(), h='';

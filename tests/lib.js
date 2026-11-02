@@ -1,6 +1,11 @@
 // Shared helpers for the browser tests. Each test drives several simulated devices
 // (separate browser contexts = separate phones/laptops) through a local test relay.
-const { chromium } = require("playwright");
+const playwright = require("playwright");
+const { chromium } = playwright;
+/* BROWSER=webkit runs the same tests in Safari's engine (what every iPhone browser uses) */
+const BROWSER = process.env.BROWSER || "chromium";
+const browserType = playwright[BROWSER];
+const IS_WEBKIT = BROWSER === "webkit";
 const path = require("path");
 const { spawn } = require("child_process");
 const assert = require("assert");
@@ -19,7 +24,9 @@ async function startRelay() {
 
 /* a fresh device; collects page errors so tests can assert there were none */
 async function device(b, opts = {}) {
-  const ctx = await b.newContext({ viewport: opts.phone ? { width: 390, height: 844 } : { width: 1200, height: 850 }, colorScheme: opts.dark ? "dark" : "light", permissions: ["clipboard-read", "clipboard-write"] });
+  const ctx = await b.newContext({ viewport: opts.phone ? { width: 390, height: 844 } : { width: 1200, height: 850 }, colorScheme: opts.dark ? "dark" : "light", ...(IS_WEBKIT ? {} : { permissions: ["clipboard-read", "clipboard-write"] }) });
+  /* WebKit has no clipboard permission for tests: use an in-page clipboard so copy buttons can be checked */
+  if (IS_WEBKIT) await ctx.addInitScript(() => { let clip = ""; try { Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: (t) => { clip = String(t); return Promise.resolve(); }, readText: () => Promise.resolve(clip) } }); } catch (e) {} });
   const p = await ctx.newPage();
   p._errors = [];
   p._dialogs = [];
@@ -69,4 +76,4 @@ async function eventually(fn, msg, ms = 10000) {
 function noErrors(...pages) { for (const p of pages) assert.deepStrictEqual(p._errors, [], "page errors"); }
 function stored(p) { return p.evaluate(() => localStorage.getItem("speechcraftMeeting.v2") || ""); }
 
-module.exports = { chromium, assert, sleep, ROOT, FILE, URL, startRelay, device, host, join, solo, pickWho, setCoordPin, coTab, addMembers, setRole, eventually, noErrors, stored };
+module.exports = { chromium, browserType, BROWSER, IS_WEBKIT, assert, sleep, ROOT, FILE, URL, startRelay, device, host, join, solo, pickWho, setCoordPin, coTab, addMembers, setRole, eventually, noErrors, stored };

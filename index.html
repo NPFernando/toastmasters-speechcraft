@@ -1767,6 +1767,8 @@ function healthRows(){
   var used={}; its.forEach(function(it){ used[it.role]=1; });
   var need=AROLES.filter(function(a){ return !a.multi&&a.k!=="coord"&&(used[a.k]||["timer","ah","gram","saa"].indexOf(a.k)>=0)&&!asList(a.k).length; }).map(function(a){return a.n;});
   rows.push({key:"roles",st:need.length?"warn":"ok",t:"Role players",d:need.length?"Not filled: "+need.join(", "):"Every role on the agenda has someone",list:need,tab:need.length?"setup":""});
+  if(NET.room){ var rpn=remNames(), con=rpn.filter(isOnlineName), off=rpn.filter(function(n){return !isOnlineName(n);});
+    if(rpn.length) rows.push({st:off.length?"warn":"ok",t:"Role players connected",d:con.length+" of "+rpn.length+(off.length?" · not yet: "+off.join(", "):" · everyone is here")}); }
   var sp=asList("speakers"), noEv=sp.filter(function(n){return !evaluatorOf(n);});
   if(sp.length) rows.push({st:noEv.length?"warn":"ok",t:"Speakers and evaluators",d:noEv.length?"No evaluator yet for "+noEv.join(", "):sp.length+" speaker"+(sp.length===1?"":"s")+", each with an evaluator",tab:noEv.length?"setup":""});
   else rows.push({st:"warn",t:"Prepared speakers",d:"None on the agenda yet",tab:"setup"});
@@ -1863,10 +1865,10 @@ function coordHTML(){
   AROLES.forEach(function(a){
     if(a.multi){
       var v=asList(a.k);
-      h+='<div class="rprow"><span class="rpl">'+a.n+'</span><div class="rpv"><div class="chips">'+v.map(function(n,i){ return '<span class="chip word">'+esc(n)+rsvpBadge(n)+'<button data-rpdel="'+a.k+'" data-i="'+i+'">✕</button></span>'; }).join("")+'</div>'+
+      h+='<div class="rprow"><span class="rpl">'+a.n+'</span><div class="rpv"><div class="chips">'+v.map(function(n,i){ return '<span class="chip word">'+onDot(n)+esc(n)+rsvpBadge(n)+'<button data-rpdel="'+a.k+'" data-i="'+i+'">✕</button></span>'; }).join("")+'</div>'+
          '<div class="row" style="margin-top:4px"><input class="t" data-rpadd-in="'+a.k+'" list="memberlist" autocomplete="off" placeholder="Add a name"><button class="btn sm" data-rpadd="'+a.k+'">+ Add</button></div></div></div>';
     } else {
-      h+='<div class="rprow"><span class="rpl">'+a.n+rsvpBadge(assigned(a.k))+'</span><div class="rpv"><input class="t" data-rp="'+a.k+'" list="memberlist" autocomplete="off" value="'+esc(assigned(a.k))+'" placeholder="Pick a member or type a guest\'s name"></div></div>';
+      h+='<div class="rprow"><span class="rpl">'+a.n+rsvpBadge(assigned(a.k))+(assigned(a.k)?' '+onDot(assigned(a.k),true):'')+'</span><div class="rpv"><input class="t" data-rp="'+a.k+'" list="memberlist" autocomplete="off" value="'+esc(assigned(a.k))+'" placeholder="Pick a member or type a guest\'s name"></div></div>';
     }
   });
   h+='<div class="rprow"><span class="rpl">Keynote topic</span><div class="rpv row"><input class="t" data-ag="ktopic" value="'+esc(A.ktopic)+'" placeholder="e.g. Effective use of Humor"><input class="t" data-ag="korg" value="'+esc(A.korg)+'" placeholder="Club / organisation (optional)"></div></div></div>';
@@ -3012,6 +3014,9 @@ function refreshPeers(){
   var t=now(), list=[{role:L.role,roles:myRoles(),name:myName(),host:NET.mode==="host",me:true}];
   Object.keys(NET.info).forEach(function(id){ var p=NET.info[id]; if(t-p.last<20000) list.push(p); });
   NET.peers=list; refreshHealth();
+  /* who's connected changed: refresh the Coordinator's role-player dots */
+  var osig=list.map(function(p){return nkey(p.name||"");}).sort().join("|");
+  if(osig!==NET.onSig){ NET.onSig=osig; if(L.role==="coord"&&curView()==="role"&&coTab()==="setup") laterRender(); }
   if(NET.room){
     if(list.length>1 || NET.mode==="host") setStatus("on");
     else if(NET.status!=="wait") setStatus("wait", NET.synced?"Waiting for the others to reconnect…":"Looking for meeting "+fmtCode(NET.code)+"…");
@@ -3652,6 +3657,8 @@ document.getElementById("bnav").addEventListener("click",function(e){
 
 /* the meeting at a glance, for everyone */
 function agendaProgress(){ var its=runItems().filter(function(i){return !isSkipped(i.id);}), done=its.filter(function(i){return S.run.started&&S.run.started[i.id]!=null;}).length; return {done:done,n:its.length}; }
+/* green dot for a connected person (text for screen readers); with label: "online" / "not connected" */
+function onDot(n,label){ if(!NET.room||!n) return ""; var on=isOnlineName(n); return on?'<i class="dotg" role="img" aria-label="online" title="Connected now"></i>'+(label?'<span class="saved">online</span>':''):(label?'<span class="saved">not connected</span>':''); }
 function isOnlineName(n){ return !!n && (NET.peers||[]).some(function(p){ return nkey(p.name)===nkey(n); }); }
 function dashHTML(){
   var ss=scheduleStatus(), pr=agendaProgress(), h='';
@@ -4456,7 +4463,7 @@ applyDisplay();
   document.addEventListener("keydown",function(e){ if(e.key==="Escape") setOpen(false); });
 })();
 /* ---------- home, about and clean-up ---------- */
-var APP_VERSION="3.9.3 · November 2026";
+var APP_VERSION="3.9.4 · November 2026";
 function aboutHTML(){
   var on=!!NET.mode, coord=L.role==="coord";
   return '<div class="finhead"><h2 class="sec" style="margin:0">ℹ️ About</h2><button class="btn ghost" id="aboutClose">Close</button></div>'+

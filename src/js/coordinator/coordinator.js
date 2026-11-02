@@ -46,6 +46,8 @@ function healthRows(){
   var used={}; its.forEach(function(it){ used[it.role]=1; });
   var need=AROLES.filter(function(a){ return !a.multi&&a.k!=="coord"&&(used[a.k]||["timer","ah","gram","saa"].indexOf(a.k)>=0)&&!asList(a.k).length; }).map(function(a){return a.n;});
   rows.push({key:"roles",st:need.length?"warn":"ok",t:"Role players",d:need.length?"Not filled: "+need.join(", "):"Every role on the agenda has someone",list:need,tab:need.length?"setup":""});
+  if(NET.room){ var rpn=remNames(), con=rpn.filter(isOnlineName), off=rpn.filter(function(n){return !isOnlineName(n);});
+    if(rpn.length) rows.push({st:off.length?"warn":"ok",t:"Role players connected",d:con.length+" of "+rpn.length+(off.length?" · not yet: "+off.join(", "):" · everyone is here")}); }
   var sp=asList("speakers"), noEv=sp.filter(function(n){return !evaluatorOf(n);});
   if(sp.length) rows.push({st:noEv.length?"warn":"ok",t:"Speakers and evaluators",d:noEv.length?"No evaluator yet for "+noEv.join(", "):sp.length+" speaker"+(sp.length===1?"":"s")+", each with an evaluator",tab:noEv.length?"setup":""});
   else rows.push({st:"warn",t:"Prepared speakers",d:"None on the agenda yet",tab:"setup"});
@@ -142,10 +144,10 @@ function coordHTML(){
   AROLES.forEach(function(a){
     if(a.multi){
       var v=asList(a.k);
-      h+='<div class="rprow"><span class="rpl">'+a.n+'</span><div class="rpv"><div class="chips">'+v.map(function(n,i){ return '<span class="chip word">'+esc(n)+rsvpBadge(n)+'<button data-rpdel="'+a.k+'" data-i="'+i+'">✕</button></span>'; }).join("")+'</div>'+
+      h+='<div class="rprow"><span class="rpl">'+a.n+'</span><div class="rpv"><div class="chips">'+v.map(function(n,i){ return '<span class="chip word">'+onDot(n)+esc(n)+rsvpBadge(n)+'<button data-rpdel="'+a.k+'" data-i="'+i+'">✕</button></span>'; }).join("")+'</div>'+
          '<div class="row" style="margin-top:4px"><input class="t" data-rpadd-in="'+a.k+'" list="memberlist" autocomplete="off" placeholder="Add a name"><button class="btn sm" data-rpadd="'+a.k+'">+ Add</button></div></div></div>';
     } else {
-      h+='<div class="rprow"><span class="rpl">'+a.n+rsvpBadge(assigned(a.k))+'</span><div class="rpv"><input class="t" data-rp="'+a.k+'" list="memberlist" autocomplete="off" value="'+esc(assigned(a.k))+'" placeholder="Pick a member or type a guest\'s name"></div></div>';
+      h+='<div class="rprow"><span class="rpl">'+a.n+rsvpBadge(assigned(a.k))+(assigned(a.k)?' '+onDot(assigned(a.k),true):'')+'</span><div class="rpv"><input class="t" data-rp="'+a.k+'" list="memberlist" autocomplete="off" value="'+esc(assigned(a.k))+'" placeholder="Pick a member or type a guest\'s name"></div></div>';
     }
   });
   h+='<div class="rprow"><span class="rpl">Keynote topic</span><div class="rpv row"><input class="t" data-ag="ktopic" value="'+esc(A.ktopic)+'" placeholder="e.g. Effective use of Humor"><input class="t" data-ag="korg" value="'+esc(A.korg)+'" placeholder="Club / organisation (optional)"></div></div></div>';

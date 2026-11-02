@@ -7,12 +7,12 @@ const T = require("./lib");
   let failed = 0;
   for (const f of files) {
     const relay = await T.startRelay();
-    const b = await T.chromium.launch();
+    const b = await T.browserType.launch();
     const t0 = Date.now();
     try { await require(path.join(__dirname, f))(b); console.log("✓ " + f + "  (" + ((Date.now() - t0) / 1000).toFixed(1) + "s)"); }
     catch (e) { failed++; console.log("✗ " + f + "\n    " + String(e && e.message || e).split("\n").slice(0, 6).join("\n    ")); }
     finally { await b.close().catch(() => {}); relay.kill(); await T.sleep(300); }
   }
-  console.log("\n" + (files.length - failed) + " passed, " + failed + " failed");
+  console.log("\n" + T.BROWSER + ": " + (files.length - failed) + " passed, " + failed + " failed");
   process.exit(failed ? 1 : 0);
 })();

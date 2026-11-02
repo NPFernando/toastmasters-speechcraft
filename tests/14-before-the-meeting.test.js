@@ -20,6 +20,10 @@ module.exports = async (b) => {
   await T.join(P, code, "SC Rashmi Maneesha", ["timer"]);
   await T.eventually(async () => /Dry run/.test(await P.innerText("#view")), "dry-run banner on a phone");
   await T.eventually(async () => /Devices[\s\S]*1 other device connected · all on/.test(await C.innerText(".health")), "health check sees the phone on the same version").catch(async (e) => { console.log(await C.innerText(".health")); throw e; });
+  // the organiser sees who's connected among the role players
+  await T.eventually(async () => /Role players connected[\s\S]*1 of 3 · not yet: [^\n]*SC Laurel Senanayake/.test(await C.innerText(".health")), "connected count in the health check");
+  await T.eventually(async () => !!(await C.$('.rprow:has([data-rp=timer]) .dotg')), "green dot next to the connected Timer");
+  T.assert.match(await C.innerText('.rprow:has([data-rp=tmod])'), /not connected/);
   // reminders for the group chat
   await C.click("#remCopy");
   const txt = await C.evaluate(() => navigator.clipboard.readText());
