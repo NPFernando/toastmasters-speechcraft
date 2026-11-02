@@ -65,6 +65,7 @@ All files run in one shared scope (one `<script>`, wrapped in a single function)
 | `11-agenda-timing` | Move agenda items up/down keeping their length; change a length, shift or re-start the whole agenda; insert/remove items; the Toastmaster's +5 / −5 / "next starts now" on the day without changing the printed times; President/organiser back-up controls; organiser undo; drag to reorder; "How the agenda ran" summary |
 | (all) | `lib.js` `coTab(page, "setup"|"agenda"|"people"|"after")` switches the Coordinator sub-tab; `08-accessibility` checks all four |
 | `12-undo` | Undo after removing a guest (President) and a filler word (Ah-Counter) |
+| `17-round-robin-bell` | The person timed in Round Robin sees their live clock and the bell on their own phone (any role) |
 | `16-sample-leak-repair` | A device whose real meeting picked up the practice sample data is repaired on load (sample members, speeches, topics and PIN 1234 removed; real members kept) |
 | `15-practice-multi-device` | Practice meeting on several devices: invite link stays in practice mode; a typed practice code moves a real phone into practice mode without touching its real data |
 | `14-before-the-meeting` | Health check (incl. a phone on the same version), group-chat reminders, dry run banner and clean-up (test members removed, role players kept), automatic copy on Finish meeting |

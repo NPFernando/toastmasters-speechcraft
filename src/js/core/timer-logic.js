@@ -3,7 +3,9 @@ function sessionOf(id){ for(var i=0;i<SESSIONS.length;i++) if(SESSIONS[i].id===i
 function elapsed(row,t){ if(row.manual!=null) return row.manual; if(row.start==null) return null; var e=(row.end!=null?row.end:t); return Math.max(0,Math.round((e-row.start-(row.pz||0)-(row.paused?Math.max(0,e-row.paused):0))/1000)); }
 function pauseRow(sid,id){ var r=findRow(sid,id); if(!r||rowState(r)!=="running"||r.paused) return; r.paused=now(); tick(r); commit(); }
 function resumeRow(sid,id){ var r=findRow(sid,id); if(!r||!r.paused) return; r.pz=(r.pz||0)+Math.max(0,now()-r.paused); r.paused=null; tick(r); commit(); }
-function sigLabel(sg,r){ return r&&r.paused?"⏸ Paused":signalName(sg); }
+/* Round Robin has a single bell, not green/amber/red */
+function isRR(r){ return !!(r&&S.rows.rr&&S.rows.rr.some(function(x){return x.id===r.id;})); }
+function sigLabel(sg,r){ if(r&&r.paused) return "⏸ Paused"; if(isRR(r)&&sg) return sg==="sr"?"🔔 BELL · time’s up":"● Within time"; return signalName(sg); }
 function pauseNote(r){ return r&&r.pz>=1000?' (paused '+fmt(Math.round(r.pz/1000))+')':''; }
 function rowState(row){ if(row.start!=null&&row.end==null&&row.manual==null) return "running"; if(row.manual!=null||row.end!=null) return "done"; return "idle"; }
 function limOf(sid,row){ return (row&&row.lim)||S.limits[sid]; }
