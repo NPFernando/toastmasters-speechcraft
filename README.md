@@ -13,7 +13,7 @@ A single HTML page for running Speechcraft meetings at **Dijital Team Colombo**.
 | 🎤 **Table Topics Master** | Prepare topics, random pick, full-screen topic display, record who took each topic, remaining vs used topics |
 | 🔢 **Ah-Counter** | Tap counts of filler words (Um, Ah, Er, So, Like…) per speaker, editable word list |
 | 📝 **Grammarian** | Word of the Day, uses per speaker, great phrases and slips |
-| 🔁 **Round Robin Master** | Question list, show the question full screen, tap each person to queue them on the Timer (20-second bell) |
+| 🔁 **Round Robin Master** | Question list, show the question full screen, tap each person to queue them on the Timer (20-second bell). Follows the Timer live: each person shows as ⏳ queued, 🎙 speaking or ✓ done (with their time), even if the Timer added them; "Eshan is speaking · ✓ 3 answered · ⏳ 1 queued". The person speaking hears a bell on their own phone at 20 s (🔔 Sound on/off on their card); the Timer can also ring it on their device. |
 | 🎙 **Speaker** | Prepared speakers add their speech title, objectives and time limits (used by the Timer), see their result and assigned evaluator, and open their private feedback |
 | 🗣 **Speech Evaluator** / 💬 **Table Topics Evaluator** | "Your speakers" first (assigned by the Coordinator or "Assign to me"), with speech titles and objectives; Commend · Recommend · Commend + ratings kept as a private draft until **Submit** |
 | 🙋 **Participant** | Check in, vote, send anonymous notes to speakers, open a printable personal feedback card |

@@ -2,7 +2,7 @@
 function limitsHTML(s){
   var L2=S.limits[s.id];
   if(s.type==="rep") return '<div class="limits"><span class="saved" style="align-self:center">Each report has its own time: Timer and Ah-Counter 1 min (green 0:30 · amber 0:45 · red 1:00), Grammarian 2 min (green 1:00 · amber 1:30 · red 2:00). The Coordinator\'s role players fill this list in.</span></div>';
-  if(s.type==="rr") return '<div class="limits"><div class="lim"><span>🔔</span><span>Bell</span><input data-lim="b" aria-label="Bell at (m:ss)" value="'+fmt(L2.b)+'"></div><span class="saved" style="align-self:center">Within time up to the bell, Overtime after it.</span></div>';
+  if(s.type==="rr") return '<div class="limits"><div class="lim"><span>🔔</span><span>Bell</span><input data-lim="b" aria-label="Bell at (m:ss)" value="'+fmt(L2.b)+'"></div><span class="saved" style="align-self:center">Within time up to the bell, Overtime after it. The speaker’s own phone rings the bell.</span><label class="tgl" style="align-self:center"><input type="checkbox" id="timerBell"'+(timerBellOn()?' checked':'')+'> <span>🔔 Also ring on this device</span></label></div>';
   return '<div class="limits">'+
     '<div class="lim"><i class="shp" style="color:var(--g)" aria-hidden="true">●</i><span>Green</span><input data-lim="g" aria-label="Green at (m:ss)" value="'+fmt(L2.g)+'"></div>'+
     '<div class="lim"><i class="shp" style="color:var(--a)" aria-hidden="true">▲</i><span>Amber</span><input data-lim="a" aria-label="Amber at (m:ss)" value="'+fmt(L2.a)+'"></div>'+

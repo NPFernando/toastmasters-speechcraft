@@ -37,6 +37,7 @@ start/welcome.js
 start/multi-role.js
 roles/toastmaster-order.js
 features/rsvp.js
+features/bell-sound.js
 features/copy-report.js
 roles/president-saa.js
 features/finish.js

@@ -4,11 +4,14 @@ function rrHTML(){
   var cur=rrById(S.rrcur.id), rem=S.rrq.filter(function(q){return !q.used;}), used=S.rrq.filter(function(q){return q.used;});
   var h='<section class="card">';
   if(cur){
-    var answered=S.rows.rr.filter(function(r){return r.qid===cur.id;}).map(function(r){return nkey(r.name);});
+    var mine=S.rows.rr.filter(function(r){return r.qid===cur.id;}), stOf={};
+    mine.forEach(function(r){ var k=nkey(r.name), st=rowState(r); if(!stOf[k]||st==="running"||(st==="done"&&stOf[k].st!=="running")) stOf[k]={st:st,r:r}; });
+    var answered=Object.keys(stOf), nDone=answered.filter(function(k){return stOf[k].st==="done";}).length, live=mine.find(function(r){return rowState(r)==="running";});
     h+='<div class="curtopic"><div class="lbl">Current question</div><div class="txt">'+esc(cur.text)+'</div><div class="row"><button class="btn" id="rrShow">📺 Show on screen</button><button class="btn" id="rrNext">Next question ▶</button></div></div>';
     var people=uniq(memberNames().concat(S.names));
-    h+='<h2 class="sec">Participants <span class="cnt">tap a name to queue them on the Timer (20-second bell)</span></h2><div class="chips">'+
-       (people.length?people.map(function(n){ var a=answered.indexOf(nkey(n))>=0; return '<button class="chip'+(a?' active':'')+'" data-rrcall="'+esc(n)+'">'+(a?'✓ ':'')+esc(n)+'</button>'; }).join(""):'<span class="muted">The Coordinator\'s member list appears here.</span>')+
+    h+='<div class="rrstat" aria-live="polite">'+(live?'🎙 <b>'+esc(live.name)+'</b> is speaking — the Timer has started them':'Waiting for the Timer')+' · ✓ '+nDone+' answered'+(answered.length-nDone-(live?1:0)>0?' · ⏳ '+(answered.length-nDone-(live?1:0))+' queued':'')+'</div>';
+    h+='<h2 class="sec">Participants <span class="cnt">tap a name to queue them on the Timer · ⏳ queued · 🎙 speaking · ✓ done</span></h2><div class="chips">'+
+       (people.length?people.map(function(n){ var a=answered.indexOf(nkey(n))>=0; return '<button class="chip'+(a?' active':'')+(a&&stOf[nkey(n)].st==="running"?' rrlive':'')+'" data-rrcall="'+esc(n)+'">'+(a?{running:'🎙 ',done:'✓ ',idle:'⏳ '}[stOf[nkey(n)].st]||'':'')+esc(n)+(a&&stOf[nkey(n)].st==="done"?' <small>'+fmt(elapsed(stOf[nkey(n)].r,now()))+'</small>':'')+'</button>'; }).join(""):'<span class="muted">The Coordinator\'s member list appears here.</span>')+
        '</div><div class="row" style="margin-top:8px"><input class="t" id="rrGuest" list="roster" autocomplete="off" placeholder="Guest name"><button class="btn" id="rrGuestAdd">+ Queue</button></div>';
   } else {
     h+='<div class="curtopic empty"><div style="margin-bottom:10px">'+(rem.length?'Start with the first question.':'Add your Round Robin questions below.')+'</div>'+(rem.length?'<button class="btn go big1" id="rrNext">▶ First question</button>':'')+'</div>';

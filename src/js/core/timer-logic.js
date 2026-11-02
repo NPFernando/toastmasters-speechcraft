@@ -24,7 +24,7 @@ function status(sid,row,t){
 }
 function displayName(row,i){ return row.name&&row.name.trim()?row.name.trim():"Speaker "+(i+1); }
 function findRow(sid,id){ return S.rows[sid].find(function(x){return x.id===id;}); }
-function newRow(sid,name){ return {id:uid(),name:name||"",start:null,end:null,manual:null,ord:maxOrd(S.rows[sid])+1,u:now()}; }
+function newRow(sid,name){ var r={id:uid(),name:name||"",start:null,end:null,manual:null,ord:maxOrd(S.rows[sid])+1,u:now()}; if(sid==="rr"&&S.rrcur&&S.rrcur.id) r.qid=S.rrcur.id; return r; }
 function runningList(){ var out=[]; SESSIONS.forEach(function(s){ S.rows[s.id].forEach(function(r,i){ if(rowState(r)==="running") out.push({sid:s.id,s:s,r:r,i:i}); }); }); return out; }
 function anyRunning(){ return runningList().length>0; }
 function firstQueued(sid){ return S.rows[sid].find(function(r){return rowState(r)==="idle";}); }

@@ -140,3 +140,5 @@ div.timebox::before{font-size:.75em;vertical-align:1px}
 .tplrow{margin:0 0 8px}
 .gqr{margin:8px 0} .pj-guest{margin-top:3vh;display:flex;align-items:center;gap:2vw;justify-content:center;font-size:clamp(16px,2vw,28px);font-weight:700}
 .pj-guest .qr{background:#fff;padding:8px;border-radius:12px} .pj-guest .qr svg{width:clamp(110px,18vh,220px);height:auto;display:block}
+.chip.rrlive{outline:3px solid var(--g);outline-offset:1px}
+.rrstat{margin:10px 0 2px;font-size:15px}

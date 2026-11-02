@@ -82,7 +82,7 @@ function meStatus(sid,sec,row){ var L2=limOf(sid,row);
   if(sid==="rr") return sec<=L2.b?"Keep going":"Time's up — finish now";
   if(sec<L2.g) return "Keep going"; if(sec<L2.a) return "✓ You've qualified"; if(sec<L2.r) return "Start wrapping up"; return "Finish now — over time"; }
 function meCardHTML(x,sec,sg){
-  return '<div class="mecard nowitem '+(sg||"sn")+'" data-sid="'+x.sid+'" data-id="'+x.r.id+'" data-me="1"><div class="mehead"><span>🎙 You are speaking · '+esc(x.s.name)+'</span><button class="btn sm" data-mefull title="Fill the screen, e.g. phone on the lectern">⛶ Full screen</button></div>'+
+  return '<div class="mecard nowitem '+(sg||"sn")+'" data-sid="'+x.sid+'" data-id="'+x.r.id+'" data-me="1"><div class="mehead"><span>🎙 You are speaking · '+esc(x.s.name)+'</span><span class="row" style="gap:4px">'+(x.sid==="rr"?meBellBtn():'')+'<button class="btn sm" data-mefull title="Fill the screen, e.g. phone on the lectern">⛶ Full screen</button></span></div>'+
     '<div class="meclock" data-live="clock">'+fmt(sec)+'</div><div class="mesig" data-live="pill">'+sigLabel(sg,x.r)+'</div>'+
     '<div class="mestat" data-live="mestat">'+esc(meStatus(x.sid,sec,x.r))+' · '+esc(nextSignalText(x.sid,sec,x.r))+'</div><div class="melim">'+esc(limitsLine(x.sid,x.r))+'</div></div>';
 }

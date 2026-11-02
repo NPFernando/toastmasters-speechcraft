@@ -623,6 +623,8 @@ div.timebox::before{font-size:.75em;vertical-align:1px}
 .tplrow{margin:0 0 8px}
 .gqr{margin:8px 0} .pj-guest{margin-top:3vh;display:flex;align-items:center;gap:2vw;justify-content:center;font-size:clamp(16px,2vw,28px);font-weight:700}
 .pj-guest .qr{background:#fff;padding:8px;border-radius:12px} .pj-guest .qr svg{width:clamp(110px,18vh,220px);height:auto;display:block}
+.chip.rrlive{outline:3px solid var(--g);outline-offset:1px}
+.rrstat{margin:10px 0 2px;font-size:15px}
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#004165">
@@ -1004,7 +1006,7 @@ function status(sid,row,t){
 }
 function displayName(row,i){ return row.name&&row.name.trim()?row.name.trim():"Speaker "+(i+1); }
 function findRow(sid,id){ return S.rows[sid].find(function(x){return x.id===id;}); }
-function newRow(sid,name){ return {id:uid(),name:name||"",start:null,end:null,manual:null,ord:maxOrd(S.rows[sid])+1,u:now()}; }
+function newRow(sid,name){ var r={id:uid(),name:name||"",start:null,end:null,manual:null,ord:maxOrd(S.rows[sid])+1,u:now()}; if(sid==="rr"&&S.rrcur&&S.rrcur.id) r.qid=S.rrcur.id; return r; }
 function runningList(){ var out=[]; SESSIONS.forEach(function(s){ S.rows[s.id].forEach(function(r,i){ if(rowState(r)==="running") out.push({sid:s.id,s:s,r:r,i:i}); }); }); return out; }
 function anyRunning(){ return runningList().length>0; }
 function firstQueued(sid){ return S.rows[sid].find(function(r){return rowState(r)==="idle";}); }
@@ -1173,7 +1175,7 @@ function meStatus(sid,sec,row){ var L2=limOf(sid,row);
   if(sid==="rr") return sec<=L2.b?"Keep going":"Time's up — finish now";
   if(sec<L2.g) return "Keep going"; if(sec<L2.a) return "✓ You've qualified"; if(sec<L2.r) return "Start wrapping up"; return "Finish now — over time"; }
 function meCardHTML(x,sec,sg){
-  return '<div class="mecard nowitem '+(sg||"sn")+'" data-sid="'+x.sid+'" data-id="'+x.r.id+'" data-me="1"><div class="mehead"><span>🎙 You are speaking · '+esc(x.s.name)+'</span><button class="btn sm" data-mefull title="Fill the screen, e.g. phone on the lectern">⛶ Full screen</button></div>'+
+  return '<div class="mecard nowitem '+(sg||"sn")+'" data-sid="'+x.sid+'" data-id="'+x.r.id+'" data-me="1"><div class="mehead"><span>🎙 You are speaking · '+esc(x.s.name)+'</span><span class="row" style="gap:4px">'+(x.sid==="rr"?meBellBtn():'')+'<button class="btn sm" data-mefull title="Fill the screen, e.g. phone on the lectern">⛶ Full screen</button></span></div>'+
     '<div class="meclock" data-live="clock">'+fmt(sec)+'</div><div class="mesig" data-live="pill">'+sigLabel(sg,x.r)+'</div>'+
     '<div class="mestat" data-live="mestat">'+esc(meStatus(x.sid,sec,x.r))+' · '+esc(nextSignalText(x.sid,sec,x.r))+'</div><div class="melim">'+esc(limitsLine(x.sid,x.r))+'</div></div>';
 }
@@ -1199,7 +1201,7 @@ function renderNow(){
 function limitsHTML(s){
   var L2=S.limits[s.id];
   if(s.type==="rep") return '<div class="limits"><span class="saved" style="align-self:center">Each report has its own time: Timer and Ah-Counter 1 min (green 0:30 · amber 0:45 · red 1:00), Grammarian 2 min (green 1:00 · amber 1:30 · red 2:00). The Coordinator\'s role players fill this list in.</span></div>';
-  if(s.type==="rr") return '<div class="limits"><div class="lim"><span>🔔</span><span>Bell</span><input data-lim="b" aria-label="Bell at (m:ss)" value="'+fmt(L2.b)+'"></div><span class="saved" style="align-self:center">Within time up to the bell, Overtime after it.</span></div>';
+  if(s.type==="rr") return '<div class="limits"><div class="lim"><span>🔔</span><span>Bell</span><input data-lim="b" aria-label="Bell at (m:ss)" value="'+fmt(L2.b)+'"></div><span class="saved" style="align-self:center">Within time up to the bell, Overtime after it. The speaker’s own phone rings the bell.</span><label class="tgl" style="align-self:center"><input type="checkbox" id="timerBell"'+(timerBellOn()?' checked':'')+'> <span>🔔 Also ring on this device</span></label></div>';
   return '<div class="limits">'+
     '<div class="lim"><i class="shp" style="color:var(--g)" aria-hidden="true">●</i><span>Green</span><input data-lim="g" aria-label="Green at (m:ss)" value="'+fmt(L2.g)+'"></div>'+
     '<div class="lim"><i class="shp" style="color:var(--a)" aria-hidden="true">▲</i><span>Amber</span><input data-lim="a" aria-label="Amber at (m:ss)" value="'+fmt(L2.a)+'"></div>'+
@@ -2218,11 +2220,14 @@ function rrHTML(){
   var cur=rrById(S.rrcur.id), rem=S.rrq.filter(function(q){return !q.used;}), used=S.rrq.filter(function(q){return q.used;});
   var h='<section class="card">';
   if(cur){
-    var answered=S.rows.rr.filter(function(r){return r.qid===cur.id;}).map(function(r){return nkey(r.name);});
+    var mine=S.rows.rr.filter(function(r){return r.qid===cur.id;}), stOf={};
+    mine.forEach(function(r){ var k=nkey(r.name), st=rowState(r); if(!stOf[k]||st==="running"||(st==="done"&&stOf[k].st!=="running")) stOf[k]={st:st,r:r}; });
+    var answered=Object.keys(stOf), nDone=answered.filter(function(k){return stOf[k].st==="done";}).length, live=mine.find(function(r){return rowState(r)==="running";});
     h+='<div class="curtopic"><div class="lbl">Current question</div><div class="txt">'+esc(cur.text)+'</div><div class="row"><button class="btn" id="rrShow">📺 Show on screen</button><button class="btn" id="rrNext">Next question ▶</button></div></div>';
     var people=uniq(memberNames().concat(S.names));
-    h+='<h2 class="sec">Participants <span class="cnt">tap a name to queue them on the Timer (20-second bell)</span></h2><div class="chips">'+
-       (people.length?people.map(function(n){ var a=answered.indexOf(nkey(n))>=0; return '<button class="chip'+(a?' active':'')+'" data-rrcall="'+esc(n)+'">'+(a?'✓ ':'')+esc(n)+'</button>'; }).join(""):'<span class="muted">The Coordinator\'s member list appears here.</span>')+
+    h+='<div class="rrstat" aria-live="polite">'+(live?'🎙 <b>'+esc(live.name)+'</b> is speaking — the Timer has started them':'Waiting for the Timer')+' · ✓ '+nDone+' answered'+(answered.length-nDone-(live?1:0)>0?' · ⏳ '+(answered.length-nDone-(live?1:0))+' queued':'')+'</div>';
+    h+='<h2 class="sec">Participants <span class="cnt">tap a name to queue them on the Timer · ⏳ queued · 🎙 speaking · ✓ done</span></h2><div class="chips">'+
+       (people.length?people.map(function(n){ var a=answered.indexOf(nkey(n))>=0; return '<button class="chip'+(a?' active':'')+(a&&stOf[nkey(n)].st==="running"?' rrlive':'')+'" data-rrcall="'+esc(n)+'">'+(a?{running:'🎙 ',done:'✓ ',idle:'⏳ '}[stOf[nkey(n)].st]||'':'')+esc(n)+(a&&stOf[nkey(n)].st==="done"?' <small>'+fmt(elapsed(stOf[nkey(n)].r,now()))+'</small>':'')+'</button>'; }).join(""):'<span class="muted">The Coordinator\'s member list appears here.</span>')+
        '</div><div class="row" style="margin-top:8px"><input class="t" id="rrGuest" list="roster" autocomplete="off" placeholder="Guest name"><button class="btn" id="rrGuestAdd">+ Queue</button></div>';
   } else {
     h+='<div class="curtopic empty"><div style="margin-bottom:10px">'+(rem.length?'Start with the first question.':'Add your Round Robin questions below.')+'</div>'+(rem.length?'<button class="btn go big1" id="rrNext">▶ First question</button>':'')+'</div>';
@@ -2574,14 +2579,14 @@ setInterval(function(){
     var pill=it.querySelector('[data-live="pill"]'); pill.className="pill "+(sg||"sn"); pill.textContent=sigLabel(sg,r);
     it.classList.remove("sg","sa","sr"); if(sg) it.classList.add(sg);
     it.querySelector('[data-live="banner"]').textContent=bannerText(sid,sg);
-    if(lastSig[r.id]!==undefined && sg && sg!==lastSig[r.id]){ flashItem(it); buzz(sg); }
+    if(lastSig[r.id]!==undefined && sg && sg!==lastSig[r.id]){ flashItem(it); buzz(sg); if(sid==="rr"&&sg==="sr"&&timerBellOn()) ringBell(); }
     lastSig[r.id]=sg;
   });
   document.querySelectorAll("#nowStrip .nowitem").forEach(function(it){
     var sid=it.dataset.sid, r=findRow(sid,it.dataset.id); if(!r||rowState(r)!=="running") return;
     var sec=elapsed(r,t), sg=signal(sid,sec,r);
     if(it.dataset.me){ it.querySelector('[data-live="clock"]').textContent=fmt(sec); var ps=it.querySelector('[data-live="pill"]'); ps.textContent=sigLabel(sg,r); it.querySelector('[data-live="mestat"]').textContent=meStatus(sid,sec,r)+" · "+nextSignalText(sid,sec,r);
-      it.classList.remove("sg","sa","sr","sn"); it.classList.add(sg||"sn"); if(lastSig["me"+r.id]!==undefined && sg && sg!==lastSig["me"+r.id]) flashItem(it); lastSig["me"+r.id]=sg; return; }
+      it.classList.remove("sg","sa","sr","sn"); it.classList.add(sg||"sn"); if(lastSig["me"+r.id]!==undefined && sg && sg!==lastSig["me"+r.id]){ flashItem(it); if(sid==="rr"&&sg==="sr"&&meBellOn()) ringBell(); } lastSig["me"+r.id]=sg; return; }
     it.querySelector('[data-live="clock"]').textContent=fmt(sec);
     var pill=it.querySelector('[data-live="pill"]'); pill.className="pill "+(sg||"sn"); pill.textContent=sigLabel(sg,r);
     it.classList.remove("sg","sa","sr"); if(sg) it.classList.add(sg);
@@ -3389,6 +3394,34 @@ function availabilityHTML(){
 }
 function rsvpBadge(name){ var r=name&&rsvpOf(name); if(!r||!r.status) return ""; return r.status==="no"?' <span class="badge no">can\'t make it</span>':r.status==="online"?' <span class="badge on">online</span>':''; }
 
+/* ---------- bell sound: rings at the Round Robin bell on the speaker's own phone (and, if switched on, on the Timer's device) ---------- */
+var AUD=null;
+function audioCtx(){ try{ if(!AUD){ var C=window.AudioContext||window.webkitAudioContext; if(!C) return null; AUD=new C(); } return AUD; }catch(e){ return null; } }
+/* browsers only allow sound after the person has tapped the page: unlock on the first tap */
+function unlockAudio(){ var a=audioCtx(); if(a&&a.state==="suspended") a.resume().catch(function(){}); }
+["pointerdown","keydown","touchend"].forEach(function(ev){ document.addEventListener(ev,unlockAudio,{passive:true}); });
+function soundReady(){ var a=AUD; return !!(a&&a.state==="running"); }
+function ringBell(){
+  var a=audioCtx(); if(!a) return false;
+  try{
+    if(a.state==="suspended") a.resume().catch(function(){});
+    var t=a.currentTime+0.02, out=a.createGain(); out.gain.value=0.5; out.connect(a.destination);
+    /* a struck bell: a few inharmonic partials with a fast attack and a long fade */
+    [[880,1,1.6],[1760,0.45,1.1],[2640,0.25,0.8],[1320,0.2,1.3]].forEach(function(p){
+      var o=a.createOscillator(), g=a.createGain(); o.type="sine"; o.frequency.value=p[0];
+      g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(p[1],t+0.01); g.gain.exponentialRampToValueAtTime(0.0001,t+p[2]);
+      o.connect(g); g.connect(out); o.start(t); o.stop(t+p[2]+0.05);
+    });
+    window.__bellRang=(window.__bellRang||0)+1; return true;
+  }catch(e){ return false; }
+}
+function meBellOn(){ return L.bellSound!==false; }      /* the person speaking: on unless they switch it off */
+function timerBellOn(){ return !!L.timerBell; }         /* the Timer's own device: off unless switched on */
+function meBellBtn(){ return '<button class="btn sm" data-mebell aria-pressed="'+meBellOn()+'" title="Bell sound on this phone when the Round Robin bell rings">'+(meBellOn()?'🔔 Sound on':'🔕 Sound off')+'</button>'; }
+(function(){
+  document.getElementById("nowStrip").addEventListener("click",function(e){ var b=e.target.closest("[data-mebell]"); if(!b) return; L.bellSound=!meBellOn(); saveL(); unlockAudio(); b.outerHTML=meBellBtn(); if(meBellOn()) ringBell(); });
+  document.getElementById("view").addEventListener("change",function(e){ if(e.target.id==="timerBell"){ L.timerBell=e.target.checked; saveL(); unlockAudio(); if(L.timerBell) ringBell(); } });
+})();
 /* ---------- copy a role's report as text ---------- */
 function reportText(role){
   var t=now(), L1=[], hd=GROUP+(S.meta.week?" · "+S.meta.week:"")+(S.meta.date?" · "+S.meta.date:"");
@@ -4466,7 +4499,7 @@ applyDisplay();
   document.addEventListener("keydown",function(e){ if(e.key==="Escape") setOpen(false); });
 })();
 /* ---------- home, about and clean-up ---------- */
-var APP_VERSION="3.9.6 · November 2026";
+var APP_VERSION="3.9.7 · November 2026";
 function aboutHTML(){
   var on=!!NET.mode, coord=L.role==="coord";
   return '<div class="finhead"><h2 class="sec" style="margin:0">ℹ️ About</h2><button class="btn ghost" id="aboutClose">Close</button></div>'+
