@@ -34,6 +34,7 @@
           <button class="mi" id="newMeeting">🆕 New meeting<small>Clear this meeting; keep members and settings</small></button>
           <button class="mi" id="installBtn" hidden>📲 Install as an app<small>Home-screen icon; opens even with weak signal</small></button>
           <button class="mi" id="ccBtn">🔌 Connection check<small>Is this device ready for the meeting?</small></button>
+          <button class="mi" id="howBtn">❓ How to use<small>Short tips for every part of the app</small></button>
           <button class="mi" id="guidesBtn">📘 Role guides<small>One printable page per role</small></button>
           <button class="mi" id="practiceBtn">🎓 Practice meeting<small>Try every role with sample data; the real meeting isn’t touched</small></button>
           <button class="mi" id="projBtn">📺 Projector view<small>Full screen for the room screen or Zoom share</small></button>
@@ -70,8 +71,11 @@
   <div id="companion" class="companion"></div>
   <main id="view"></main>
 
-  <details class="guide card">
-    <summary>How to use</summary>
+</div>
+
+<div id="fbModal" class="modal" role="dialog" aria-modal="true" aria-label="Report a problem or idea"><div class="mbox" id="fbBox"></div></div>
+<div id="ccModal" class="modal" role="dialog" aria-modal="true" aria-label="Connection check"><div class="mbox" id="ccBox"></div></div>
+<div id="howModal" class="modal" role="dialog" aria-modal="true" aria-label="How to use"><div class="mbox guide"><div class="finhead"><h2 class="sec" style="margin:0">❓ How to use</h2><button class="btn ghost" id="howClose">Close</button></div>
     <table>
       <tr><td>More than one role</td><td>Covering for someone? Tap <b>＋ Role</b> to add another role on the same device, then switch with one tap. If the agenda already lists you in several roles, the page offers to add them. While you're in one role, small panels keep your other jobs at hand: the Ah-Counter buttons and the Grammarian's Word of the Day +1 for whoever is speaking, and the Timer's live bar.</td></tr>
       <tr><td>Changes on the day</td><td>Members tap <b>In person / Online / Can't make it</b> (with a note like "leaving at 8") so the Coordinator sees clashes and reassigns roles. The Toastmaster can move an item to the end (e.g. a late keynote) or skip it on the run-sheet. <b>📋 Copy report text</b> (Timer, Ah-Counter, Grammarian, General Evaluator) gives a text summary to paste anywhere, and anyone taking over a role carries on with the same data.</td></tr>
@@ -99,11 +103,7 @@
       <tr><td>Report</td><td><b>Meeting report</b> builds one report. Tick which roles to include, then <b>Print / Save as PDF</b>.</td></tr>
       <tr><td>Meeting record &amp; new meeting</td><td>Data is saved on this device. <b>⤓ Save meeting record</b> downloads a file you can <b>⤒ Import</b> anywhere. <b>New meeting</b> clears speakers, topics and counts (for connected devices too) but keeps names, time limits and word lists.</td></tr>
     </table>
-  </details>
-</div>
-
-<div id="fbModal" class="modal" role="dialog" aria-modal="true" aria-label="Report a problem or idea"><div class="mbox" id="fbBox"></div></div>
-<div id="ccModal" class="modal" role="dialog" aria-modal="true" aria-label="Connection check"><div class="mbox" id="ccBox"></div></div>
+</div></div>
 <div id="aboutModal" class="modal" role="dialog" aria-modal="true" aria-label="About"><div class="mbox" id="aboutBox"></div></div>
 <div id="welcome" role="dialog" aria-modal="true" aria-label="Get started"><div class="wbox" id="wbox"></div></div>
 <div id="voteBar" class="votebar"></div>

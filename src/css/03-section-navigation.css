@@ -3,8 +3,8 @@
 .bnav button{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;border:0;background:transparent;border-radius:10px;padding:9px 10px;font:inherit;font-weight:700;color:var(--muted);cursor:pointer}
 .bnav button span{font-size:17px} .bnav button.on{background:var(--brand);color:var(--brand-ink)} .bnav button:hover:not(.on){background:var(--chip);color:var(--ink)}
 .bnav .mob{display:none} .mi.mobonly{display:none}
-body.v-now .meta,body.v-now #roles,body.v-now #companion,body.v-now details.guide,body.v-now #agendaLine,
-body.v-agenda .meta,body.v-agenda #roles,body.v-agenda #companion,body.v-agenda details.guide,body.v-agenda #agendaLine{display:none!important}
+body.v-now .meta,body.v-now #roles,body.v-now #companion,body.v-now #agendaLine,
+body.v-agenda .meta,body.v-agenda #roles,body.v-agenda #companion,body.v-agenda #agendaLine{display:none!important}
 @media (max-width:640px){
   .bnav{position:fixed;left:0;right:0;bottom:0;z-index:44;margin:0;border-radius:0;border-width:1px 0 0;padding:4px 4px calc(4px + env(safe-area-inset-bottom));box-shadow:0 -4px 16px rgba(0,0,0,.08);gap:2px}
   .bnav button{flex-direction:column;gap:1px;font-size:11px;padding:6px 2px} .bnav button span{font-size:20px} .bnav .mob{display:flex}
@@ -52,7 +52,7 @@ body.v-agenda .meta,body.v-agenda #roles,body.v-agenda #companion,body.v-agenda 
 .pj-ctl .btn{background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.4)}
 
 /* focus mode */
-body.focus .meta,body.focus #roles,body.focus details.guide,body.focus #agendaLine,body.focus #companion{display:none!important}
+body.focus .meta,body.focus #roles,body.focus #agendaLine,body.focus #companion{display:none!important}
 .fbar{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--mar);color:var(--mar-ink);border-radius:12px;padding:8px 12px;margin-bottom:10px}
 .fbar .btn{background:transparent;color:inherit;border-color:currentColor}
 .fcard{padding:18px} .flbl{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:center}

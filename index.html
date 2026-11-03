@@ -10,7 +10,7 @@
   --brand:#004165; --brand-ink:#ffffff; --bar:#004165; --bar-ink:#ffffff;
   --mar:#772432; --mar-ink:#ffffff; --hy:#f2df74; --hy-ink:#3b3200; --cg:#a9b2b1;
   --g:#15803d; --g-ink:#ffffff; --g-bg:#d8f3e3; --a:#d99a00; --a-bg:#fff0c2; --r:#d63a3a; --r-bg:#fde0e0;
-  --run:#c65911; --run-bg:#fff2cc; --input:#ffffff; --chip:#e8edef;
+  --run:#a84a0c; --run-bg:#fff2cc; --input:#ffffff; --chip:#e8edef;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
@@ -406,11 +406,9 @@ details.fold{margin-top:14px;border:1px solid var(--line);border-radius:10px;pad
 #stage .ctl .btn{background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.35)}
 #stage img{position:absolute;top:18px;max-height:70px}
 #stage img.l{left:18px} #stage img.r{right:18px;border-radius:6px}
-details.guide{margin-top:14px}
-details.guide summary{cursor:pointer;font-weight:700}
-details.guide table{border-collapse:collapse;margin-top:8px;width:100%}
-details.guide td{border-top:1px solid var(--line);padding:6px;vertical-align:top}
-details.guide td:first-child{font-weight:600;width:190px}
+#howModal .mbox{max-width:860px}.guide table{border-collapse:collapse;margin-top:8px;width:100%}
+.guide td{border-top:1px solid var(--line);padding:6px;vertical-align:top}
+.guide td:first-child{font-weight:600;width:190px}
 
 @media (max-width:640px){
   .logo{height:40px} .logo img{max-height:40px;max-width:90px}
@@ -450,6 +448,7 @@ details.guide td:first-child{font-weight:600;width:190px}
   #report h4{break-after:avoid} #report table{break-inside:auto} #report tr{break-inside:avoid}
 }
 
+@media (max-width:640px){.guide table,.guide tbody,.guide tr,.guide td{display:block;width:auto!important}.guide td:first-child{border-top:1px solid var(--line);padding-bottom:0}.guide td+td{border-top:0;padding-top:2px}}
 /* ---------- Toastmasters brand layer ---------- */
 body{font-family:"Source Sans 3","Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif}
 header.top{background:var(--bar);color:var(--bar-ink);border-radius:16px;padding:12px 16px;box-shadow:0 6px 20px rgba(0,65,101,.18)}
@@ -486,8 +485,8 @@ html.big body{zoom:1.16}
 .bnav button{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;border:0;background:transparent;border-radius:10px;padding:9px 10px;font:inherit;font-weight:700;color:var(--muted);cursor:pointer}
 .bnav button span{font-size:17px} .bnav button.on{background:var(--brand);color:var(--brand-ink)} .bnav button:hover:not(.on){background:var(--chip);color:var(--ink)}
 .bnav .mob{display:none} .mi.mobonly{display:none}
-body.v-now .meta,body.v-now #roles,body.v-now #companion,body.v-now details.guide,body.v-now #agendaLine,
-body.v-agenda .meta,body.v-agenda #roles,body.v-agenda #companion,body.v-agenda details.guide,body.v-agenda #agendaLine{display:none!important}
+body.v-now .meta,body.v-now #roles,body.v-now #companion,body.v-now #agendaLine,
+body.v-agenda .meta,body.v-agenda #roles,body.v-agenda #companion,body.v-agenda #agendaLine{display:none!important}
 @media (max-width:640px){
   .bnav{position:fixed;left:0;right:0;bottom:0;z-index:44;margin:0;border-radius:0;border-width:1px 0 0;padding:4px 4px calc(4px + env(safe-area-inset-bottom));box-shadow:0 -4px 16px rgba(0,0,0,.08);gap:2px}
   .bnav button{flex-direction:column;gap:1px;font-size:11px;padding:6px 2px} .bnav button span{font-size:20px} .bnav .mob{display:flex}
@@ -535,7 +534,7 @@ body.v-agenda .meta,body.v-agenda #roles,body.v-agenda #companion,body.v-agenda 
 .pj-ctl .btn{background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.4)}
 
 /* focus mode */
-body.focus .meta,body.focus #roles,body.focus details.guide,body.focus #agendaLine,body.focus #companion{display:none!important}
+body.focus .meta,body.focus #roles,body.focus #agendaLine,body.focus #companion{display:none!important}
 .fbar{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--mar);color:var(--mar-ink);border-radius:12px;padding:8px 12px;margin-bottom:10px}
 .fbar .btn{background:transparent;color:inherit;border-color:currentColor}
 .fcard{padding:18px} .flbl{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:center}
@@ -655,6 +654,7 @@ div.timebox::before{font-size:.75em;vertical-align:1px}
           <button class="mi" id="newMeeting">🆕 New meeting<small>Clear this meeting; keep members and settings</small></button>
           <button class="mi" id="installBtn" hidden>📲 Install as an app<small>Home-screen icon; opens even with weak signal</small></button>
           <button class="mi" id="ccBtn">🔌 Connection check<small>Is this device ready for the meeting?</small></button>
+          <button class="mi" id="howBtn">❓ How to use<small>Short tips for every part of the app</small></button>
           <button class="mi" id="guidesBtn">📘 Role guides<small>One printable page per role</small></button>
           <button class="mi" id="practiceBtn">🎓 Practice meeting<small>Try every role with sample data; the real meeting isn’t touched</small></button>
           <button class="mi" id="projBtn">📺 Projector view<small>Full screen for the room screen or Zoom share</small></button>
@@ -691,8 +691,11 @@ div.timebox::before{font-size:.75em;vertical-align:1px}
   <div id="companion" class="companion"></div>
   <main id="view"></main>
 
-  <details class="guide card">
-    <summary>How to use</summary>
+</div>
+
+<div id="fbModal" class="modal" role="dialog" aria-modal="true" aria-label="Report a problem or idea"><div class="mbox" id="fbBox"></div></div>
+<div id="ccModal" class="modal" role="dialog" aria-modal="true" aria-label="Connection check"><div class="mbox" id="ccBox"></div></div>
+<div id="howModal" class="modal" role="dialog" aria-modal="true" aria-label="How to use"><div class="mbox guide"><div class="finhead"><h2 class="sec" style="margin:0">❓ How to use</h2><button class="btn ghost" id="howClose">Close</button></div>
     <table>
       <tr><td>More than one role</td><td>Covering for someone? Tap <b>＋ Role</b> to add another role on the same device, then switch with one tap. If the agenda already lists you in several roles, the page offers to add them. While you're in one role, small panels keep your other jobs at hand: the Ah-Counter buttons and the Grammarian's Word of the Day +1 for whoever is speaking, and the Timer's live bar.</td></tr>
       <tr><td>Changes on the day</td><td>Members tap <b>In person / Online / Can't make it</b> (with a note like "leaving at 8") so the Coordinator sees clashes and reassigns roles. The Toastmaster can move an item to the end (e.g. a late keynote) or skip it on the run-sheet. <b>📋 Copy report text</b> (Timer, Ah-Counter, Grammarian, General Evaluator) gives a text summary to paste anywhere, and anyone taking over a role carries on with the same data.</td></tr>
@@ -720,11 +723,7 @@ div.timebox::before{font-size:.75em;vertical-align:1px}
       <tr><td>Report</td><td><b>Meeting report</b> builds one report. Tick which roles to include, then <b>Print / Save as PDF</b>.</td></tr>
       <tr><td>Meeting record &amp; new meeting</td><td>Data is saved on this device. <b>⤓ Save meeting record</b> downloads a file you can <b>⤒ Import</b> anywhere. <b>New meeting</b> clears speakers, topics and counts (for connected devices too) but keeps names, time limits and word lists.</td></tr>
     </table>
-  </details>
-</div>
-
-<div id="fbModal" class="modal" role="dialog" aria-modal="true" aria-label="Report a problem or idea"><div class="mbox" id="fbBox"></div></div>
-<div id="ccModal" class="modal" role="dialog" aria-modal="true" aria-label="Connection check"><div class="mbox" id="ccBox"></div></div>
+</div></div>
 <div id="aboutModal" class="modal" role="dialog" aria-modal="true" aria-label="About"><div class="mbox" id="aboutBox"></div></div>
 <div id="welcome" role="dialog" aria-modal="true" aria-label="Get started"><div class="wbox" id="wbox"></div></div>
 <div id="voteBar" class="votebar"></div>
@@ -4540,8 +4539,15 @@ applyDisplay();
   window.openMoreMenu=function(fromNav){ setOpen(!m.classList.contains("on"),fromNav); };
   document.addEventListener("keydown",function(e){ if(e.key==="Escape") setOpen(false); });
 })();
+/* ❓ How to use: kept in ⋯ More so it doesn't take space on every screen */
+(function(){
+  var M=document.getElementById("howModal");
+  document.getElementById("howBtn").addEventListener("click",function(){ M.classList.add("on"); var c=document.getElementById("howClose"); if(c) c.focus(); });
+  M.addEventListener("click",function(e){ if(e.target===M||e.target.closest("#howClose")) M.classList.remove("on"); });
+  document.addEventListener("keydown",function(e){ if(e.key==="Escape") M.classList.remove("on"); });
+})();
 /* ---------- home, about and clean-up ---------- */
-var APP_VERSION="3.9.9 · November 2026";
+var APP_VERSION="3.9.10 · November 2026";
 function aboutHTML(){
   var on=!!NET.mode, coord=L.role==="coord";
   return '<div class="finhead"><h2 class="sec" style="margin:0">ℹ️ About</h2><button class="btn ghost" id="aboutClose">Close</button></div>'+

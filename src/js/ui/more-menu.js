@@ -8,3 +8,10 @@
   window.openMoreMenu=function(fromNav){ setOpen(!m.classList.contains("on"),fromNav); };
   document.addEventListener("keydown",function(e){ if(e.key==="Escape") setOpen(false); });
 })();
+/* ❓ How to use: kept in ⋯ More so it doesn't take space on every screen */
+(function(){
+  var M=document.getElementById("howModal");
+  document.getElementById("howBtn").addEventListener("click",function(){ M.classList.add("on"); var c=document.getElementById("howClose"); if(c) c.focus(); });
+  M.addEventListener("click",function(e){ if(e.target===M||e.target.closest("#howClose")) M.classList.remove("on"); });
+  document.addEventListener("keydown",function(e){ if(e.key==="Escape") M.classList.remove("on"); });
+})();
