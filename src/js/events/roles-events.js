@@ -19,6 +19,8 @@
     if(L.role==="rrm"){
       if(t.closest("#rrAdd")){ var ta=document.getElementById("rrInput"), o=maxOrd(S.rrq); ta.value.split(/\n+/).map(function(x){return x.trim();}).filter(Boolean).forEach(function(x){ S.rrq.push({id:uid(),text:x,used:false,ord:++o,u:now()}); }); ta.value=""; commit(); return; }
       if(t.closest("#rrNext")){ rrNextQ(); return; }
+      if(t.closest("#rrRandom")){ rrRandom(); return; }
+      if(t.closest("#rrShuffleAll")){ if(confirm("Queue everyone who hasn’t had a turn on the Timer, in a random order?")) rrShuffleAll(); return; }
       if(t.closest("#rrShow")){ L.stageMode="rr"; openStage(); return; }
       var rc=t.closest("[data-rrcall]"); if(rc){ rrCall(rc.dataset.rrcall); return; }
       if(t.closest("#rrGuestAdd")){ var gi=document.getElementById("rrGuest"); rrCall((gi.value||"").trim()); return; }

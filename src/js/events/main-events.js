@@ -134,6 +134,6 @@ document.getElementById("toastUndo").addEventListener("click",undoRemove);
 document.getElementById("stageClose").addEventListener("click",closeStage);
 /* the stage reuses the header logos (embedded once) */
 (function(){ var st=document.getElementById("stage"), hl=document.querySelectorAll("header .logo img, .logo img"); if(hl.length>=2){ st.querySelector("img.l").src=hl[0].src; st.querySelector("img.r").src=hl[1].src; } })();
-document.getElementById("stageRandom").addEventListener("click",function(){ if(L.role==="rrm") rrNextQ(); else randomTopic(); renderStage(); });
+document.getElementById("stageRandom").addEventListener("click",function(){ if(L.role==="rrm") rrRandom(); else randomTopic(); renderStage(); });
 document.addEventListener("fullscreenchange",function(){ if(!document.fullscreenElement) document.getElementById("stage").classList.remove("on"); });
 

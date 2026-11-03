@@ -49,7 +49,7 @@ function callSpeaker(){
   if(document.getElementById("stage").classList.contains("on")) renderStage();
 }
 function renderStage(){
-  if(L.role==="rrm"){ var q=rrById(S.rrcur.id); document.getElementById("stageLbl").textContent="Round Robin"; document.getElementById("stageTxt").textContent=q?q.text:"No question selected"; document.getElementById("stageSpk").textContent=""; return; }
+  if(L.role==="rrm"){ var q=rrById(S.rrcur.id); document.getElementById("stageLbl").textContent="Round Robin"; document.getElementById("stageTxt").textContent=q?q.text:"No question selected"; document.getElementById("stageSpk").textContent=S.rrcur.last?"🎙 "+S.rrcur.last:""; return; }
   document.getElementById("stageLbl").textContent="Table Topic";
   var cur=topicById(S.cur.id);
   document.getElementById("stageTxt").textContent=cur?cur.text:"No topic selected";

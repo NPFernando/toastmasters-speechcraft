@@ -625,6 +625,7 @@ div.timebox::before{font-size:.75em;vertical-align:1px}
 .pj-guest .qr{background:#fff;padding:8px;border-radius:12px} .pj-guest .qr svg{width:clamp(110px,18vh,220px);height:auto;display:block}
 .chip.rrlive{outline:3px solid var(--g);outline-offset:1px}
 .rrstat{margin:10px 0 2px;font-size:15px}
+.rrpick{font-size:30px;margin:10px 0 4px}
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#004165">
@@ -1321,7 +1322,7 @@ function callSpeaker(){
   if(document.getElementById("stage").classList.contains("on")) renderStage();
 }
 function renderStage(){
-  if(L.role==="rrm"){ var q=rrById(S.rrcur.id); document.getElementById("stageLbl").textContent="Round Robin"; document.getElementById("stageTxt").textContent=q?q.text:"No question selected"; document.getElementById("stageSpk").textContent=""; return; }
+  if(L.role==="rrm"){ var q=rrById(S.rrcur.id); document.getElementById("stageLbl").textContent="Round Robin"; document.getElementById("stageTxt").textContent=q?q.text:"No question selected"; document.getElementById("stageSpk").textContent=S.rrcur.last?"🎙 "+S.rrcur.last:""; return; }
   document.getElementById("stageLbl").textContent="Table Topic";
   var cur=topicById(S.cur.id);
   document.getElementById("stageTxt").textContent=cur?cur.text:"No topic selected";
@@ -2223,27 +2224,41 @@ function rrHTML(){
     var mine=S.rows.rr.filter(function(r){return r.qid===cur.id;}), stOf={};
     mine.forEach(function(r){ var k=nkey(r.name), st=rowState(r); if(!stOf[k]||st==="running"||(st==="done"&&stOf[k].st!=="running")) stOf[k]={st:st,r:r}; });
     var answered=Object.keys(stOf), nDone=answered.filter(function(k){return stOf[k].st==="done";}).length, live=mine.find(function(r){return rowState(r)==="running";});
-    h+='<div class="curtopic"><div class="lbl">Current question</div><div class="txt">'+esc(cur.text)+'</div><div class="row"><button class="btn" id="rrShow">📺 Show on screen</button><button class="btn" id="rrNext">Next question ▶</button></div></div>';
-    var people=uniq(memberNames().concat(S.names));
+    var pool=rrPool(), left=pool.filter(function(n){return answered.indexOf(nkey(n))<0;});
+    h+='<div class="curtopic"><div class="lbl">Round Robin question</div><div class="txt">'+esc(cur.text)+'</div>'+
+       (S.rrcur.last?'<div class="rrpick" aria-live="polite">🎲 <b>'+esc(S.rrcur.last)+'</b></div>':'')+
+       '<div class="row"><button class="btn go big1" id="rrRandom"'+(left.length?'':' disabled')+'>🎲 Pick someone at random</button><button class="btn" id="rrShow">📺 Show on screen</button></div>'+
+       '<div class="row" style="margin-top:6px"><button class="btn sm" id="rrShuffleAll"'+(left.length>1?'':' disabled')+' title="Queue everyone who hasn’t had a turn on the Timer, in a random order">🔀 Queue everyone left in random order</button>'+
+       '<label class="tgl"><input type="checkbox" id="rrHere"'+(rrHereOnly()?' checked':'')+'> <span>Only people here (checked in or connected)</span></label></div>'+
+       '<div class="saved" style="margin-top:6px">'+(pool.length?(left.length?(pool.length-left.length)+' of '+pool.length+' have had a turn · '+left.length+' to go':'🎉 Everyone has had a turn'):'No one '+(rrHereOnly()?'checked in or connected yet — untick “Only people here”':'on the member list yet'))+'</div></div>';
+    var people=uniq(pool.concat(answered.map(function(k){ var r=mine.find(function(x){return nkey(x.name)===k;}); return r?r.name:k; })));
     h+='<div class="rrstat" aria-live="polite">'+(live?'🎙 <b>'+esc(live.name)+'</b> is speaking — the Timer has started them':'Waiting for the Timer')+' · ✓ '+nDone+' answered'+(answered.length-nDone-(live?1:0)>0?' · ⏳ '+(answered.length-nDone-(live?1:0))+' queued':'')+'</div>';
     h+='<h2 class="sec">Participants <span class="cnt">tap a name to queue them on the Timer · ⏳ queued · 🎙 speaking · ✓ done</span></h2><div class="chips">'+
        (people.length?people.map(function(n){ var a=answered.indexOf(nkey(n))>=0; return '<button class="chip'+(a?' active':'')+(a&&stOf[nkey(n)].st==="running"?' rrlive':'')+'" data-rrcall="'+esc(n)+'">'+(a?{running:'🎙 ',done:'✓ ',idle:'⏳ '}[stOf[nkey(n)].st]||'':'')+esc(n)+(a&&stOf[nkey(n)].st==="done"?' <small>'+fmt(elapsed(stOf[nkey(n)].r,now()))+'</small>':'')+'</button>'; }).join(""):'<span class="muted">The Coordinator\'s member list appears here.</span>')+
        '</div><div class="row" style="margin-top:8px"><input class="t" id="rrGuest" list="roster" autocomplete="off" placeholder="Guest name"><button class="btn" id="rrGuestAdd">+ Queue</button></div>';
   } else {
-    h+='<div class="curtopic empty"><div style="margin-bottom:10px">'+(rem.length?'Start with the first question.':'Add your Round Robin questions below.')+'</div>'+(rem.length?'<button class="btn go big1" id="rrNext">▶ First question</button>':'')+'</div>';
+    h+='<div class="curtopic empty"><div style="margin-bottom:10px">'+(rem.length?'Ready when you are: start the Round Robin with your question.':'Type the Round Robin question below (usually one question for everyone).')+'</div>'+(rem.length?'<button class="btn go big1" id="rrNext">▶ Start the Round Robin</button>':'')+'</div>';
   }
-  h+='<h2 class="sec">Prepare questions</h2><textarea class="t" id="rrInput" placeholder="One question per line, e.g.\nWhat is one thing that made you smile this week?"></textarea><div class="row" style="margin-top:8px"><button class="btn primary" id="rrAdd">+ Add questions</button><span class="saved">'+rem.length+' remaining · '+used.length+' asked</span></div>';
+  h+='<h2 class="sec">Prepare the question <span class="cnt">usually one question for everyone; add more only if you want to change it part-way</span></h2><textarea class="t" id="rrInput" placeholder="One question per line, e.g.\nWhat is one thing that made you smile this week?"></textarea><div class="row" style="margin-top:8px"><button class="btn primary" id="rrAdd">+ Add questions</button><span class="saved">'+rem.length+' remaining · '+used.length+' asked</span></div>';
   h+='<ul class="tlist">'+S.rrq.map(function(q,i){ return '<li data-rqid="'+q.id+'" class="'+(q.id===S.rrcur.id?'cur':'')+'"><span class="n">'+(i+1)+'</span><span style="flex:1'+(q.used&&q.id!==S.rrcur.id?';color:var(--muted)':'')+'">'+esc(q.text)+'</span><button class="btn sm" data-rqact="pick">Ask</button><button class="iconbtn" data-rqact="del">✕</button></li>'; }).join("")+'</ul>';
   return h+'</section>';
 }
 function rrPick(id){ var q=rrById(id); if(!q) return; q.used=true; tick(q); S.rrcur.id=id; tick(S.rrcur); commit(); if(document.getElementById("stage").classList.contains("on")) renderStage(); }
 function rrNextQ(){ var nx=S.rrq.find(function(q){return !q.used;}); if(nx) rrPick(nx.id); else alert("No more questions."); }
-function rrCall(name){
+/* who can be picked: the member list (and names used before), optionally only people here today */
+function rrHereOnly(){ if(L.rrHere!=null) return !!L.rrHere; return uniq(memberNames().concat(S.names)).some(function(n){ return present(n)||isOnlineName(n); }); }
+function rrPool(){ var all=uniq(memberNames().concat(S.names)); return rrHereOnly()?all.filter(function(n){ return present(n)||isOnlineName(n); }):all; }
+function rrLeft(){ var cur=rrById(S.rrcur.id); if(!cur) return []; var done=S.rows.rr.filter(function(r){return r.qid===cur.id;}).map(function(r){return nkey(r.name);}); return rrPool().filter(function(n){ return done.indexOf(nkey(n))<0; }); }
+function rrRandom(){ var left=rrLeft(); if(!left.length){ alert("Everyone has had a turn."); return null; } var n=left[Math.floor(Math.random()*left.length)]; rrCall(n); return n; }
+function rrShuffleAll(){ var left=rrLeft().slice(); for(var i=left.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)), t=left[i]; left[i]=left[j]; left[j]=t; } left.forEach(function(n){ rrCall(n,true); }); if(left.length){ S.rrcur.last=left[0]; tick(S.rrcur); commit(); } }
+function rrCall(name,quiet){
   var cur=rrById(S.rrcur.id); if(!cur||!name) return;
+  if(!quiet){ S.rrcur.last=name; tick(S.rrcur); }
   var ak="rr:"+cur.id+":"+nkey(name); if(S.rows.rr.some(function(r){return r.ak===ak;})) return;
   var r=newRow("rr",name); r.ak=ak; r.qid=cur.id; S.rows.rr.push(r); addName(S,name); commit();
 }
 
+(function(){ document.getElementById("view").addEventListener("change",function(e){ if(e.target.id==="rrHere"&&L.role==="rrm"){ L.rrHere=e.target.checked; saveL(); renderAll(); } }); })();
 /* ---------- Member: check-in, notes, feedback card ---------- */
 function attendLive(){ return S.attend.filter(function(a){return !a.void;}); }
 function present(name,mid){ return S.attend.some(function(a){ return a.mid===(mid||S.mid) && nkey(a.name)===nkey(name) && a.present; }); }
@@ -2522,6 +2537,8 @@ function feedbackPinsHTML(){
     if(L.role==="rrm"){
       if(t.closest("#rrAdd")){ var ta=document.getElementById("rrInput"), o=maxOrd(S.rrq); ta.value.split(/\n+/).map(function(x){return x.trim();}).filter(Boolean).forEach(function(x){ S.rrq.push({id:uid(),text:x,used:false,ord:++o,u:now()}); }); ta.value=""; commit(); return; }
       if(t.closest("#rrNext")){ rrNextQ(); return; }
+      if(t.closest("#rrRandom")){ rrRandom(); return; }
+      if(t.closest("#rrShuffleAll")){ if(confirm("Queue everyone who hasn’t had a turn on the Timer, in a random order?")) rrShuffleAll(); return; }
       if(t.closest("#rrShow")){ L.stageMode="rr"; openStage(); return; }
       var rc=t.closest("[data-rrcall]"); if(rc){ rrCall(rc.dataset.rrcall); return; }
       if(t.closest("#rrGuestAdd")){ var gi=document.getElementById("rrGuest"); rrCall((gi.value||"").trim()); return; }
@@ -2739,7 +2756,7 @@ document.getElementById("toastUndo").addEventListener("click",undoRemove);
 document.getElementById("stageClose").addEventListener("click",closeStage);
 /* the stage reuses the header logos (embedded once) */
 (function(){ var st=document.getElementById("stage"), hl=document.querySelectorAll("header .logo img, .logo img"); if(hl.length>=2){ st.querySelector("img.l").src=hl[0].src; st.querySelector("img.r").src=hl[1].src; } })();
-document.getElementById("stageRandom").addEventListener("click",function(){ if(L.role==="rrm") rrNextQ(); else randomTopic(); renderStage(); });
+document.getElementById("stageRandom").addEventListener("click",function(){ if(L.role==="rrm") rrRandom(); else randomTopic(); renderStage(); });
 document.addEventListener("fullscreenchange",function(){ if(!document.fullscreenElement) document.getElementById("stage").classList.remove("on"); });
 
 /* ---------- coordinator & toastmaster events ---------- */
@@ -4499,7 +4516,7 @@ applyDisplay();
   document.addEventListener("keydown",function(e){ if(e.key==="Escape") setOpen(false); });
 })();
 /* ---------- home, about and clean-up ---------- */
-var APP_VERSION="3.9.7 · November 2026";
+var APP_VERSION="3.9.8 · November 2026";
 function aboutHTML(){
   var on=!!NET.mode, coord=L.role==="coord";
   return '<div class="finhead"><h2 class="sec" style="margin:0">ℹ️ About</h2><button class="btn ghost" id="aboutClose">Close</button></div>'+

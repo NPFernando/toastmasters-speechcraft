@@ -142,3 +142,4 @@ div.timebox::before{font-size:.75em;vertical-align:1px}
 .pj-guest .qr{background:#fff;padding:8px;border-radius:12px} .pj-guest .qr svg{width:clamp(110px,18vh,220px);height:auto;display:block}
 .chip.rrlive{outline:3px solid var(--g);outline-offset:1px}
 .rrstat{margin:10px 0 2px;font-size:15px}
+.rrpick{font-size:30px;margin:10px 0 4px}
