@@ -6,7 +6,7 @@ module.exports = async (b) => {
   const code = await T.host(M, "Dilini", ["timer"]);
   const R = await T.device(b, { phone: true });
   await T.join(R, code, "Hiruni Wickrama", ["rrm"]);
-  await R.fill("#rrInput", "What made you smile this week?"); await R.click("#rrAdd"); await R.click("#rrNext");
+  await R.fill("#rrQ", "What made you smile this week?"); await R.click("#rrStart");
   const P = await T.device(b, { phone: true });
   await T.join(P, code, "Eshan Rodrigo", ["member"]);
   await M.click("[data-tab=rr]");
@@ -23,6 +23,6 @@ module.exports = async (b) => {
   T.assert.ok((await P.evaluate(() => window.__bellRang || 0)) >= 1, "bell sound on the speaker's phone");
   T.assert.strictEqual(await M.evaluate(() => window.__bellRang || 0), 0, "Timer's device silent unless switched on");
   await M.click('#view [data-act="stop"]');
-  await T.eventually(async () => /✓ 1 answered/.test(await R.innerText(".rrstat")) && /✓ Eshan Rodrigo/.test(await R.innerText("#view")), "RRM sees them done");
+  await T.eventually(async () => /✓ 1 done/.test(await R.innerText(".rrstat")) && /✓ Eshan Rodrigo/.test(await R.innerText("#view")), "RRM sees them done");
   T.noErrors(M, P, R);
 };

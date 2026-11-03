@@ -143,3 +143,4 @@ div.timebox::before{font-size:.75em;vertical-align:1px}
 .chip.rrlive{outline:3px solid var(--g);outline-offset:1px}
 .rrstat{margin:10px 0 2px;font-size:15px}
 .rrpick{font-size:30px;margin:10px 0 4px}
+.updbar{position:fixed;left:50%;top:10px;transform:translateX(-50%);z-index:95;background:var(--card);color:var(--ink);border:2px solid var(--brand);border-radius:12px;padding:8px 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;box-shadow:0 6px 24px rgba(0,0,0,.25);max-width:calc(100% - 24px)}

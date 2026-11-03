@@ -17,14 +17,14 @@
       if(t.closest("#evSubmit")){ var ds=evDraft(); if(!ds) return; var dd2=ds.d; if(!(dd2.c1||dd2.r||dd2.c2)){ alert("Write at least one Commend or Recommend before submitting."); return; } if(!myName()){ alert("Type your name in Your name at the top first, so the speaker knows who evaluated them."); return; } t.disabled=true; submitDraft(ds.id).then(function(){ renderAll(); }); return; }
     }
     if(L.role==="rrm"){
-      if(t.closest("#rrAdd")){ var ta=document.getElementById("rrInput"), o=maxOrd(S.rrq); ta.value.split(/\n+/).map(function(x){return x.trim();}).filter(Boolean).forEach(function(x){ S.rrq.push({id:uid(),text:x,used:false,ord:++o,u:now()}); }); ta.value=""; commit(); return; }
-      if(t.closest("#rrNext")){ rrNextQ(); return; }
+      if(t.closest("#rrStart")){ rrStart((document.getElementById("rrQ")||{}).value); return; }
       if(t.closest("#rrRandom")){ rrRandom(); return; }
-      if(t.closest("#rrShuffleAll")){ if(confirm("Queue everyone who hasn’t had a turn on the Timer, in a random order?")) rrShuffleAll(); return; }
+      if(t.closest("#rrEdit")){ var cq=rrById(S.rrcur.id); if(!cq) return; var nt=prompt("Round Robin question (the same for everyone):",cq.text); if(nt&&nt.trim()){ cq.text=nt.trim(); tick(cq); commit(); } return; }
+      if(t.closest("#rrReset")){ if(confirm("Finish this Round Robin? The question is cleared so you can start a new one. Times already recorded are kept.")){ S.rrcur.id=null; S.rrcur.last=""; tick(S.rrcur); commit(); } return; }
+      var rf=t.closest("[data-rrforget]"); if(rf){ rrForget(rf.dataset.rrforget); return; }
       if(t.closest("#rrShow")){ L.stageMode="rr"; openStage(); return; }
       var rc=t.closest("[data-rrcall]"); if(rc){ rrCall(rc.dataset.rrcall); return; }
       if(t.closest("#rrGuestAdd")){ var gi=document.getElementById("rrGuest"); rrCall((gi.value||"").trim()); return; }
-      var qa=t.closest("[data-rqact]"); if(qa){ var id=qa.closest("[data-rqid]").dataset.rqid; if(qa.dataset.rqact==="pick") rrPick(id); else { if(S.rrcur.id===id){ S.rrcur.id=null; tick(S.rrcur); } removeItem(["rrq"],id,"Question"); } return; }
     }
     if(L.role==="speaker"){
       var me2=t.closest("[data-spme]"); if(me2){ setMyName(me2.dataset.spme); var s0=mySpeech(); applySpeech(s0); commit(); return; }
