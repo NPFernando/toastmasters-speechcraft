@@ -71,13 +71,43 @@ var ROLE_GUIDE={
     after:["Open your feedback card; 💬 Report a problem or idea if anything didn’t work."],
     app:["Table Topics speakers see their time on their own phone when timed."]}
 };
+/* Publisher-hosted references; local guidance is labelled separately from International. */
+var ROLE_DOC_ROOT="https://www.toastmasters.org/";
+var ROLE_DOC_HATS=["Alternative: A Toastmaster Wears Many Hats",ROLE_DOC_ROOT+"resources/a-toastmaster-wears-many-hats"];
+var ROLE_DOC_PDF=["Backup PDF: A Toastmaster Wears Many Hats","https://ccdn.toastmasters.org//medias/files/pathways/toastmaster-wears-many-hats/1167d-a-toastmaster-wears-many-hats.pdf"];
+var ROLE_DOC_LOCAL=["Local guidance: University of Colombo Gavel Club","https://www.gavel.cmb.ac.lk/making-yourself-useful-at-educational-meetings/"];
+var ROLE_DOCS={
+  coord:[["Official: Speechcraft FAQ (coordinators)",ROLE_DOC_ROOT+"education/speechcraft/speechcraft-faq"],["Alternative: Speechcraft overview",ROLE_DOC_ROOT+"education/speechcraft"]],
+  president:[["Official: Club Leadership Handbook (President)",ROLE_DOC_ROOT+"resources/club-leadership-handbook"],["Alternative: Handbook and language versions",ROLE_DOC_ROOT+"membership/leadership/club-officer-tools/club-leadership-handbook"]],
+  saa:[["Official: Club Leadership Handbook (Sergeant at Arms)",ROLE_DOC_ROOT+"resources/club-leadership-handbook"],["Alternative: Handbook and language versions",ROLE_DOC_ROOT+"membership/leadership/club-officer-tools/club-leadership-handbook"]],
+  tmod:[["Official: Toastmaster",ROLE_DOC_ROOT+"membership/club-meeting-roles/toastmaster"]],
+  ge:[["Official: General Evaluator",ROLE_DOC_ROOT+"membership/club-meeting-roles/general-evaluator"],["Official: General Evaluator Checklist",ROLE_DOC_ROOT+"resources/general-evaluator-checklist"]],
+  timer:[["Official: Timer",ROLE_DOC_ROOT+"membership/club-meeting-roles/timer"]],
+  ttm:[["Official: Topicsmaster",ROLE_DOC_ROOT+"membership/club-meeting-roles/topicsmaster"]],
+  ah:[["Official: Ah-Counter",ROLE_DOC_ROOT+"membership/club-meeting-roles/ah-counter"]],
+  gram:[["Official: Grammarian",ROLE_DOC_ROOT+"membership/club-meeting-roles/grammarian"]],
+  speaker:[["Official: Meeting Speaker",ROLE_DOC_ROOT+"membership/club-meeting-roles/meeting-speaker"]],
+  seval:[["Official: Evaluator",ROLE_DOC_ROOT+"membership/club-meeting-roles/evaluator"]],
+  tteval:[["Official: Evaluator (general evaluation guidance)",ROLE_DOC_ROOT+"membership/club-meeting-roles/evaluator"],ROLE_DOC_LOCAL],
+  member:[["Official: Club Meeting Roles",ROLE_DOC_ROOT+"membership/club-meeting-roles"],["Official: Table Topics Speaker",ROLE_DOC_ROOT+"membership/club-meeting-roles/table-topics-speaker"]],
+  rrm:[ROLE_DOC_LOCAL,["Alternative local URL: University of Colombo Gavel Club","https://www.gavel.cmb.ac.lk/?p=1010"]]
+};
+function roleDocsHTML(id){
+  var links=(ROLE_DOCS[id]||[]).slice();
+  if(id!=="coord"&&id!=="president"&&id!=="saa"&&id!=="rrm") links.push(ROLE_DOC_HATS,ROLE_DOC_PDF);
+  if(id==="president"||id==="saa") links.push(["Backup PDF: Club Leadership Handbook","https://content.toastmasters.org/image/upload/1310-club-leadership-handbook.pdf"]);
+  if(id==="rrm") links.push(["Related International guidance: meeting roles (not a Round Robin manual)",ROLE_DOC_ROOT+"membership/club-meeting-roles"]);
+  var note=id==="rrm"?"Round Robin is a local format; these are University of Colombo Gavel Club references, not a Toastmasters International role manual. The two local URLs lead to the same article.":id==="tteval"?"International provides general evaluator guidance; the local reference describes Table Topics evaluations.":"Toastmasters International references. Follow your agreed meeting agenda where local practices differ.";
+  return '<div class="role-docs"><h4>Official references &amp; alternatives</h4><p>'+esc(note)+'</p><ul>'+links.map(function(x){return '<li><a href="'+esc(x[1])+'" target="_blank" rel="noopener noreferrer">'+esc(x[0])+'</a></li>';}).join('')+'</ul><p class="saved">Links verified 5 November 2026. Internet access required; alternatives are external links, not offline copies.</p></div>';
+}
+
 function guidePageHTML(id){
   var r=roleObj(id), g=ROLE_GUIDE[id]; if(!r||!g) return "";
   var li=function(a){ return '<ul>'+a.map(function(x){return '<li>'+esc(x)+'</li>';}).join("")+'</ul>'; };
   return '<div class="gpage"><div class="rlogos"><img src="'+document.querySelector(".logo img").src+'" alt="Toastmasters International"><img src="'+document.querySelector(".logo.co img").src+'" alt="Dijital Team"></div>'+
     '<h2>'+r.icon+' '+esc(r.name)+'</h2><div class="sub">'+esc(GROUP)+' · Speechcraft role guide</div><p class="gwhat">'+esc(g.what)+'</p>'+
     '<div class="ggrid"><div><h4>Before the meeting</h4>'+li(g.before)+'</div><div><h4>During</h4>'+li(g.during)+'</div><div><h4>After</h4>'+li(g.after)+'</div><div><h4>In the app</h4>'+li(g.app)+'</div></div>'+
-    '<div class="gfoot">Open the app: '+esc(SITE_URL)+' · choose '+r.icon+' '+esc(r.name)+'</div></div>';
+    roleDocsHTML(id)+'<div class="gfoot">Open the app: '+esc(SITE_URL)+' · choose '+r.icon+' '+esc(r.name)+'</div></div>';
 }
 function openGuides(ids){
   ids=ids&&ids.length?ids:ROLES.map(function(r){return r.id;});
