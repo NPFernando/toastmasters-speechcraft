@@ -12,6 +12,7 @@ function reportText(role){
     S.gramRows.forEach(function(r){ L1.push("• "+r.name+": WOTD ×"+(r.w||0)+(r.good.length?"; great: "+r.good.join("; "):"")+(r.slips.length?"; to polish: "+r.slips.join("; "):"")); });
   } else if(role==="ge"){
     L1.push("🧭 General Evaluator's notes — "+hd);
+    geObservationLines().forEach(function(line){ L1.push("• "+line); });
     reportsSummary().forEach(function(x){ L1.push("• "+x[0].replace(/^\S+\s/,"")+(x[1]?" ("+x[1]+")":"")+": "+x[2]); });
     if(S.genotes.good) L1.push("What went well: "+S.genotes.good); if(S.genotes.improve) L1.push("What could be better: "+S.genotes.improve);
   }

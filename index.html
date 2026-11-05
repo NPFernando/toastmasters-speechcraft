@@ -2166,7 +2166,7 @@ function voteControlHTML(canOpen,canReveal){
   return h;
 }
 function geHTML(){
-  var h='<section class="card">'+voteControlHTML(true,false);
+  var h='<section class="card">'+voteControlHTML(true,false)+geObservationsHTML();
   h+='<h2 class="sec">📣 Call for reports</h2><div class="sumlist">'+reportsSummary().map(function(x){ return '<div><b>'+x[0]+'</b>'+(x[1]?' · '+esc(x[1]):'')+'<div class="muted">'+esc(x[2])+'</div></div>'; }).join("")+'</div><div class="row" style="margin-top:6px"><button class="btn" id="geReport">📄 Open full report</button>'+copyBtn("ge")+'</div>';
   h+='<h2 class="sec">🗣 Evaluations</h2><table class="sumtable"><thead><tr><th>Speaker</th><th>Type</th><th>Assigned</th><th>Status</th></tr></thead><tbody>';
   var rows=preparedSpeakers().map(function(n){return [n,"ps"];}).concat(ttSpeakers().map(function(n){return [n,"tt"];}));
@@ -2178,6 +2178,39 @@ function geHTML(){
   return h+'</section>';
 }
 
+
+/* Meeting observations are manual evidence, never inferred from a running timer. */
+var GE_SECTIONS=[
+  ["Before the meeting",[["ready","Room, equipment and agenda ready"],["team","Evaluation team confirmed and briefed"],["guests","Guests welcomed and meeting format explained"]]],
+  ["Meeting opening",[["start","Meeting called to order on time"],["formalities","Scheduled opening formalities completed"],["handover","President introduced TMOD and handed over clearly"],["roles","GE, Timer, Ah-Counter and Grammarian introduced; roles/signals explained"]]],
+  ["Round Robin",[["rrIntro","Master explained format, speaking order and timing"],["rrRule","Last-word handover rule explained, when used"],["rrParticipation","Everyone invited to participate"],["rrTiming","Timing signals followed and transitions kept moving"],["rrReturn","Master returned control to TMOD"]]],
+  ["Speaking sessions",[["introductions","Prepared speakers, titles, objectives and evaluators introduced"],["transitions","Clear handovers between sessions and speakers"],["keynote","Scheduled educational presentation introduced and delivered"],["topics","Table Topics purpose and timing explained; questions clear and inclusive"]]],
+  ["Evaluation and closing",[["reports","GE called scheduled evaluations and team reports"],["quality","Evaluations specific, balanced, encouraging and actionable"],["finish","Agenda kept to time and meeting formally adjourned"],["atmosphere","Supportive atmosphere and audience engagement"]]]
+];
+var GE_OPEN={};
+function gePanel(key,label){ return '<details data-ge-panel="'+esc(key)+'"'+(GE_OPEN[key]?' open':'')+'><summary>'+esc(label)+'</summary>'; }
+var GE_STATUS={yes:"Yes",partial:"Partly",no:"No",na:"Not applicable"};
+function geField(key,label,type){ return '<label class="f evbox"><b>'+esc(label)+'</b><input class="t" type="'+(type||'text')+'" data-ge="'+esc(key)+'" value="'+esc(S.genotes[key]||'')+'"></label>'; }
+function geSelect(key,label){ return '<label class="f evbox"><b>'+esc(label)+'</b><select class="t" data-ge="'+esc(key)+'"><option value="">Not observed</option>'+Object.keys(GE_STATUS).map(function(v){return '<option value="'+v+'"'+(S.genotes[key]===v?' selected':'')+'>'+GE_STATUS[v]+'</option>';}).join('')+'</select></label>'; }
+function geObservationLines(){
+  var out=[];
+  GE_SECTIONS.forEach(function(section){ section[1].forEach(function(item){var k='check_'+item[0], v=S.genotes[k], note=S.genotes[k+'_note']; if(v||note) out.push(section[0]+' — '+item[1]+': '+(GE_STATUS[v]||'Not observed')+(note?' — '+note:''));}); });
+  [['plannedStart','Scheduled start'],['actualStart','Actual start'],['plannedEnd','Scheduled end'],['actualEnd','Actual end'],['rrFormat','Round Robin format / agreed rule'],['action','Priority recommendation / next action']].forEach(function(x){if(S.genotes[x[0]]) out.push(x[1]+': '+S.genotes[x[0]]);});
+  S.rows.rr.forEach(function(r){var k='rr_'+r.id, last=S.genotes[k+'_last'], first=S.genotes[k+'_first'], result=S.genotes[k+'_result']; if(last||first||result) out.push('Round Robin — '+r.name+': previous speaker’s last word: '+(last||'not recorded')+'; opening word: '+(first||'not recorded')+'; followed agreed rule: '+(GE_STATUS[result]||'Not observed'));});
+  return out;
+}
+function geHasNotes(){ return !!(S.genotes.good||S.genotes.improve||geObservationLines().length); }
+function geObservationsHTML(){
+  var h='<h2 class="sec">Meeting observations</h2><p class="muted">Record what you observe. Leave unseen items as Not observed; use Not applicable for activities outside today’s agenda. Notes are shared meeting data, not private feedback.</p>';
+  h+='<div class="row">'+geField('plannedStart','Scheduled start','time')+geField('actualStart','Actual start','time')+geField('plannedEnd','Scheduled end','time')+geField('actualEnd','Actual end','time')+'</div>';
+  GE_SECTIONS.forEach(function(section){h+=gePanel(section[0],section[0]); section[1].forEach(function(item){var k='check_'+item[0]; h+=geSelect(k,item[1])+geField(k+'_note','Evidence / suggestion: '+item[1]);}); h+='</details>';});
+  h+=gePanel('handovers','Round Robin word handovers')+'<p class="muted">Use for the last-word format. Record turns in the observed speaking order; the first speaker may be Not applicable. Names below come from the Timer queue and do not prove speaking order. No audio or automatic word recognition is used.</p>'+geField('rrFormat','Round Robin format / agreed rule');
+  if(!S.rows.rr.length) h+='<p class="muted">Add participants through the Round Robin Master to record individual handovers.</p>';
+  S.rows.rr.forEach(function(r){var k='rr_'+r.id; h+=gePanel('rr_'+r.id,r.name)+geField(k+'_last','Previous speaker’s last word')+geField(k+'_first','This speaker’s opening word')+geSelect(k+'_result','Followed the agreed handover rule')+'</details>';});
+  return h+'</details>'+geField('action','Priority recommendation / next action');
+}
+
+document.getElementById("view").addEventListener("toggle",function(e){ if(e.target.dataset.gePanel) GE_OPEN[e.target.dataset.gePanel]=e.target.open; },true);
 /* ---------- voting ---------- */
 function renderVoteModal(){
   var st=S.vote.state, h='<h3>🗳 Vote</h3>';
@@ -2579,6 +2612,7 @@ function feedbackPinsHTML(){
     if(L.role==="speaker"&&(t.dataset.sp==="title"||t.dataset.sp==="obj")){ var s=mySpeech(); if(!s) return; s[t.dataset.sp]=t.value; tick(s); commitQuiet(); return; }
   });
   V.addEventListener("change",function(e){
+    if(e.target.dataset.ge){ S.genotes[e.target.dataset.ge]=e.target.value; tick(S.genotes); commitQuiet(); laterRender(); return; }
     if(L.role==="speaker"&&(e.target.dataset.sp==="title"||e.target.dataset.sp==="obj")){ laterRender(); return; }
     if(L.role==="speaker"&&e.target.dataset.sp&&e.target.dataset.sp!=="title"&&e.target.dataset.sp!=="obj"){ var s=mySpeech(); if(!s) return; s[e.target.dataset.sp]=e.target.value; tick(s); applySpeech(s); commit(); return; }
     if(e.target.id==="cardName"){ L.cardName=e.target.value; saveL(); renderAll(); return; } if(e.target.dataset.evf||e.target.dataset.ge) laterRender(); });
@@ -2902,7 +2936,7 @@ function hasData(k){
   if(k==="ttm") return S.topics.length>0; if(k==="ah") return S.ahRows.length>0;
   if(k==="rrm") return S.rrq.length>0;
   if(k==="evals") return S.evals.some(function(e){return e.done;});
-  if(k==="ge") return !!(S.genotes.good||S.genotes.improve);
+  if(k==="ge") return geHasNotes();
   if(k==="awards") return S.vote.state==="shown";
   if(k==="guests") return S.guests.length>0||Object.keys(S.pres.chk||{}).length>0;
   if(k==="attend") return S.attend.some(function(a){return a.mid===S.mid&&a.present;});
@@ -2991,7 +3025,7 @@ function buildReport(){
     h+='<h4>🗣 Evaluations</h4>';
     h+='<table><thead><tr><th>Speaker</th><th>Type</th><th>Evaluated by</th></tr></thead><tbody>'+S.evals.filter(function(e){return e.done;}).map(function(e){ return '<tr><td>'+esc(e.speaker)+'</td><td>'+(e.kind==="tt"?"Table Topics":"Prepared speech")+'</td><td>'+esc(e.by)+'</td></tr>'; }).join("")+'</tbody></table><div style="color:#666;margin-top:3px">🔒 Evaluation contents are private to each speaker (on their feedback card).</div>';
   }
-  if(inc("ge")){ h+='<h4>🧭 General Evaluator</h4>'+(S.genotes.good?'<div><b>What went well:</b> '+esc(S.genotes.good)+'</div>':'')+(S.genotes.improve?'<div><b>What could be better:</b> '+esc(S.genotes.improve)+'</div>':''); }
+  if(inc("ge")){ h+='<h4>🧭 General Evaluator</h4>'+geObservationLines().map(function(line){return '<div>'+esc(line)+'</div>';}).join('')+(S.genotes.good?'<div><b>What went well:</b> '+esc(S.genotes.good)+'</div>':'')+(S.genotes.improve?'<div><b>What could be better:</b> '+esc(S.genotes.improve)+'</div>':''); }
   if(inc("awards")){ h+='<h4>🏆 Awards</h4><table><tbody>'+VCATS.map(function(c){ var tl=tally(c.k); return '<tr><td>'+c.n+'</td><td><b>'+esc(tl.winners.map(function(w){return w.name;}).join(" & ")||"—")+'</b></td><td class="c">'+(tl.winners.length?tl.winners[0].n+' votes':'')+'</td></tr>'; }).join("")+'</tbody></table><div style="color:#666;margin-top:3px">'+votersCount()+' devices voted.</div>'; }
   if(inc("guests")){ var pc2=presChecks(), od=pc2.open.length-chkLeft("pres","open",pc2.open).length, cd=pc2.close.length-chkLeft("pres","close",pc2.close).length;
     h+='<h4>🔔 President &amp; guests</h4><div>Opening '+od+'/'+pc2.open.length+' · Closing '+cd+'/'+pc2.close.length+(S.pres.notes?' · Announcements: '+esc(S.pres.notes):'')+'</div>';
@@ -3463,6 +3497,7 @@ function reportText(role){
     S.gramRows.forEach(function(r){ L1.push("• "+r.name+": WOTD ×"+(r.w||0)+(r.good.length?"; great: "+r.good.join("; "):"")+(r.slips.length?"; to polish: "+r.slips.join("; "):"")); });
   } else if(role==="ge"){
     L1.push("🧭 General Evaluator's notes — "+hd);
+    geObservationLines().forEach(function(line){ L1.push("• "+line); });
     reportsSummary().forEach(function(x){ L1.push("• "+x[0].replace(/^\S+\s/,"")+(x[1]?" ("+x[1]+")":"")+": "+x[2]); });
     if(S.genotes.good) L1.push("What went well: "+S.genotes.good); if(S.genotes.improve) L1.push("What could be better: "+S.genotes.improve);
   }
@@ -3603,7 +3638,7 @@ function finChecks(r){
   } else if(r==="rrm"){
     if(!S.rrq.length) w.push("No Round Robin questions recorded.");
   } else if(r==="ge"){
-    if(!String(S.genotes.good||"").trim()&&!String(S.genotes.improve||"").trim()) w.push("General evaluation notes are empty.");
+    if(!geHasNotes()) w.push("General evaluation notes are empty.");
   } else if(r==="tmod"){
     if(S.vote.state!=="shown") w.push("Voting results haven't been revealed yet.");
   } else if(r==="seval"||r==="tteval"){

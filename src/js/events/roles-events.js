@@ -51,6 +51,7 @@
     if(L.role==="speaker"&&(t.dataset.sp==="title"||t.dataset.sp==="obj")){ var s=mySpeech(); if(!s) return; s[t.dataset.sp]=t.value; tick(s); commitQuiet(); return; }
   });
   V.addEventListener("change",function(e){
+    if(e.target.dataset.ge){ S.genotes[e.target.dataset.ge]=e.target.value; tick(S.genotes); commitQuiet(); laterRender(); return; }
     if(L.role==="speaker"&&(e.target.dataset.sp==="title"||e.target.dataset.sp==="obj")){ laterRender(); return; }
     if(L.role==="speaker"&&e.target.dataset.sp&&e.target.dataset.sp!=="title"&&e.target.dataset.sp!=="obj"){ var s=mySpeech(); if(!s) return; s[e.target.dataset.sp]=e.target.value; tick(s); applySpeech(s); commit(); return; }
     if(e.target.id==="cardName"){ L.cardName=e.target.value; saveL(); renderAll(); return; } if(e.target.dataset.evf||e.target.dataset.ge) laterRender(); });
