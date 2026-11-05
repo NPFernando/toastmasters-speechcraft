@@ -2187,6 +2187,8 @@ var GE_SECTIONS=[
   ["Speaking sessions",[["introductions","Prepared speakers, titles, objectives and evaluators introduced"],["transitions","Clear handovers between sessions and speakers"],["keynote","Scheduled educational presentation introduced and delivered"],["topics","Table Topics purpose and timing explained; questions clear and inclusive"]]],
   ["Evaluation and closing",[["reports","GE called scheduled evaluations and team reports"],["quality","Evaluations specific, balanced, encouraging and actionable"],["finish","Agenda kept to time and meeting formally adjourned"],["atmosphere","Supportive atmosphere and audience engagement"]]]
 ];
+var GE_OPEN={};
+function gePanel(key,label){ return '<details data-ge-panel="'+esc(key)+'"'+(GE_OPEN[key]?' open':'')+'><summary>'+esc(label)+'</summary>'; }
 var GE_STATUS={yes:"Yes",partial:"Partly",no:"No",na:"Not applicable"};
 function geField(key,label,type){ return '<label class="f evbox"><b>'+esc(label)+'</b><input class="t" type="'+(type||'text')+'" data-ge="'+esc(key)+'" value="'+esc(S.genotes[key]||'')+'"></label>'; }
 function geSelect(key,label){ return '<label class="f evbox"><b>'+esc(label)+'</b><select class="t" data-ge="'+esc(key)+'"><option value="">Not observed</option>'+Object.keys(GE_STATUS).map(function(v){return '<option value="'+v+'"'+(S.genotes[key]===v?' selected':'')+'>'+GE_STATUS[v]+'</option>';}).join('')+'</select></label>'; }
@@ -2201,12 +2203,14 @@ function geHasNotes(){ return !!(S.genotes.good||S.genotes.improve||geObservatio
 function geObservationsHTML(){
   var h='<h2 class="sec">Meeting observations</h2><p class="muted">Record what you observe. Leave unseen items as Not observed; use Not applicable for activities outside today’s agenda. Notes are shared meeting data, not private feedback.</p>';
   h+='<div class="row">'+geField('plannedStart','Scheduled start','time')+geField('actualStart','Actual start','time')+geField('plannedEnd','Scheduled end','time')+geField('actualEnd','Actual end','time')+'</div>';
-  GE_SECTIONS.forEach(function(section){h+='<details><summary>'+esc(section[0])+'</summary>'; section[1].forEach(function(item){var k='check_'+item[0]; h+=geSelect(k,item[1])+geField(k+'_note','Evidence / suggestion: '+item[1]);}); h+='</details>';});
-  h+='<details><summary>Round Robin word handovers</summary><p class="muted">Use for the last-word format. Record turns in the observed speaking order; the first speaker may be Not applicable. Names below come from the Timer queue and do not prove speaking order. No audio or automatic word recognition is used.</p>'+geField('rrFormat','Round Robin format / agreed rule');
+  GE_SECTIONS.forEach(function(section){h+=gePanel(section[0],section[0]); section[1].forEach(function(item){var k='check_'+item[0]; h+=geSelect(k,item[1])+geField(k+'_note','Evidence / suggestion: '+item[1]);}); h+='</details>';});
+  h+=gePanel('handovers','Round Robin word handovers')+'<p class="muted">Use for the last-word format. Record turns in the observed speaking order; the first speaker may be Not applicable. Names below come from the Timer queue and do not prove speaking order. No audio or automatic word recognition is used.</p>'+geField('rrFormat','Round Robin format / agreed rule');
   if(!S.rows.rr.length) h+='<p class="muted">Add participants through the Round Robin Master to record individual handovers.</p>';
-  S.rows.rr.forEach(function(r){var k='rr_'+r.id; h+='<details><summary>'+esc(r.name)+'</summary>'+geField(k+'_last','Previous speaker’s last word')+geField(k+'_first','This speaker’s opening word')+geSelect(k+'_result','Followed the agreed handover rule')+'</details>';});
+  S.rows.rr.forEach(function(r){var k='rr_'+r.id; h+=gePanel('rr_'+r.id,r.name)+geField(k+'_last','Previous speaker’s last word')+geField(k+'_first','This speaker’s opening word')+geSelect(k+'_result','Followed the agreed handover rule')+'</details>';});
   return h+'</details>'+geField('action','Priority recommendation / next action');
 }
+
+document.getElementById("view").addEventListener("toggle",function(e){ if(e.target.dataset.gePanel) GE_OPEN[e.target.dataset.gePanel]=e.target.open; },true);
 /* ---------- voting ---------- */
 function renderVoteModal(){
   var st=S.vote.state, h='<h3>🗳 Vote</h3>';
