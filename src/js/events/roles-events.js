@@ -57,7 +57,7 @@
     if(e.target.id==="cardName"){ L.cardName=e.target.value; saveL(); renderAll(); return; } if(e.target.dataset.evf||e.target.dataset.ge) laterRender(); });
   document.getElementById("voteBox").addEventListener("click",function(e){
     var c=e.target.closest("[data-vcat]");
-    if(c){ if(S.vote.state!=="open"){ renderVoteModal(); return; } var cat=c.dataset.vcat, v=upsert(["votes"],"v|"+cat+"|"+devId(),{cat:cat,choice:""}); v.choice=(nkey(v.choice)===nkey(c.dataset.vname))?"":c.dataset.vname; tick(v); commit(); renderVoteModal(); return; }
+    if(c){ if(S.vote.state!=="open"){ renderVoteModal(); return; } castVote(c.dataset.vcat,c.dataset.vname); renderVoteModal(); return; }
     if(e.target.closest("#voteClose")) document.getElementById("voteModal").classList.remove("on");
   });
   document.getElementById("voteBar").addEventListener("click",openVote);

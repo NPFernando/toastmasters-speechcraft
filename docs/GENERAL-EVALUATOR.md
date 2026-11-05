@@ -9,7 +9,7 @@ The General Evaluator view now records a meeting checklist in addition to the ex
 - A priority recommendation helps prepare the oral report.
 - Copy and print reports include recorded observations. Existing good/improve notes remain compatible.
 
-Observations use the existing shared `genotes` meeting state, autosave, synchronization, export and reset behavior. They are visible meeting data, not encrypted private speech evaluations. Concurrent GE edits retain the existing whole-object last-write-wins behavior; use one lead recorder to avoid competing edits. There is no speech recognition or automatic word comparison.
+Observations use the existing shared `genotes` meeting state, autosave, synchronization, export and reset behavior. They are visible meeting data, not encrypted private speech evaluations. GE checklist fields now merge independently across updated devices. Same-field conflicts use timestamps and a deterministic tie-break; see MEETING-WORKFLOWS.md. Agenda-linked observations and persistent follow-up actions are also available. There is no speech recognition or automatic word comparison.
 
 ## Sources consulted
 

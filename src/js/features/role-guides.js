@@ -112,7 +112,7 @@ function guidePageHTML(id){
 function openGuides(ids){
   ids=ids&&ids.length?ids:ROLES.map(function(r){return r.id;});
   document.getElementById("report").innerHTML=ids.map(guidePageHTML).join("");
-  document.getElementById("repPick").innerHTML='<b style="font-size:14px">Role guide'+(ids.length>1?'s ('+ids.length+')':'')+'</b> <span class="saved">'+(ids.length===1?'<button class="linkbtn" id="guidesAll">Show all roles</button>':'')+'</span>';
+  document.getElementById("repPick").innerHTML='<b style="font-size:14px">Role guide'+(ids.length>1?'s ('+ids.length+')':'')+'</b> <button class="btn sm" data-reference-pack>Download offline reference pack</button> <span class="saved">'+(ids.length===1?'<button class="linkbtn" id="guidesAll">Show all roles</button>':'')+'</span>';
   var w=document.getElementById("reportWrap"); w.dataset.kind="guide"; w.classList.add("on");
 }
 document.getElementById("repPick").addEventListener("click",function(e){ if(e.target.closest("#guidesAll")) openGuides(); });

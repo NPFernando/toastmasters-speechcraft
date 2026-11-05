@@ -1,6 +1,6 @@
 /* ---------- Stage 2: evaluators, General Evaluator, voting, Round Robin, members ---------- */
 var MULTI_ROLES={seval:1,tteval:1,member:1,speaker:1};
-function myName(){ if(L.role==="coord"){ var mc=myCo(); if(mc) return mc.name; } return MULTI_ROLES[L.role] ? ((L.myNames||{})[L.role]||L.me||"") : (S.people[L.role]||""); }
+function myName(){ if(L.role==="keynote") return S.people.keynote||assigned("keynote")||L.me||""; if(L.role==="coord"){ var mc=myCo(); if(mc) return mc.name; } return MULTI_ROLES[L.role] ? ((L.myNames||{})[L.role]||L.me||"") : (S.people[L.role]||""); }
 function setMyName(v){ if(L.role==="coord"&&myCo()){ var mc=myCo(); mc.name=String(v||"").trim()||mc.name; tick(mc); commitQuiet(); return; } return setMyName0(v); }
 function setMyName0(v){
   if(v) L.me=v;
@@ -32,13 +32,18 @@ var VCATS=[
   {k:"ev",n:"Best Evaluator",c:function(){ return evaluatorNames().filter(awardEligible).map(function(n){return {name:n};}); }},
   {k:"role",n:"Best Role Player",c:function(){ return rolePlayerList().filter(function(p){return awardEligible(p.name);}).map(function(p){return {name:p.name,sub:p.roles.join(", ")};}); }}
 ];
-function myVote(cat){ var v=S.votes.find(function(x){return x.id==="v|"+cat+"|"+devId();}); return v?v.choice:""; }
-function tally(cat){
-  var c={}; S.votes.forEach(function(v){ if(v.cat===cat&&v.choice){ var k=nkey(v.choice); c[k]=c[k]||{name:v.choice,n:0}; c[k].n++; } });
-  var list=Object.keys(c).map(function(k){return c[k];}).sort(function(a,b){return b.n-a.n;});
-  var top=list.length?list[0].n:0;
-  return {list:list,winners:list.filter(function(x){return x.n===top&&top>0;})};
+function voterKey(name){return "person:"+encodeURIComponent(nkey(name));}
+function voteIdentity(){return nkey(L.voterName||myName());}
+function effectiveVotes(){var by={};S.votes.forEach(function(v){var key=(v.voter||v.id.split("|").slice(2).join("|"))+"|"+v.cat,old=by[key];if(!old||v.u>old.u||(v.u===old.u&&v.id>old.id))by[key]=v;});return Object.keys(by).map(function(k){return by[k];});}
+function myVote(cat){var key=voterKey(voteIdentity()),v=effectiveVotes().find(function(x){return x.cat===cat&&x.voter===key;});return v?v.choice:"";}
+function castVote(cat,choice){
+ if(S.vote.state!=="open"||!VCATS.some(function(c){return c.k===cat&&c.c().some(function(n){return nkey(n.name)===nkey(choice);});}))return;
+ var name=voteIdentity();if(!name){alert("Enter your voting name first.");return;}
+ var key=voterKey(name),id="v|"+cat+"|"+key,v=upsert(["votes"],id,{cat:cat,voter:key,choice:""});
+ S.votes=S.votes.filter(function(x){if(x.id==="v|"+cat+"|"+devId()){S.dead[x.id]=now();return false;}return true;});
+ v.voter=key;v.choice=nkey(v.choice)===nkey(choice)?"":choice;tick(v);commit();
 }
-function votersCount(){ var s={}; S.votes.forEach(function(v){ if(v.choice) s[v.id.split("|")[2]]=1; }); return Object.keys(s).length; }
+function tally(cat){var c={};effectiveVotes().forEach(function(v){if(v.cat===cat&&v.choice){var k=nkey(v.choice);c[k]=c[k]||{name:v.choice,n:0};c[k].n++;}});var list=Object.keys(c).map(function(k){return c[k];}).sort(function(a,b){return b.n-a.n;});var top=list.length?list[0].n:0;return {list:list,winners:list.filter(function(x){return x.n===top&&top>0;})};}
+function votersCount(){var s={};effectiveVotes().forEach(function(v){if(v.choice)s[v.voter||v.id.split("|").slice(2).join("|")]=1;});return Object.keys(s).length;}
 function voteStateText(){ return {closed:"Voting not open yet",open:"🗳 Voting is open",done:"Voting closed — waiting for the Toastmaster to reveal",shown:"🏆 Winners revealed"}[S.vote.state]||""; }
 

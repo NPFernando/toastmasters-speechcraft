@@ -1,7 +1,13 @@
 /* ---------- field-level sync for the agenda and member list ----------
    Each agenda field, role player, agenda item and member carries its own change time
    (agenda.fu / members.fu), so two organisers editing different things never overwrite each other. */
-var shadowAg=null, shadowMem=null;
+var shadowAg=null, shadowMem=null, shadowGE=null;
+function geParts(g){var p={};Object.keys(g||{}).forEach(function(k){if(k!=="u"&&k!=="fu") p[k]=js(g[k]);});return p;}
+function mergeGENotes(A,B){
+ var a=A.genotes,b=B.genotes,fa=a.fu||{},fb=b.fu||{},keys=Object.keys(geParts(a)).concat(Object.keys(geParts(b)),Object.keys(fa),Object.keys(fb));
+ var chosen={},times={};keys.forEach(function(k){var ta=Object.prototype.hasOwnProperty.call(fa,k)?fa[k]:(hasFu(a)?0:a.u||0),tb=Object.prototype.hasOwnProperty.call(fb,k)?fb[k]:(hasFu(b)?0:b.u||0);var take=tb>ta||(tb===ta&&js(b[k])>js(a[k])); var src=take?b:a;if(k in src)chosen[k]=clone(src[k]);times[k]=Math.max(ta,tb);});
+ chosen.fu=times;chosen.u=Math.max(a.u||0,b.u||0);A.genotes=chosen;
+}
 function js(x){ return JSON.stringify(x===undefined?null:x); }
 function agParts(ag){
   var p={}; Object.keys(ag||{}).forEach(function(f){ if(f!=="items"&&f!=="assign"&&f!=="u"&&f!=="fu") p["f."+f]=js(ag[f]); });
@@ -16,8 +22,8 @@ function stampObj(obj,parts,shadow){
   if(ch) obj.u=Math.max(t,(obj.u||0)+1);
   return ch;
 }
-function stampFields(){ stampObj(S.agenda,agParts(S.agenda),shadowAg); stampObj(S.members,memParts(S.members),shadowMem); shadowSync(); }
-function shadowSync(){ shadowAg=agParts(S.agenda); shadowMem=memParts(S.members); }
+function stampFields(){ stampObj(S.agenda,agParts(S.agenda),shadowAg); stampObj(S.members,memParts(S.members),shadowMem); stampObj(S.genotes,geParts(S.genotes),shadowGE); shadowSync(); }
+function shadowSync(){ shadowAg=agParts(S.agenda); shadowMem=memParts(S.members); shadowGE=geParts(S.genotes); }
 function hasFu(o){ return !!(o&&o.fu&&Object.keys(o.fu).length); }
 function mergeAgenda(A,B){
   if(!hasFu(A.agenda)&&!hasFu(B.agenda)){ if((B.agenda.u||0)>(A.agenda.u||0)) A.agenda=clone(B.agenda); return; }
@@ -52,6 +58,7 @@ function mergeInto(A,B,mode){
   B.names.forEach(function(n){ addName(A,n); });
   A.attend=mergeColl(A.attend,B.attend,{}); A.keys=mergeColl(A.keys,B.keys,{});
   KEEP_LWW.forEach(function(k){ if(k==="members") mergeMembers(A,B); else if((B[k].u||0)>(A[k].u||0)) A[k]=clone(B[k]); });
+  A.actions=mergeColl(A.actions,B.actions,{});
   A.coorg=mergeColl(A.coorg,B.coorg,{}); A.ideas=mergeColl(A.ideas,B.ideas,{}); A.tpls=mergeColl(A.tpls,B.tpls,{});
   Object.keys(A.people).forEach(function(k){ if((B.peopleU[k]||0)>(A.peopleU[k]||0)){ A.people[k]=B.people[k]; A.peopleU[k]=B.peopleU[k]; } });
   if(B.mid!==A.mid && mode==="keep"){ if(A===S) shadowSync(); return stable(A)!==before; }
@@ -63,7 +70,7 @@ function mergeInto(A,B,mode){
     COLLS.forEach(function(p){ setColl(A,p,clone(getColl(B,p))); });
   } else if(B.mid===A.mid){
     Object.keys(B.dead).forEach(function(id){ if(!(A.dead[id]>=B.dead[id])) A.dead[id]=B.dead[id]; });
-    MEETING_LWW.forEach(function(k){ if(k==="agenda") mergeAgenda(A,B); else if((B[k].u||0)>(A[k].u||0)) A[k]=clone(B[k]); });
+    MEETING_LWW.forEach(function(k){ if(k==="agenda") mergeAgenda(A,B); else if(k==="genotes") mergeGENotes(A,B); else if((B[k].u||0)>(A[k].u||0)) A[k]=clone(B[k]); });
     COLLS.forEach(function(p){ setColl(A,p,mergeColl(getColl(A,p),getColl(B,p),A.dead)); });
   }
   if(A===S) shadowSync();

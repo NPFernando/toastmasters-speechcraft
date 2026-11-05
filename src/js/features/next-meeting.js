@@ -10,7 +10,7 @@ function myUpcoming(forName){
     else if(r==="tteval") parts.push({icon:"💬",t:"Table Topics Evaluator",d:"Speakers are shared out as the Table Topics Master calls them"});
     else { var o=roleObj(r), times=itemsSorted().filter(function(it){return it.role===r;}).map(function(it){return fmtHM(it.time);}); parts.push({icon:o?o.icon:"•",t:o?o.name:r,d:times.length?"On the agenda at "+times.join(", "):""}); }
   });
-  if(asList("keynote").some(function(n){return nkey(n)===k;})) parts.unshift({icon:"🌟",t:"Keynote"+(S.agenda.ktopic?" — “"+S.agenda.ktopic+"”":""),d:itemsSorted().filter(function(it){return it.role==="keynote";}).map(function(it){return "At "+fmtHM(it.time);}).join(", ")});
+  if(parts.every(function(p){return p.t.indexOf("Educational Presenter")<0;})&&asList("keynote").some(function(n){return nkey(n)===k;})) parts.unshift({icon:"🌟",t:"Keynote"+(S.agenda.ktopic?" — “"+S.agenda.ktopic+"”":""),d:itemsSorted().filter(function(it){return it.role==="keynote";}).map(function(it){return "At "+fmtHM(it.time);}).join(", ")});
   if(!parts.length) return null;
   var first=itemsSorted()[0];
   return {name:nm,date:S.meta.date,start:first?first.time:"",venue:S.agenda.venue||"",parts:parts,today:S.meta.date===today};

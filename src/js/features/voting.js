@@ -3,7 +3,8 @@ function renderVoteModal(){
   var st=S.vote.state, h='<h3>🗳 Vote</h3>';
   if(st!=="open"){ h+='<p class="muted">'+voteStateText()+'.</p>'; }
   else {
-    h+='<p class="muted" style="margin-top:0">One vote per category on this device. You can change your vote until voting closes.</p>';
+    h+='<p class="muted" style="margin-top:0">One vote per category per voting name, shared across your devices. Use the same full name on each device. This is name-based, not identity verification. You can change your vote until voting closes.</p>';
+    h+='<label class="f"><b>Your voting name</b><input class="t" id="voterName" list="roster" value="'+esc(L.voterName||myName())+'"></label>';
     VCATS.forEach(function(c){
       var cands=c.c(), mine=myVote(c.k);
       h+='<div class="wcard"><b>'+c.n+'</b>'+(mine?' <span class="ok">✓</span>':'')+'<div class="chips" style="margin-top:8px">'+
@@ -23,7 +24,8 @@ function renderVoteBar(){
 }
 function winnersHTML(){
   var h='<div class="winners"><h2>🏆 Congratulations!</h2>';
-  VCATS.forEach(function(c){ var t=tally(c.k); h+='<div class="wcat"><div class="saved">'+c.n+'</div><div class="wname">'+(t.winners.length?t.winners.map(function(w){return esc(w.name);}).join(" &amp; "):'—')+'</div>'+(t.winners.length?'<div class="saved">'+t.winners[0].n+' vote'+(t.winners[0].n===1?'':'s')+(t.winners.length>1?' each (tie)':'')+'</div>':'')+'</div>'; });
+  h+='<label class="f"><b>Your voting name</b><input class="t" id="voterName" list="roster" value="'+esc(L.voterName||myName())+'"></label>';
+    VCATS.forEach(function(c){ var t=tally(c.k); h+='<div class="wcat"><div class="saved">'+c.n+'</div><div class="wname">'+(t.winners.length?t.winners.map(function(w){return esc(w.name);}).join(" &amp; "):'—')+'</div>'+(t.winners.length?'<div class="saved">'+t.winners[0].n+' vote'+(t.winners[0].n===1?'':'s')+(t.winners.length>1?' each (tie)':'')+'</div>':'')+'</div>'; });
   return h+'</div>';
 }
 function maybeShowWinners(force){

@@ -8,6 +8,7 @@ A single HTML page for running Speechcraft meetings at **Dijital Team Colombo**.
 | 🔔 **President** | Their agenda times; opening checklist (call to order, anthem, welcome, club mission, introduce the Toastmaster); announcements; guest list with "welcomed" ticks; closing checklist with the award winners |
 | 🛎 **Sergeant at Arms** | Before / as people arrive / after checklists (room, lectern, timing lights, badges, greeting, seating, packing up); adds guests to the shared guest list |
 | 🎩 **Toastmaster of the Day** | Run-sheet with Now / Next, tap to move on, shows if the meeting is on time or behind; everyone sees a "Now:" line |
+| 🌟 **Educational Presenter / Keynote** | Topic, objectives, introduction, materials and target duration; labelled presentation queue for the Timer |
 | 🧭 **General Evaluator** | Live Timer / Ah-Counter / Grammarian results for the call for reports, evaluation status, meeting notes, opens and closes voting |
 | ⏱ **Timer** | Plan speakers, live counter with green / amber / red signal flashes, Table Topics, Prepared Speech, Round Robin, Evaluations and Role reports (Timer and Ah-Counter 1 min, Grammarian 2 min), manual time entry, time totals |
 | 🎤 **Table Topics Master** | Prepare topics, random pick, full-screen topic display, record who took each topic, remaining vs used topics |
@@ -36,7 +37,7 @@ One **Meeting report** combines every role and can be saved as a PDF.
 - **🔌 Connection check** (⋯ More): whether this device reaches the connection relays and the other devices (with round-trip time), and supports encryption, keeping the screen awake, vibration and saving. **Copy results** to include in a problem report.
 - **💬 Report a problem or idea** (⋯ More): see [Issues and ideas](#issues-and-ideas).
 - **⏭ "You're up next":** when the Toastmaster moves on, whoever's part is next gets a banner and a buzz ("⏭ You're up next: Prepared Speech Session (about 40 min)"), and again when it's their turn ("🎤 You're on now").
-- **👋 Guest self check-in:** a QR on the projector's welcome screen (and **📱 Guest check-in QR** on the President's and Sergeant at Arms's guest lists). Guests scan it, type their name and how they heard about the group, and tap **Check in**: they join as a Participant, appear on the guest list and attendance, and can vote. No account or password is needed. A guest who is on the agenda as a speaker or keynote (e.g. a visiting Toastmaster) is set up as a **Speaker**, with their own timing card and private feedback.
+- **👋 Guest self check-in:** a QR on the projector's welcome screen (and **📱 Guest check-in QR** on the President's and Sergeant at Arms's guest lists). Guests scan it, type their name and how they heard about the group, and tap **Check in**: they join as a Participant, appear on the guest list and attendance, and can vote. No account or password is needed. A guest assigned a prepared speech enters **Speaker**; a guest assigned the keynote enters **Educational Presenter / Keynote**.
 - **⏱ Agenda timing** (Coordinator): **▲▼** (or drag the ▲▼ handle on a laptop) moves an item and keeps how long it runs; each item shows its length in **min**, and changing it moves everything after it; **Start at** and **−5 / +5 min** move the whole agenda; **＋** inserts a 5-minute item below and **✕** removes one, with the items after it moving to suit. The header shows the start, end and total length.
 - **🕰 Running late on the day** (Toastmaster): **+5 min / −5 min** moves the rest of the agenda, or **⟳ Next starts now** re-times it from the current time. The Now/Next cards, the run-sheet (with the printed time struck through) and the on-time status use the new times on every device; the printed agenda keeps the planned times. **Printed times** undoes it.
 - **Nothing moves by itself:** the Now item only changes when someone taps Next. If an item runs long, the run-sheet says how far over it is and offers **Move the rest N min later**. The **President** and an unlocked **organiser** get the same **🎛 Live agenda controls** on the 📡 Now tab (Back, Next, ±5 min, Next starts now) as a back-up to the Toastmaster, and everyone sees who made the last change.
@@ -73,7 +74,7 @@ One **Meeting report** combines every role and can be saved as a PDF.
 
 ### Voting
 
-When the General Evaluator opens voting, a vote bar appears on every connected device: Best Prepared Speaker, Best Table Topics Speaker, Best Evaluator and Best Role Player, one vote per device per award. Results stay hidden until the Toastmaster taps **Reveal winners**, then they appear on every screen together.
+When the General Evaluator opens voting, a vote bar appears on every connected device: Best Prepared Speaker, Best Table Topics Speaker, Best Evaluator and Best Role Player, one vote per normalized full voting name per award across devices (names are self-declared, not verified). Results stay hidden until the Toastmaster taps **Reveal winners**, then they appear on every screen together.
 
 ### Private feedback
 
@@ -132,3 +133,7 @@ Everything is saved in the browser on each device. The Coordinator saves the **m
 - QR codes: [QR Code Generator](https://github.com/kazuhikoarase/qrcode-generator) 1.4.4 by Kazuhiko Arase, MIT License, embedded in the page. "QR Code" is a registered trademark of DENSO WAVE INCORPORATED.
 - Connection library: [Trystero](https://github.com/dmotz/trystero) 0.26.0 (Nostr strategy, includes @noble/secp256k1), MIT License, embedded in the page.
 - The Toastmasters International logo is used under the Toastmasters brand guidelines for club and Speechcraft materials. It is a trademark of Toastmasters International. The Dijital Team logo belongs to Dijital Team.
+
+## Meeting workflow update (3.10.0)
+
+Educational Presenter, agenda-linked GE observations, persistent follow-up actions, name-based voting across devices, per-field GE sync, explicit accepted handovers, and a downloadable offline role pack are described in [Meeting workflows](docs/MEETING-WORKFLOWS.md).

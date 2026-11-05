@@ -1,7 +1,7 @@
 /* ---------- agenda, role players, coordinator, toastmaster run-sheet ---------- */
 var AROLES=[
   {k:"president",n:"President"},{k:"saa",n:"Sergeant at Arms"},{k:"tmod",n:"Toastmaster of the Day"},{k:"ge",n:"General Evaluator"},
-  {k:"ttm",n:"Table Topics Master"},{k:"rrm",n:"Round Robin Master"},{k:"keynote",n:"Keynote Speaker"},
+  {k:"ttm",n:"Table Topics Master"},{k:"rrm",n:"Round Robin Master"},{k:"keynote",n:"Educational Presenter / Keynote"},
   {k:"timer",n:"Timer"},{k:"ah",n:"Ah-Counter"},{k:"gram",n:"Grammarian"},
   {k:"speakers",n:"Prepared Speakers",multi:true},{k:"sevals",n:"Speech Evaluators",multi:true},{k:"ttevals",n:"Table Topics Evaluators",multi:true},
   {k:"coord",n:"Speechcraft Coordinator"}
