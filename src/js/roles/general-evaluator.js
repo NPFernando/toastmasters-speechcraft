@@ -15,7 +15,7 @@ function voteControlHTML(canOpen,canReveal){
   return h;
 }
 function geHTML(){
-  var h='<section class="card">'+voteControlHTML(true,false);
+  var h='<section class="card">'+voteControlHTML(true,false)+geObservationsHTML();
   h+='<h2 class="sec">📣 Call for reports</h2><div class="sumlist">'+reportsSummary().map(function(x){ return '<div><b>'+x[0]+'</b>'+(x[1]?' · '+esc(x[1]):'')+'<div class="muted">'+esc(x[2])+'</div></div>'; }).join("")+'</div><div class="row" style="margin-top:6px"><button class="btn" id="geReport">📄 Open full report</button>'+copyBtn("ge")+'</div>';
   h+='<h2 class="sec">🗣 Evaluations</h2><table class="sumtable"><thead><tr><th>Speaker</th><th>Type</th><th>Assigned</th><th>Status</th></tr></thead><tbody>';
   var rows=preparedSpeakers().map(function(n){return [n,"ps"];}).concat(ttSpeakers().map(function(n){return [n,"tt"];}));
@@ -27,3 +27,32 @@ function geHTML(){
   return h+'</section>';
 }
 
+
+/* Meeting observations are manual evidence, never inferred from a running timer. */
+var GE_SECTIONS=[
+  ["Before the meeting",[["ready","Room, equipment and agenda ready"],["team","Evaluation team confirmed and briefed"],["guests","Guests welcomed and meeting format explained"]]],
+  ["Meeting opening",[["start","Meeting called to order on time"],["formalities","Scheduled opening formalities completed"],["handover","President introduced TMOD and handed over clearly"],["roles","GE, Timer, Ah-Counter and Grammarian introduced; roles/signals explained"]]],
+  ["Round Robin",[["rrIntro","Master explained format, speaking order and timing"],["rrRule","Last-word handover rule explained, when used"],["rrParticipation","Everyone invited to participate"],["rrTiming","Timing signals followed and transitions kept moving"],["rrReturn","Master returned control to TMOD"]]],
+  ["Speaking sessions",[["introductions","Prepared speakers, titles, objectives and evaluators introduced"],["transitions","Clear handovers between sessions and speakers"],["keynote","Scheduled educational presentation introduced and delivered"],["topics","Table Topics purpose and timing explained; questions clear and inclusive"]]],
+  ["Evaluation and closing",[["reports","GE called scheduled evaluations and team reports"],["quality","Evaluations specific, balanced, encouraging and actionable"],["finish","Agenda kept to time and meeting formally adjourned"],["atmosphere","Supportive atmosphere and audience engagement"]]]
+];
+var GE_STATUS={yes:"Yes",partial:"Partly",no:"No",na:"Not applicable"};
+function geField(key,label,type){ return '<label class="f evbox"><b>'+esc(label)+'</b><input class="t" type="'+(type||'text')+'" data-ge="'+esc(key)+'" value="'+esc(S.genotes[key]||'')+'"></label>'; }
+function geSelect(key,label){ return '<label class="f evbox"><b>'+esc(label)+'</b><select class="t" data-ge="'+esc(key)+'"><option value="">Not observed</option>'+Object.keys(GE_STATUS).map(function(v){return '<option value="'+v+'"'+(S.genotes[key]===v?' selected':'')+'>'+GE_STATUS[v]+'</option>';}).join('')+'</select></label>'; }
+function geObservationLines(){
+  var out=[];
+  GE_SECTIONS.forEach(function(section){ section[1].forEach(function(item){var k='check_'+item[0], v=S.genotes[k], note=S.genotes[k+'_note']; if(v||note) out.push(section[0]+' — '+item[1]+': '+(GE_STATUS[v]||'Not observed')+(note?' — '+note:''));}); });
+  [['plannedStart','Scheduled start'],['actualStart','Actual start'],['plannedEnd','Scheduled end'],['actualEnd','Actual end'],['rrFormat','Round Robin format / agreed rule'],['action','Priority recommendation / next action']].forEach(function(x){if(S.genotes[x[0]]) out.push(x[1]+': '+S.genotes[x[0]]);});
+  S.rows.rr.forEach(function(r){var k='rr_'+r.id, last=S.genotes[k+'_last'], first=S.genotes[k+'_first'], result=S.genotes[k+'_result']; if(last||first||result) out.push('Round Robin — '+r.name+': previous speaker’s last word: '+(last||'not recorded')+'; opening word: '+(first||'not recorded')+'; followed agreed rule: '+(GE_STATUS[result]||'Not observed'));});
+  return out;
+}
+function geHasNotes(){ return !!(S.genotes.good||S.genotes.improve||geObservationLines().length); }
+function geObservationsHTML(){
+  var h='<h2 class="sec">Meeting observations</h2><p class="muted">Record what you observe. Leave unseen items as Not observed; use Not applicable for activities outside today’s agenda. Notes are shared meeting data, not private feedback.</p>';
+  h+='<div class="row">'+geField('plannedStart','Scheduled start','time')+geField('actualStart','Actual start','time')+geField('plannedEnd','Scheduled end','time')+geField('actualEnd','Actual end','time')+'</div>';
+  GE_SECTIONS.forEach(function(section){h+='<details><summary>'+esc(section[0])+'</summary>'; section[1].forEach(function(item){var k='check_'+item[0]; h+=geSelect(k,item[1])+geField(k+'_note','Evidence / suggestion: '+item[1]);}); h+='</details>';});
+  h+='<details><summary>Round Robin word handovers</summary><p class="muted">Use for the last-word format. Record turns in the observed speaking order; the first speaker may be Not applicable. Names below come from the Timer queue and do not prove speaking order. No audio or automatic word recognition is used.</p>'+geField('rrFormat','Round Robin format / agreed rule');
+  if(!S.rows.rr.length) h+='<p class="muted">Add participants through the Round Robin Master to record individual handovers.</p>';
+  S.rows.rr.forEach(function(r){var k='rr_'+r.id; h+='<details><summary>'+esc(r.name)+'</summary>'+geField(k+'_last','Previous speaker’s last word')+geField(k+'_first','This speaker’s opening word')+geSelect(k+'_result','Followed the agreed handover rule')+'</details>';});
+  return h+'</details>'+geField('action','Priority recommendation / next action');
+}

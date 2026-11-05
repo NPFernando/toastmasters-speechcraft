@@ -25,7 +25,7 @@ function finChecks(r){
   } else if(r==="rrm"){
     if(!S.rrq.length) w.push("No Round Robin questions recorded.");
   } else if(r==="ge"){
-    if(!String(S.genotes.good||"").trim()&&!String(S.genotes.improve||"").trim()) w.push("General evaluation notes are empty.");
+    if(!geHasNotes()) w.push("General evaluation notes are empty.");
   } else if(r==="tmod"){
     if(S.vote.state!=="shown") w.push("Voting results haven't been revealed yet.");
   } else if(r==="seval"||r==="tteval"){

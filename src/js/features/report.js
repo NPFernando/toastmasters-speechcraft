@@ -6,7 +6,7 @@ function hasData(k){
   if(k==="ttm") return S.topics.length>0; if(k==="ah") return S.ahRows.length>0;
   if(k==="rrm") return S.rrq.length>0;
   if(k==="evals") return S.evals.some(function(e){return e.done;});
-  if(k==="ge") return !!(S.genotes.good||S.genotes.improve);
+  if(k==="ge") return geHasNotes();
   if(k==="awards") return S.vote.state==="shown";
   if(k==="guests") return S.guests.length>0||Object.keys(S.pres.chk||{}).length>0;
   if(k==="attend") return S.attend.some(function(a){return a.mid===S.mid&&a.present;});
@@ -95,7 +95,7 @@ function buildReport(){
     h+='<h4>🗣 Evaluations</h4>';
     h+='<table><thead><tr><th>Speaker</th><th>Type</th><th>Evaluated by</th></tr></thead><tbody>'+S.evals.filter(function(e){return e.done;}).map(function(e){ return '<tr><td>'+esc(e.speaker)+'</td><td>'+(e.kind==="tt"?"Table Topics":"Prepared speech")+'</td><td>'+esc(e.by)+'</td></tr>'; }).join("")+'</tbody></table><div style="color:#666;margin-top:3px">🔒 Evaluation contents are private to each speaker (on their feedback card).</div>';
   }
-  if(inc("ge")){ h+='<h4>🧭 General Evaluator</h4>'+(S.genotes.good?'<div><b>What went well:</b> '+esc(S.genotes.good)+'</div>':'')+(S.genotes.improve?'<div><b>What could be better:</b> '+esc(S.genotes.improve)+'</div>':''); }
+  if(inc("ge")){ h+='<h4>🧭 General Evaluator</h4>'+geObservationLines().map(function(line){return '<div>'+esc(line)+'</div>';}).join('')+(S.genotes.good?'<div><b>What went well:</b> '+esc(S.genotes.good)+'</div>':'')+(S.genotes.improve?'<div><b>What could be better:</b> '+esc(S.genotes.improve)+'</div>':''); }
   if(inc("awards")){ h+='<h4>🏆 Awards</h4><table><tbody>'+VCATS.map(function(c){ var tl=tally(c.k); return '<tr><td>'+c.n+'</td><td><b>'+esc(tl.winners.map(function(w){return w.name;}).join(" & ")||"—")+'</b></td><td class="c">'+(tl.winners.length?tl.winners[0].n+' votes':'')+'</td></tr>'; }).join("")+'</tbody></table><div style="color:#666;margin-top:3px">'+votersCount()+' devices voted.</div>'; }
   if(inc("guests")){ var pc2=presChecks(), od=pc2.open.length-chkLeft("pres","open",pc2.open).length, cd=pc2.close.length-chkLeft("pres","close",pc2.close).length;
     h+='<h4>🔔 President &amp; guests</h4><div>Opening '+od+'/'+pc2.open.length+' · Closing '+cd+'/'+pc2.close.length+(S.pres.notes?' · Announcements: '+esc(S.pres.notes):'')+'</div>';
