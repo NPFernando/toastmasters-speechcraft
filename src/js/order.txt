@@ -61,4 +61,5 @@ ui/projector.js
 ui/display-settings.js
 ui/more-menu.js
 ui/home-about.js
+features/meeting-workflows.js
 start/boot.js

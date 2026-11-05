@@ -132,3 +132,7 @@ Everything is saved in the browser on each device. The Coordinator saves the **m
 - QR codes: [QR Code Generator](https://github.com/kazuhikoarase/qrcode-generator) 1.4.4 by Kazuhiko Arase, MIT License, embedded in the page. "QR Code" is a registered trademark of DENSO WAVE INCORPORATED.
 - Connection library: [Trystero](https://github.com/dmotz/trystero) 0.26.0 (Nostr strategy, includes @noble/secp256k1), MIT License, embedded in the page.
 - The Toastmasters International logo is used under the Toastmasters brand guidelines for club and Speechcraft materials. It is a trademark of Toastmasters International. The Dijital Team logo belongs to Dijital Team.
+
+## Meeting workflow update (3.10.0)
+
+Educational Presenter, agenda-linked GE observations, persistent follow-up actions, name-based voting across devices, per-field GE sync, explicit accepted handovers, and a downloadable offline role pack are described in [Meeting workflows](docs/MEETING-WORKFLOWS.md).

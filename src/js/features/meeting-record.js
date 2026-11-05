@@ -5,8 +5,8 @@ function bumpNum(t){ var m=String(t).match(/^(.*?)(\d+)(\D*)$/); if(!m) return t
 function newMeetingCore(carry){
   autoSaveRecord("Before new meeting");
   var keep={people:S.people,peopleU:S.peopleU,limits:S.limits,fill:S.fill,members:S.members,pin:S.pin,agenda:S.agenda};
-  var n=blank(); n.people=keep.people; n.peopleU=keep.peopleU; n.limits=keep.limits; n.fill=keep.fill; n.members=keep.members; n.pin=keep.pin; n.attend=S.attend; n.keys=S.keys; n.coorg=S.coorg; n.ideas=S.ideas; n.tpls=S.tpls;
-  n.agenda=clone(keep.agenda); n.agenda.ktopic=""; n.agenda.korg=""; n.agenda.u=now();
+  var n=blank(); n.people=keep.people; n.peopleU=keep.peopleU; n.limits=keep.limits; n.fill=keep.fill; n.members=keep.members; n.pin=keep.pin; n.attend=S.attend; n.keys=S.keys; n.coorg=S.coorg; n.ideas=S.ideas; n.tpls=S.tpls; n.actions=clone(S.actions);
+  n.agenda=clone(keep.agenda); n.agenda.ktopic=""; n.agenda.korg=""; ["kobjective","kintro","kmaterials","kminutes"].forEach(function(k){delete n.agenda[k];}); n.agenda.u=now();
   if(carry){
     n.assigns=clone(S.assigns||[]);
     var nd=S.agenda.next||(S.meta.date?addDaysISO(S.meta.date,7):""); if(nd) n.meta.date=nd;

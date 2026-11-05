@@ -31,7 +31,7 @@ function renderAll(){
   document.body.classList.toggle("focus",inFocus());
   if(curView()!=="role") v.innerHTML=curView()==="now"?dashHTML():agendaViewHTML();
   else if(inFocus()) v.innerHTML=focusHTML();
-  else if(L.role==="coord"){ var cu=coordUnlocked(), won=cu&&S.wrap.on; var ct=coTab(); v.innerHTML=(won?endMeetingHTML():"")+coordHTML()+(cu?(ct==="setup"?healthHTML()+availabilityHTML():ct==="people"?coorgHTML()+attendanceHTML()+feedbackPinsHTML():ct==="after"?(won?"":endMeetingHTML())+autoRecHTML()+progressHTML()+ideasHTML():""):""); }
+  else if(L.role==="coord"){ var cu=coordUnlocked(), won=cu&&S.wrap.on; var ct=coTab(); v.innerHTML=(won?endMeetingHTML():"")+coordHTML()+(cu&&ct==="after"?actionsHTML():"")+(cu?(ct==="setup"?healthHTML()+availabilityHTML():ct==="people"?coorgHTML()+attendanceHTML()+feedbackPinsHTML():ct==="after"?(won?"":endMeetingHTML())+autoRecHTML()+progressHTML()+ideasHTML():""):""); }
   else if(L.role==="tmod") v.innerHTML=(S.vote.state!=="closed"?'<section class="card" style="margin-bottom:12px">'+voteControlHTML(false,true)+'</section>':'')+tmodHTML();
   else if(L.role==="ge") v.innerHTML=geHTML();
   else if(L.role==="seval"||L.role==="tteval") v.innerHTML=evalHTML();
@@ -39,11 +39,13 @@ function renderAll(){
   else if(L.role==="member") v.innerHTML=memberHTML();
   else if(L.role==="president") v.innerHTML=presidentHTML();
   else if(L.role==="saa") v.innerHTML=saaHTML();
+  else if(L.role==="keynote") v.innerHTML=keynoteHTML();
   else if(L.role==="speaker") v.innerHTML=speakerHTML();
   else if(L.role==="timer") v.innerHTML=timerHTML();
   else if(L.role==="ttm") v.innerHTML=ttmHTML();
   else if(L.role==="ah") v.innerHTML=ahHTML();
   else v.innerHTML=gramHTML();
+  if(curView()==="role") v.insertAdjacentHTML("beforeend",handoverHTML());
   var tp=tipsHTML(); if(tp) v.insertAdjacentHTML("afterbegin",tp);
   var db=dryBannerHTML(); if(db) v.insertAdjacentHTML("afterbegin",db);
   if(curView()==="role" && !inFocus() && L.role!=="coord" && !(S.run&&S.run.cur)){ var up=upcomingHTML(false); if(up) v.insertAdjacentHTML("afterbegin",up); }

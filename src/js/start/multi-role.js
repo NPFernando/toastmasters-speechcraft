@@ -6,7 +6,7 @@ function dropRole(id){ myRoles(); if(L.roles.length<2) return; L.roles=L.roles.f
 /* roles the agenda gives this person today */
 function agendaRolesFor(name){
   if(!name) return []; var k=nkey(name), out=[];
-  ["coord","president","saa","tmod","ge","ttm","rrm","timer","ah","gram"].forEach(function(r){ if(nkey(assigned(r))===k) out.push(r); });
+  ["keynote","coord","president","saa","tmod","ge","ttm","rrm","timer","ah","gram"].forEach(function(r){ if(nkey(assigned(r))===k) out.push(r); });
   if(asList("sevals").some(function(n){return nkey(n)===k;})||S.assigns.some(function(a){return nkey(a.evaluator)===k;})) out.push("seval");
   if(asList("ttevals").some(function(n){return nkey(n)===k;})) out.push("tteval");
   if(asList("speakers").some(function(n){return nkey(n)===k;})) out.push("speaker");

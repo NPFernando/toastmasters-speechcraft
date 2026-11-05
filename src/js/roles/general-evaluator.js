@@ -15,7 +15,7 @@ function voteControlHTML(canOpen,canReveal){
   return h;
 }
 function geHTML(){
-  var h='<section class="card">'+voteControlHTML(true,false)+geObservationsHTML();
+  var h='<section class="card">'+voteControlHTML(true,false)+geObservationsHTML()+geAgendaHTML()+actionsHTML();
   h+='<h2 class="sec">📣 Call for reports</h2><div class="sumlist">'+reportsSummary().map(function(x){ return '<div><b>'+x[0]+'</b>'+(x[1]?' · '+esc(x[1]):'')+'<div class="muted">'+esc(x[2])+'</div></div>'; }).join("")+'</div><div class="row" style="margin-top:6px"><button class="btn" id="geReport">📄 Open full report</button>'+copyBtn("ge")+'</div>';
   h+='<h2 class="sec">🗣 Evaluations</h2><table class="sumtable"><thead><tr><th>Speaker</th><th>Type</th><th>Assigned</th><th>Status</th></tr></thead><tbody>';
   var rows=preparedSpeakers().map(function(n){return [n,"ps"];}).concat(ttSpeakers().map(function(n){return [n,"tt"];}));
@@ -46,6 +46,7 @@ function geObservationLines(){
   GE_SECTIONS.forEach(function(section){ section[1].forEach(function(item){var k='check_'+item[0], v=S.genotes[k], note=S.genotes[k+'_note']; if(v||note) out.push(section[0]+' — '+item[1]+': '+(GE_STATUS[v]||'Not observed')+(note?' — '+note:''));}); });
   [['plannedStart','Scheduled start'],['actualStart','Actual start'],['plannedEnd','Scheduled end'],['actualEnd','Actual end'],['rrFormat','Round Robin format / agreed rule'],['action','Priority recommendation / next action']].forEach(function(x){if(S.genotes[x[0]]) out.push(x[1]+': '+S.genotes[x[0]]);});
   S.rows.rr.forEach(function(r){var k='rr_'+r.id, last=S.genotes[k+'_last'], first=S.genotes[k+'_first'], result=S.genotes[k+'_result']; if(last||first||result) out.push('Round Robin — '+r.name+': previous speaker’s last word: '+(last||'not recorded')+'; opening word: '+(first||'not recorded')+'; followed agreed rule: '+(GE_STATUS[result]||'Not observed'));});
+  workflowReportLines().forEach(function(line){out.push(line);});
   return out;
 }
 function geHasNotes(){ return !!(S.genotes.good||S.genotes.improve||geObservationLines().length); }

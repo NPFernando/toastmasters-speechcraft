@@ -1,6 +1,6 @@
 /* ---------- welcome: pick role, then host / join ---------- */
 var W={step:"role",role:null,code:""};
-var ROLE_DESC={president:"Opens and closes the meeting, welcomes guests by name",saa:"Room set-up, greets members and guests, packs up",speaker:"Your speech title, time limits, result and private feedback",ge:"Calls for reports, tracks evaluations, opens voting",rrm:"Round Robin questions; queues each person on the Timer",seval:"Commend / Recommend / Commend for prepared speakers",tteval:"Commend / Recommend / Commend for Table Topics speakers",member:"Check in, vote, send notes, see your feedback card",coord:"Sets up the agenda, role players and members (PIN)",tmod:"Runs the meeting: Now / Next, on time or behind",timer:"Times every speaker and shows the signals",ttm:"Runs Table Topics and calls the speakers",ah:"Counts filler words for each speaker",gram:"Word of the Day, great phrases and slips"};
+var ROLE_DESC={keynote:"Educational topic, objectives, introduction, materials and presentation timing",president:"Opens and closes the meeting, welcomes guests by name",saa:"Room set-up, greets members and guests, packs up",speaker:"Your speech title, time limits, result and private feedback",ge:"Calls for reports, tracks evaluations, opens voting",rrm:"Round Robin questions; queues each person on the Timer",seval:"Commend / Recommend / Commend for prepared speakers",tteval:"Commend / Recommend / Commend for Table Topics speakers",member:"Check in, vote, send notes, see your feedback card",coord:"Sets up the agenda, role players and members (PIN)",tmod:"Runs the meeting: Now / Next, on time or behind",timer:"Times every speaker and shows the signals",ttm:"Runs Table Topics and calls the speakers",ah:"Counts filler words for each speaker",gram:"Word of the Day, great phrases and slips"};
 var SITE_URL="https://npfernando.github.io/toastmasters-speechcraft/";
 function baseUrl(){ return (/^https?:/.test(location.protocol) ? location.origin+location.pathname : SITE_URL)+(NS===".practice"?"?as=practice":""); }
 function inviteLink(code){ return baseUrl()+"#join="+fmtCode(code); }
@@ -40,7 +40,7 @@ function refreshWelcome(){
   }
   if(document.getElementById("qrModal").classList.contains("on")) renderPhoneQR();
 }
-var ROLE_GROUPS=[["Running the meeting",["coord","president","tmod","ge","saa"]],["Timing & reports",["timer","ttm","rrm","ah","gram"]],["Speakers & evaluators",["speaker","seval","tteval"]],["Audience",["member"]]];
+var ROLE_GROUPS=[["Running the meeting",["coord","president","tmod","ge","saa"]],["Timing & reports",["timer","ttm","rrm","ah","gram"]],["Speakers & evaluators",["keynote","speaker","seval","tteval"]],["Audience",["member"]]];
 function wName(){ return W.name!=null?W.name:(L.setup?(L.me||myName()||""):(L.me||"")); }
 function roleCardHTML(r,today){
   var on=(W.sel||[]).indexOf(r.id)>=0, holder=S.people[r.id]||assigned(r.id)||"", nm=wName();

@@ -1,5 +1,5 @@
 /* ---------- finish the meeting: every role confirms it is done ---------- */
-var FIN_ROLES=["president","saa","tmod","ge","timer","ttm","rrm","ah","gram","seval","tteval"];
+var FIN_ROLES=["keynote","president","saa","tmod","ge","timer","ttm","rrm","ah","gram","seval","tteval"];
 function finRoleName(r){ var o=roleObj(r); return o?o.name:r; }
 function finNameFor(r){ return MULTI_ROLES[r] ? ((L.myNames||{})[r]||L.me||"") : (S.people[r]||assigned(r)||""); }
 function finId(r,name){ return "f|"+r+"|"+(MULTI_ROLES[r]?nkey(name||devId()):""); }

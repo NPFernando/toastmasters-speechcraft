@@ -74,7 +74,7 @@ function runAdjReset(){ S.run.by=runBy(); S.run.adj={}; tick(S.run); commit(); }
 function runAdjTotal(){ var c=curItem(), n=c.cur?c.next:null; return n&&S.run.adj?(S.run.adj[n.id]||0):0; }
 function extraText(x){
   if(x==="speakers"){ var sp=uniq(asList("speakers").concat(S.speeches.filter(function(s){return s.type!=="tt";}).map(function(s){return s.name;}))); return sp.length?"Speakers: "+sp.map(function(n){ var t=speechTitle(n); return n+(t?" — “"+t+"”":""); }).join(", "):""; }
-  if(x==="keynote"){ var k=assigned("keynote"); return k?(k+(S.agenda.korg?" ("+S.agenda.korg+")":"")+(S.agenda.ktopic?" — "+S.agenda.ktopic:"")):""; }
+  if(x==="keynote"){ var k=assigned("keynote"); return k?(k+(S.agenda.korg?" ("+S.agenda.korg+")":"")+(S.agenda.ktopic?" — "+S.agenda.ktopic:"")+(S.agenda.kobjective?"\nObjectives: "+S.agenda.kobjective:"")+(S.agenda.kintro?"\nIntroduction: "+S.agenda.kintro:"")+(S.agenda.kmaterials?"\nMaterials: "+S.agenda.kmaterials:"")):""; }
   if(x==="ttevals"){ var tv=asList("ttevals"); return tv.length?"Evaluators: "+tv.join(", "):""; }
   if(x==="evals"){
     var p=[]; ["timer","ah","gram"].forEach(function(k){ if(assigned(k)) p.push(arole(k).n+" – "+assigned(k)); });
