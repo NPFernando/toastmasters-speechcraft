@@ -65,6 +65,16 @@ function renderMeta(){
   var r=ROLES.find(function(x){return x.id===L.role;});
   document.getElementById("myNameLbl").textContent="Your name ("+r.name+")";
 }
+/* Identify phones rather than narrow windows: tablets retain the transfer shortcut. */
+function isPhoneDevice(){
+  var ua=navigator.userAgent||"";
+  if(/ipad/i.test(ua)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1)) return false;
+  if(navigator.userAgentData&&navigator.userAgentData.mobile===true) return true;
+  if(/iphone|ipod|windows phone|iemobile|android.*mobile/i.test(ua)) return true;
+  if(/android/i.test(ua)) return false; /* Android tablet UA omits Mobile. */
+  var scr=window.screen;
+  return !!(navigator.maxTouchPoints>0&&scr&&Math.min(scr.width,scr.height)<600&&window.matchMedia&&window.matchMedia("(pointer: coarse)").matches);
+}
 function renderRoles(){
   var r=ROLES.find(function(x){return x.id===L.role;});
   var team=ROLES.filter(function(x){return x.id!==L.role && S.people[x.id];}).map(function(x){return x.icon+" "+esc(S.people[x.id]);});
@@ -75,7 +85,7 @@ function renderRoles(){
   } else if(NET.mode){ sub='<span class="doty"></span>'+esc(NET.msg||"Connecting…"); }
   else sub=team.length?'Team: '+team.join(" · ")+' · <i>not connected</i>':'Your role on this device · not connected';
   document.getElementById("roles").innerHTML=roleTabsHTML()+linkBarHTML()+'<div class="me">'+r.icon+' <b>'+r.name+'</b>'+(myName()?' · '+esc(myName()):'')+
-    '<small>'+sub+'</small></div><button class="btn sm" data-open-phone title="Show a QR code to open your role on your phone">📱 Open on phone</button>'+(FOCUS_ROLES[L.role]?'<button class="btn sm" data-focus="on" title="Show only what this role needs right now">🎯 Focus</button>':'')+(TIPS[L.role]?'<button class="btn sm" data-tips title="Show the tips for this role again">💡 Tips</button>':'')+'<button class="btn sm" data-change-role>Change role</button>';
+    '<small>'+sub+'</small></div>'+(isPhoneDevice()?'':'<button class="btn sm" data-open-phone title="Show a QR code to open your role on your phone">📱 Open on phone</button>')+(FOCUS_ROLES[L.role]?'<button class="btn sm" data-focus="on" title="Show only what this role needs right now">🎯 Focus</button>':'')+(TIPS[L.role]?'<button class="btn sm" data-tips title="Show the tips for this role again">💡 Tips</button>':'')+'<button class="btn sm" data-change-role>Change role</button>';
 }
 /* the speaker's own live card: big clock and the Timer's signal colour on their device */
 function myNameKeys(){ var a=[myName(),L.me]; Object.keys(L.myNames||{}).forEach(function(k){ a.push(L.myNames[k]); }); return uniq(a.filter(function(n){return n&&String(n).trim();}).map(nkey)); }
