@@ -41,7 +41,7 @@ function finChecks(r){
 function finExpected(){
   var out=[], seen={};
   var add=function(r,name){ var id=finId(r,name); if(seen[id]) return; seen[id]=1; out.push({r:r,name:name||"",id:id}); };
-  ["president","saa","tmod","ge","timer","ttm","rrm","ah","gram"].forEach(function(r){ var n=assigned(r)||S.people[r]; if(n) add(r,n); });
+  ["keynote","president","saa","tmod","ge","timer","ttm","rrm","ah","gram"].forEach(function(r){ var n=assigned(r)||S.people[r]; if(n) add(r,n); });
   asList("sevals").forEach(function(n){ add("seval",n); }); S.assigns.forEach(function(a){ if(a.evaluator) add("seval",a.evaluator); });
   asList("ttevals").forEach(function(n){ add("tteval",n); });
   (NET.peers||[]).forEach(function(p){ (Array.isArray(p.roles)&&p.roles.length?p.roles:[p.role]).forEach(function(r){ if(FIN_ROLES.indexOf(r)>=0) add(r,MULTI_ROLES[r]?p.name:(assigned(r)||S.people[r]||p.name)); }); });

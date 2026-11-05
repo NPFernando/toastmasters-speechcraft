@@ -38,9 +38,9 @@ module.exports = async (b) => {
   const K = await T.device(b, { phone: true, url: T.URL + "#join=" + code + "&guest=1" });
   await T.eventually(async () => !(await K.isDisabled("#gCheck")), "second guest connected", 20000);
   await K.fill("#gName", "TM Nalin De Abrew"); await K.click("#gCheck");
-  await T.eventually(async () => /agenda as a speaker/.test(await K.innerText("#wbox")), "guest speaker recognised");
+  await T.eventually(async () => /agenda as an educational presenter/.test(await K.innerText("#wbox")), "guest speaker recognised");
   await K.click("#gDone");
-  T.assert.match(await K.innerText("#roles"), /Speaker/);
+  T.assert.match(await K.innerText("#roles"), /Educational Presenter/);
   await T.coTab(C, "people");
   await T.eventually(async () => { const t = await C.innerText("#view"); return /Kasun Perera/.test(t) && /TM Nalin De Abrew/.test(t); }, "guests in the Coordinator's attendance");
   // "you're up next": the Toastmaster moves through the agenda; the speaker is nudged before their session
@@ -48,6 +48,6 @@ module.exports = async (b) => {
   await M.click("#runStart");
   for (let i = 0; i < 5; i++) { await M.click("#runNext"); await T.sleep(250); }
   await T.eventually(async () => /You.re up next: Toastmaster of the Day/.test(await L.innerText("#nudge")), "speaker nudged before the Prepared Speech session");
-  await T.eventually(async () => /You.re on now: Keynote Speaker/.test(await K.innerText("#nudge")), "keynote guest nudged when it's their turn");
+  await T.eventually(async () => /You.re on now: Educational Presenter/.test(await K.innerText("#nudge")), "keynote guest nudged when it's their turn");
   T.noErrors(C, L, G, K, M);
 };

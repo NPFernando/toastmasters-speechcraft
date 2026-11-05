@@ -1,6 +1,6 @@
 /* ---------- Stage 2: evaluators, General Evaluator, voting, Round Robin, members ---------- */
 var MULTI_ROLES={seval:1,tteval:1,member:1,speaker:1};
-function myName(){ if(L.role==="coord"){ var mc=myCo(); if(mc) return mc.name; } return MULTI_ROLES[L.role] ? ((L.myNames||{})[L.role]||L.me||"") : (S.people[L.role]||""); }
+function myName(){ if(L.role==="keynote") return S.people.keynote||assigned("keynote")||L.me||""; if(L.role==="coord"){ var mc=myCo(); if(mc) return mc.name; } return MULTI_ROLES[L.role] ? ((L.myNames||{})[L.role]||L.me||"") : (S.people[L.role]||""); }
 function setMyName(v){ if(L.role==="coord"&&myCo()){ var mc=myCo(); mc.name=String(v||"").trim()||mc.name; tick(mc); commitQuiet(); return; } return setMyName0(v); }
 function setMyName0(v){
   if(v) L.me=v;
