@@ -88,3 +88,10 @@ Verified 5 November 2026. Open any role guide in the app to find its sources. Ex
 - [Alternative: A Toastmaster Wears Many Hats](https://www.toastmasters.org/resources/a-toastmaster-wears-many-hats)
 - [Backup PDF: A Toastmaster Wears Many Hats](https://ccdn.toastmasters.org//medias/files/pathways/toastmaster-wears-many-hats/1167d-a-toastmaster-wears-many-hats.pdf)
 
+
+## keynote
+
+- [Official: Meeting Speaker — general guidance](https://www.toastmasters.org/membership/club-meeting-roles/meeting-speaker)
+- [Official: Speechcraft overview](https://www.toastmasters.org/education/speechcraft)
+
+All 15 role guides are available as a self-contained offline HTML pack from the portal. Official manuals remain external source links.
