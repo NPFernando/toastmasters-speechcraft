@@ -14,6 +14,10 @@ function agendaRoleNames(role){
     default: return asList(role);
   }
 }
+function agendaNames(){
+  return uniq(ROLES.flatMap(function(role){ return agendaRoleNames(role.id); }));
+}
+function meetingNames(){ return uniq(memberNames().concat(agendaNames())); }
 function agendaRolesFor(name){
   if(!name) return [];
   var key=nkey(name);

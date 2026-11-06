@@ -75,11 +75,11 @@ function addName(st,name){
 }
 function remember(name){ if(addName(S,name)){ save(); NET.push(); renderRoster(); } }
 function renderRoster(){
-  var all=memberNames().concat(S.names);
+  var all=meetingNames().concat(S.names);
   SESSIONS.forEach(function(s){ S.rows[s.id].forEach(function(r){ if(r.name&&r.name.trim()&&!r.ak) all.push(r.name.trim()); }); });
   var seen={}, list=[];
   all.forEach(function(n){ var k=n.toLowerCase(); if(!seen[k]){ seen[k]=1; list.push(n); } });
   document.getElementById("roster").innerHTML=list.map(function(n){return '<option value="'+esc(n)+'">';}).join("");
 }
-function renderMemberList(){ var el=document.getElementById("memberlist"); if(el) el.innerHTML=memberNames().map(function(n){return '<option value="'+esc(n)+'">';}).join(""); }
+function renderMemberList(){ var el=document.getElementById("memberlist"); if(el) el.innerHTML=meetingNames().map(function(n){return '<option value="'+esc(n)+'">';}).join(""); }
 

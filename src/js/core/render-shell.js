@@ -24,6 +24,7 @@ function softRender(){ if(editingInApp()){ pendingRender=true; renderLiveOnly();
 document.addEventListener("focusout",function(){ if(!pendingRender) return; setTimeout(function(){ if(pendingRender && !editingInApp()){ pendingRender=false; renderAll(); } },250); });
 
 function renderAll(){
+  populateAgendaMembers();
   pendingRender=false; renderNav(); renderProj();
   renderMeta(); renderRoles(); renderRoster();
   renderLive(); renderNow();

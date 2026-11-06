@@ -129,7 +129,7 @@ function coordHTML(){
   if(!NET.room) h+='<div class="note" style="margin-bottom:8px">Tip: start a meeting (top of the page) and share its code or QR in your group chat before the meeting. Everyone who joins gets this agenda and their names automatically.</div>';
   var CT=coTab();
   h+=coTabsHTML(CT);
-  if(CT==="setup"&&!memberNames().length) h+='<div class="note">Start by adding the group’s members on <button class="linkbtn" data-cotab="people">👥 People</button>. Role players are chosen from that list.</div>';
+  if(CT==="setup"&&!memberNames().length) h+='<div class="note">Add recurring members on <button class="linkbtn" data-cotab="people">👥 People</button>. Names entered for agenda roles are saved to Members automatically.</div>';
   if(CT==="setup") h+='<div class="meta" style="margin-top:10px">'+
      '<label class="f">Program title<input class="t" data-ag="title" value="'+esc(A.title)+'"></label>'+
      '<label class="f">Meeting no<input class="t" data-ag="no" value="'+esc(A.no)+'" placeholder="e.g. 05"></label>'+
