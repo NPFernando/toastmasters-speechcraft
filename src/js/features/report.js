@@ -79,7 +79,7 @@ function buildReport(){
   }
   if(inc("gram")){
     h+='<h4>📝 Grammarian’s Report</h4>';
-    if(S.gram.wotd) h+='<div><b>Word of the Day:</b> '+esc(S.gram.wotd)+(S.gram.meaning?' — '+esc(S.gram.meaning):'')+'</div>';
+    if(S.gram.wotd) h+='<div><b>Word of the Day:</b> '+esc(S.gram.wotd)+(S.gram.meaning?' — '+esc(S.gram.meaning):'')+'</div>'+(S.gram.example?'<div><b>Example:</b> '+esc(S.gram.example)+'</div>':'');
     if(S.gramRows.length){
       h+='<table style="margin-top:6px"><thead><tr><th>Speaker</th><th class="c">WOTD uses</th><th>Great phrases</th><th>Slips / corrections</th></tr></thead><tbody>';
       S.gramRows.forEach(function(r){ h+='<tr><td>'+esc(r.name)+'</td><td class="c">'+(r.w||0)+'</td><td>'+esc(r.good.join("; "))+'</td><td>'+esc(r.slips.join("; "))+'</td></tr>'; });

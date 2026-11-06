@@ -12,7 +12,7 @@ function projHTML(){
   } else {
     main='<div class="pj-lbl">Welcome to</div><div class="pj-name">'+esc(S.agenda.title||GROUP)+'</div><div class="pj-who">Speechcraft'+(S.meta.week?' · '+esc(S.meta.week):'')+'</div><div class="pj-sub">'+esc(fmtDate(S.meta.date)||"")+'</div>'+(guestLink()?'<div class="pj-guest">'+qrSvg(guestLink())+'<div>👋 Guests: scan to check in</div></div>':'');
   }
-  var foot=S.gram.wotd?'<div class="pj-wotd"><span>Word of the Day</span><b>'+esc(S.gram.wotd)+'</b>'+(S.gram.meaning?'<i>'+esc(S.gram.meaning)+'</i>':'')+'</div>':'';
+  var foot=S.gram.wotd?'<div class="pj-wotd"><span>Word of the Day</span><b>'+esc(S.gram.wotd)+'</b>'+wordOfDayDetailsHTML()+'</div>':'';
   return '<div class="pj-head"><img src="'+tm+'" alt=""><div>'+esc(GROUP)+(S.meta.week?' · '+esc(S.meta.week):'')+'</div><img class="r" src="'+co+'" alt=""></div><div class="pj-main '+cls+'">'+main+'</div>'+foot+
     '<div class="pj-ctl"><button class="btn" data-pjfull>⛶ Full screen</button><button class="btn" data-pjclose>✕ Close</button></div>';
 }
