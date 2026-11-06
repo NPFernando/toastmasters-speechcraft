@@ -34,7 +34,7 @@
       if(added){ tick(S.members); commit(); } var again=document.getElementById("memIn"); if(again){ again.value=""; again.focus(); } return;
     }
     var kr=t.closest("[data-keyreset]"); if(kr){ var nm=kr.dataset.keyreset; if(!confirm("Reset "+nm+"'s feedback PIN?\n\nThey can set a new one, but feedback encrypted for the old PIN can't be read any more.")) return; var rec=S.keys.find(function(k){return k.id==="k|"+nkey(nm);}); if(rec){ rec.pub=null; rec.wrapped=""; tick(rec); commit(); } return; }
-    var md=t.closest("[data-mdel]"); if(md){ S.members.list=S.members.list.filter(function(m){return m.id!==md.dataset.mdel;}); tick(S.members); commit(); return; }
+    var md=t.closest("[data-mdel]"); if(md){ removeMember(md.dataset.mdel); return; }
     var ra=t.closest("[data-rpadd]"); if(ra){
       var k=ra.dataset.rpadd, box=document.querySelector('[data-rpadd-in="'+k+'"]'), v=(box.value||"").trim(); if(!v) return;
       var arr=asList(k); v.split(/[,;]+/).map(function(x){return x.trim();}).filter(Boolean).forEach(function(n){ if(arr.indexOf(n)<0) arr.push(n); });

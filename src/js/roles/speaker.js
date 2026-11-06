@@ -35,7 +35,7 @@ function feedbackBlock0(cn){
 function speakerHTML(){
   var me=myName(), h='<section class="card">';
   if(!me){
-    h+='<h2 class="sec" style="margin-top:0">Who are you?</h2><div class="chips">'+memberNames().map(function(n){return '<button class="chip" data-spme="'+esc(n)+'">'+esc(n)+'</button>';}).join("")+'</div><div class="saved" style="margin-top:6px">Or type your name in <b>Your name</b> above.</div></section>';
+    h+='<h2 class="sec" style="margin-top:0">Who are you?</h2><div class="chips">'+meetingNames().map(function(n){return '<button class="chip" data-spme="'+esc(n)+'">'+esc(n)+'</button>';}).join("")+'</div><div class="saved" style="margin-top:6px">Or type your name in <b>Your name</b> above.</div></section>';
     return h;
   }
   var s=speechRec(me)||{type:"ps",title:"",obj:"",lim:""};
@@ -54,7 +54,7 @@ function speakerHTML(){
   return h+'</section>';
 }
 function feedbackPinsHTML(){
-  var ms=memberNames(); if(!ms.length) return "";
+  var ms=meetingNames(); if(!ms.length) return "";
   var h='<section class="card" style="margin-top:12px"><h2 class="sec" style="margin-top:0">🔒 Private feedback PINs <span class="cnt">speakers set these themselves in Participant → My feedback card</span></h2><div class="chips">';
   ms.forEach(function(n){ var k=keyRec(n); h+='<span class="chip word">'+(k?'🔒 ':'○ ')+esc(n)+(k?'<button data-keyreset="'+esc(n)+'" title="Reset this PIN">reset</button>':'')+'</span>'; });
   return h+'</div><div class="note">Resetting a PIN lets the speaker set a new one, but feedback encrypted for the old PIN can no longer be read.</div></section>';

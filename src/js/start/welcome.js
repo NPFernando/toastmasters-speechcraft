@@ -63,7 +63,7 @@ function wStartLabel(){
   var o=roleObj(s[0]); return (W.add?"Add ":"Start: ")+o.icon+" "+o.name+(s.length>1?" +"+(s.length-1):"")+" →";
 }
 function wNamesHTML(){
-  var ms=uniq(memberNames().concat(ROLES.flatMap(function(role){ return agendaRoleNames(role.id); }))), nm=wName();
+  var ms=meetingNames(), nm=wName();
   var h='<div class="wlbl">Your name</div>';
   if(ms.length){ var nb=function(n){ return '<button class="chip'+(nkey(n)===nkey(nm)?' active':'')+'" data-wname="'+esc(n)+'">'+esc(n)+kindBadge(n)+'</button>'; };
     var scs=ms.filter(function(n){return memberKind(n)==="sc";}), others=ms.filter(function(n){return memberKind(n)!=="sc";});

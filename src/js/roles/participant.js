@@ -7,7 +7,7 @@ function setPresent(name,on){
   a.present=on; a.week=S.meta.week||a.week; a.date=S.meta.date||a.date; tick(a); commit();
 }
 function memberHTML(){
-  var me=myName(), ms=memberNames(), h='<section class="card">';
+  var me=myName(), ms=meetingNames(), h='<section class="card">';
   h+='<h2 class="sec" style="margin-top:0">✅ Check in</h2><div class="saved" style="margin-bottom:6px">Tap your name when you arrive.</div><div class="chips">'+
      (ms.length?ms.map(function(n){ var p=present(n); return '<button class="chip'+(p?' active':'')+'" data-checkin="'+esc(n)+'">'+(p?'✓ ':'')+esc(n)+'</button>'; }).join(""):'<span class="muted">The Coordinator adds the member list.</span>')+
      '</div><div class="row" style="margin-top:8px"><input class="t" id="guestIn" placeholder="Guest? Type your name"><button class="btn" id="guestAdd">Check in</button></div>'+

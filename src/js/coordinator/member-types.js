@@ -2,13 +2,39 @@
 var KINDS={sc:{i:"🎓",n:"Speechcrafter",p:"Speechcrafters"},tm:{i:"⭐",n:"Toastmaster",p:"Toastmasters"},guest:{i:"👋",n:"Guest",p:"Guests"}};
 function guessKind(name){ var n=String(name||"").trim(); return /^tm[\s.-]/i.test(n)?"tm":"sc"; }
 function memberRec(name){ var k=nkey(name); return S.members.list.find(function(m){ return nkey(m.name)===k; }); }
+function agendaMemberId(name){ return "agenda-member|"+nkey(name); }
+function populateAgendaMembers(){
+  if(L.role!=="coord" || !coordUnlocked() || PRACTICE || S.meta.test) return;
+  var added=false, guests=new Set(S.guests.map(function(g){ return nkey(g.name); }));
+  agendaNames().forEach(function(name){
+    var id=agendaMemberId(name);
+    if(memberRec(name) || S.members.fu["m."+id] || guests.has(nkey(name))) return;
+    var roles=agendaRolesFor(name);
+    S.members.list.push({id:id,name:name,kind:roles.length===1&&roles[0]==="keynote"?"guest":guessKind(name)});
+    added=true;
+  });
+  if(added) commitQuiet();
+}
+// Record a deletion for the automatic entry even when the saved member had a manual ID.
+function excludeAgendaMember(name){
+  var key="m."+agendaMemberId(name);
+  S.members.fu[key]=Math.max(now(),(S.members.fu[key]||0)+1);
+}
+function removeMember(id){
+  var member=S.members.list.find(function(m){ return m.id===id; });
+  if(!member) return;
+  excludeAgendaMember(member.name);
+  S.members.list=S.members.list.filter(function(m){ return m.id!==id && m.id!==agendaMemberId(member.name); });
+  tick(S.members);
+  commit();
+}
 function memberKind(name){ var m=memberRec(name); if(m) return m.kind||guessKind(m.name); if(/^tm[\s.-]/i.test(String(name||""))) return "tm"; return S.guests.some(function(g){return nkey(g.name)===nkey(name);})?"guest":"sc"; }
 function kindBadge(name,long){ var k=memberKind(name); if(k==="sc") return ""; var m=memberRec(name); return ' <span class="kbadge k-'+k+'" title="'+KINDS[k].n+(m&&m.club?' · '+esc(m.club):'')+'">'+(k==="tm"?"⭐ TM":"👋 Guest")+(long&&m&&m.club?' · '+esc(m.club):'')+'</span>'; }
 function awardEligible(name){ return memberKind(name)!=="tm" || !!S.members.tmAwards; }
 function membersEditorHTML(){
   var groups={sc:[],tm:[],guest:[]};
   S.members.list.forEach(function(m){ (groups[m.kind||guessKind(m.name)]||groups.sc).push(m); });
-  var h='';
+  var h='<div class="saved">Agenda names are added automatically. Remove a one-time guest here to keep them on this meeting’s agenda only.</div>';
   ["sc","tm","guest"].forEach(function(k){
     if(!groups[k].length&&k!=="sc") return;
     h+='<div class="kgroup"><div class="kgh">'+KINDS[k].i+' '+KINDS[k].p+' <span class="cnt">'+groups[k].length+'</span></div><div class="chips">'+

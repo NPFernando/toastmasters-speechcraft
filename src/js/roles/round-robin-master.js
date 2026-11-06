@@ -19,7 +19,7 @@ function rrHTML(){
   h+='<div class="curtopic"><div class="lbl">Round Robin question · the same for everyone</div><div class="txt" id="rrQText">'+esc(cur.text)+'</div>'+
      (S.rrcur.last?'<div class="rrpick" aria-live="polite">🎲 <b>'+esc(S.rrcur.last)+'</b></div>':'')+
      '<div class="row"><button class="btn go big1" id="rrRandom"'+(left.length?'':' disabled')+'>🎲 Pick next at random</button><button class="btn" id="rrShow">📺 Show on screen</button><button class="linkbtn" id="rrEdit">Edit question</button></div>'+
-     '<div class="saved" style="margin-top:6px">'+(pool.length?(left.length?(pool.length-left.length)+' of '+pool.length+' have had a turn or are queued · '+left.length+' to go':'🎉 Everyone has had a turn'):'No one '+(rrHereOnly()?'checked in or connected yet — untick “Only people here”':'on the member list yet'))+'</div></div>';
+     '<div class="saved" style="margin-top:6px">'+(pool.length?(left.length?(pool.length-left.length)+' of '+pool.length+' have had a turn or are queued · '+left.length+' to go':'🎉 Everyone has had a turn'):'No one '+(rrHereOnly()?'checked in or connected yet — untick “Only people here”':'on the agenda or member list yet'))+'</div></div>';
   h+='<div class="rrstat" aria-live="polite">'+(live?'🎙 <b>'+esc(live.name)+'</b> is speaking':'Waiting for the Timer')+' · ✓ '+nDone+' done'+(nQ?' · ⏳ '+nQ+' queued':'')+'</div>';
   var people=uniq(pool.concat(mine.map(function(r){return r.name;})));
   var memberK={}; memberNames().forEach(function(n){ memberK[nkey(n)]=1; });
@@ -35,8 +35,8 @@ function rrHTML(){
   return h+'</section>';
 }
 /* who can be picked: the member list (and names used before), optionally only people here today */
-function rrHereOnly(){ if(L.rrHere!=null) return !!L.rrHere; return uniq(memberNames().concat(S.names)).some(function(n){ return present(n)||isOnlineName(n); }); }
-function rrPool(){ var all=uniq(memberNames().concat(S.names)).filter(function(n){return !rrHidden(n);}); return rrHereOnly()?all.filter(function(n){ return present(n)||isOnlineName(n); }):all; }
+function rrHereOnly(){ if(L.rrHere!=null) return !!L.rrHere; return uniq(meetingNames().concat(S.names)).some(function(n){ return present(n)||isOnlineName(n); }); }
+function rrPool(){ var all=uniq(meetingNames().concat(S.names)).filter(function(n){return !rrHidden(n);}); return rrHereOnly()?all.filter(function(n){ return present(n)||isOnlineName(n); }):all; }
 function rrLeft(){ var cur=rrById(S.rrcur.id); if(!cur) return []; var done=S.rows.rr.filter(function(r){return r.qid===cur.id;}).map(function(r){return nkey(r.name);}); return rrPool().filter(function(n){ return done.indexOf(nkey(n))<0; }); }
 function rrRandom(){ var left=rrLeft(); if(!left.length){ alert("Everyone has had a turn."); return null; } var n=left[Math.floor(Math.random()*left.length)]; rrCall(n); return n; }
 function rrCall(name,quiet){

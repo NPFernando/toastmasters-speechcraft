@@ -892,13 +892,13 @@ function addName(st,name){
 }
 function remember(name){ if(addName(S,name)){ save(); NET.push(); renderRoster(); } }
 function renderRoster(){
-  var all=memberNames().concat(S.names);
+  var all=meetingNames().concat(S.names);
   SESSIONS.forEach(function(s){ S.rows[s.id].forEach(function(r){ if(r.name&&r.name.trim()&&!r.ak) all.push(r.name.trim()); }); });
   var seen={}, list=[];
   all.forEach(function(n){ var k=n.toLowerCase(); if(!seen[k]){ seen[k]=1; list.push(n); } });
   document.getElementById("roster").innerHTML=list.map(function(n){return '<option value="'+esc(n)+'">';}).join("");
 }
-function renderMemberList(){ var el=document.getElementById("memberlist"); if(el) el.innerHTML=memberNames().map(function(n){return '<option value="'+esc(n)+'">';}).join(""); }
+function renderMemberList(){ var el=document.getElementById("memberlist"); if(el) el.innerHTML=meetingNames().map(function(n){return '<option value="'+esc(n)+'">';}).join(""); }
 
 /* ---------- merge (for live sync and restore) ---------- */
 function mergeColl(a,b,dead){
@@ -1126,6 +1126,7 @@ function softRender(){ if(editingInApp()){ pendingRender=true; renderLiveOnly();
 document.addEventListener("focusout",function(){ if(!pendingRender) return; setTimeout(function(){ if(pendingRender && !editingInApp()){ pendingRender=false; renderAll(); } },250); });
 
 function renderAll(){
+  populateAgendaMembers();
   pendingRender=false; renderNav(); renderProj();
   renderMeta(); renderRoles(); renderRoster();
   renderLive(); renderNow();
@@ -1708,13 +1709,39 @@ function coorgHTML(){
 var KINDS={sc:{i:"🎓",n:"Speechcrafter",p:"Speechcrafters"},tm:{i:"⭐",n:"Toastmaster",p:"Toastmasters"},guest:{i:"👋",n:"Guest",p:"Guests"}};
 function guessKind(name){ var n=String(name||"").trim(); return /^tm[\s.-]/i.test(n)?"tm":"sc"; }
 function memberRec(name){ var k=nkey(name); return S.members.list.find(function(m){ return nkey(m.name)===k; }); }
+function agendaMemberId(name){ return "agenda-member|"+nkey(name); }
+function populateAgendaMembers(){
+  if(L.role!=="coord" || !coordUnlocked() || PRACTICE || S.meta.test) return;
+  var added=false, guests=new Set(S.guests.map(function(g){ return nkey(g.name); }));
+  agendaNames().forEach(function(name){
+    var id=agendaMemberId(name);
+    if(memberRec(name) || S.members.fu["m."+id] || guests.has(nkey(name))) return;
+    var roles=agendaRolesFor(name);
+    S.members.list.push({id:id,name:name,kind:roles.length===1&&roles[0]==="keynote"?"guest":guessKind(name)});
+    added=true;
+  });
+  if(added) commitQuiet();
+}
+// Record a deletion for the automatic entry even when the saved member had a manual ID.
+function excludeAgendaMember(name){
+  var key="m."+agendaMemberId(name);
+  S.members.fu[key]=Math.max(now(),(S.members.fu[key]||0)+1);
+}
+function removeMember(id){
+  var member=S.members.list.find(function(m){ return m.id===id; });
+  if(!member) return;
+  excludeAgendaMember(member.name);
+  S.members.list=S.members.list.filter(function(m){ return m.id!==id && m.id!==agendaMemberId(member.name); });
+  tick(S.members);
+  commit();
+}
 function memberKind(name){ var m=memberRec(name); if(m) return m.kind||guessKind(m.name); if(/^tm[\s.-]/i.test(String(name||""))) return "tm"; return S.guests.some(function(g){return nkey(g.name)===nkey(name);})?"guest":"sc"; }
 function kindBadge(name,long){ var k=memberKind(name); if(k==="sc") return ""; var m=memberRec(name); return ' <span class="kbadge k-'+k+'" title="'+KINDS[k].n+(m&&m.club?' · '+esc(m.club):'')+'">'+(k==="tm"?"⭐ TM":"👋 Guest")+(long&&m&&m.club?' · '+esc(m.club):'')+'</span>'; }
 function awardEligible(name){ return memberKind(name)!=="tm" || !!S.members.tmAwards; }
 function membersEditorHTML(){
   var groups={sc:[],tm:[],guest:[]};
   S.members.list.forEach(function(m){ (groups[m.kind||guessKind(m.name)]||groups.sc).push(m); });
-  var h='';
+  var h='<div class="saved">Agenda names are added automatically. Remove a one-time guest here to keep them on this meeting’s agenda only.</div>';
   ["sc","tm","guest"].forEach(function(k){
     if(!groups[k].length&&k!=="sc") return;
     h+='<div class="kgroup"><div class="kgh">'+KINDS[k].i+' '+KINDS[k].p+' <span class="cnt">'+groups[k].length+'</span></div><div class="chips">'+
@@ -1832,7 +1859,10 @@ function dryBannerHTML(){ return S.meta&&S.meta.test?'<div class="drybanner" rol
       if(!confirm("Finish the dry run and clean up?\n\n• Clears this meeting’s speakers, times, topics, counts, feedback and votes on every connected device\n• Removes today’s test attendance"+(tm.length?"\n• Removes "+tm.length+" test member"+(tm.length===1?"":"s")+" ("+tm.map(function(m){return m.name;}).join(", ")+")":"")+"\n\nMembers, PIN, agenda, role players and settings are kept.")) return;
       var mid=S.mid;
       S.attend.forEach(function(a){ if(a.mid===mid){ a.void=true; a.present=false; a.u=Math.max(now(),(a.u||0)+1); } });
-      if(tm.length){ S.members.list=S.members.list.filter(function(m){return !m.test;}); tick(S.members); }
+      S.members.list=S.members.list.filter(function(m){return !m.test;});
+      // Keep the dry-run agenda as a draft without turning its test names into saved members.
+      agendaNames().forEach(function(name){ if(!memberRec(name)) excludeAgendaMember(name); });
+      tick(S.members);
       var keepAssign=clone(S.agenda.assign), keepAssigns=clone(S.assigns||[]), keepMeta={date:S.meta.date,week:S.meta.week}, keepNo=S.agenda.no, keepNext=S.agenda.next;
       newMeetingCore(false);
       S.agenda.assign=keepAssign; S.agenda.no=keepNo; S.agenda.next=keepNext; S.assigns=keepAssigns; S.meta.date=keepMeta.date; S.meta.week=keepMeta.week; delete S.meta.test; tick(S.meta); tick(S.agenda); applyAgenda(); commit();
@@ -1875,7 +1905,7 @@ function coordHTML(){
   if(!NET.room) h+='<div class="note" style="margin-bottom:8px">Tip: start a meeting (top of the page) and share its code or QR in your group chat before the meeting. Everyone who joins gets this agenda and their names automatically.</div>';
   var CT=coTab();
   h+=coTabsHTML(CT);
-  if(CT==="setup"&&!memberNames().length) h+='<div class="note">Start by adding the group’s members on <button class="linkbtn" data-cotab="people">👥 People</button>. Role players are chosen from that list.</div>';
+  if(CT==="setup"&&!memberNames().length) h+='<div class="note">Add recurring members on <button class="linkbtn" data-cotab="people">👥 People</button>. Names entered for agenda roles are saved to Members automatically.</div>';
   if(CT==="setup") h+='<div class="meta" style="margin-top:10px">'+
      '<label class="f">Program title<input class="t" data-ag="title" value="'+esc(A.title)+'"></label>'+
      '<label class="f">Meeting no<input class="t" data-ag="no" value="'+esc(A.no)+'" placeholder="e.g. 05"></label>'+
@@ -2314,7 +2344,7 @@ function rrHTML(){
   h+='<div class="curtopic"><div class="lbl">Round Robin question · the same for everyone</div><div class="txt" id="rrQText">'+esc(cur.text)+'</div>'+
      (S.rrcur.last?'<div class="rrpick" aria-live="polite">🎲 <b>'+esc(S.rrcur.last)+'</b></div>':'')+
      '<div class="row"><button class="btn go big1" id="rrRandom"'+(left.length?'':' disabled')+'>🎲 Pick next at random</button><button class="btn" id="rrShow">📺 Show on screen</button><button class="linkbtn" id="rrEdit">Edit question</button></div>'+
-     '<div class="saved" style="margin-top:6px">'+(pool.length?(left.length?(pool.length-left.length)+' of '+pool.length+' have had a turn or are queued · '+left.length+' to go':'🎉 Everyone has had a turn'):'No one '+(rrHereOnly()?'checked in or connected yet — untick “Only people here”':'on the member list yet'))+'</div></div>';
+     '<div class="saved" style="margin-top:6px">'+(pool.length?(left.length?(pool.length-left.length)+' of '+pool.length+' have had a turn or are queued · '+left.length+' to go':'🎉 Everyone has had a turn'):'No one '+(rrHereOnly()?'checked in or connected yet — untick “Only people here”':'on the agenda or member list yet'))+'</div></div>';
   h+='<div class="rrstat" aria-live="polite">'+(live?'🎙 <b>'+esc(live.name)+'</b> is speaking':'Waiting for the Timer')+' · ✓ '+nDone+' done'+(nQ?' · ⏳ '+nQ+' queued':'')+'</div>';
   var people=uniq(pool.concat(mine.map(function(r){return r.name;})));
   var memberK={}; memberNames().forEach(function(n){ memberK[nkey(n)]=1; });
@@ -2330,8 +2360,8 @@ function rrHTML(){
   return h+'</section>';
 }
 /* who can be picked: the member list (and names used before), optionally only people here today */
-function rrHereOnly(){ if(L.rrHere!=null) return !!L.rrHere; return uniq(memberNames().concat(S.names)).some(function(n){ return present(n)||isOnlineName(n); }); }
-function rrPool(){ var all=uniq(memberNames().concat(S.names)).filter(function(n){return !rrHidden(n);}); return rrHereOnly()?all.filter(function(n){ return present(n)||isOnlineName(n); }):all; }
+function rrHereOnly(){ if(L.rrHere!=null) return !!L.rrHere; return uniq(meetingNames().concat(S.names)).some(function(n){ return present(n)||isOnlineName(n); }); }
+function rrPool(){ var all=uniq(meetingNames().concat(S.names)).filter(function(n){return !rrHidden(n);}); return rrHereOnly()?all.filter(function(n){ return present(n)||isOnlineName(n); }):all; }
 function rrLeft(){ var cur=rrById(S.rrcur.id); if(!cur) return []; var done=S.rows.rr.filter(function(r){return r.qid===cur.id;}).map(function(r){return nkey(r.name);}); return rrPool().filter(function(n){ return done.indexOf(nkey(n))<0; }); }
 function rrRandom(){ var left=rrLeft(); if(!left.length){ alert("Everyone has had a turn."); return null; } var n=left[Math.floor(Math.random()*left.length)]; rrCall(n); return n; }
 function rrCall(name,quiet){
@@ -2356,7 +2386,7 @@ function setPresent(name,on){
   a.present=on; a.week=S.meta.week||a.week; a.date=S.meta.date||a.date; tick(a); commit();
 }
 function memberHTML(){
-  var me=myName(), ms=memberNames(), h='<section class="card">';
+  var me=myName(), ms=meetingNames(), h='<section class="card">';
   h+='<h2 class="sec" style="margin-top:0">✅ Check in</h2><div class="saved" style="margin-bottom:6px">Tap your name when you arrive.</div><div class="chips">'+
      (ms.length?ms.map(function(n){ var p=present(n); return '<button class="chip'+(p?' active':'')+'" data-checkin="'+esc(n)+'">'+(p?'✓ ':'')+esc(n)+'</button>'; }).join(""):'<span class="muted">The Coordinator adds the member list.</span>')+
      '</div><div class="row" style="margin-top:8px"><input class="t" id="guestIn" placeholder="Guest? Type your name"><button class="btn" id="guestAdd">Check in</button></div>'+
@@ -2411,7 +2441,7 @@ function attendanceHTML(){
   var mids=[], seen={};
   attendLive().slice().sort(function(a,b){ return String(a.date).localeCompare(String(b.date)); }).forEach(function(a){ if(!seen[a.mid]){ seen[a.mid]={mid:a.mid,label:a.week?a.week.replace(" of 10",""):(a.date||"?")}; mids.push(seen[a.mid]); } });
   if(!seen[S.mid]) mids.push({mid:S.mid,label:(S.meta.week||"Today").replace(" of 10","")});
-  var ms=uniq(memberNames().concat(attendLive().map(function(a){return a.name;})));
+  var ms=uniq(meetingNames().concat(attendLive().map(function(a){return a.name;})));
   var h='<section class="card" style="margin-top:12px"><h2 class="sec" style="margin-top:0">✅ Attendance <span class="cnt">tap a name in the last column to mark today</span></h2><div style="overflow-x:auto"><table class="sumtable"><thead><tr><th>Member</th>'+mids.map(function(m){return '<th>'+esc(m.label)+'</th>';}).join("")+'<th>Total</th></tr></thead><tbody>';
   ms.forEach(function(n){
     var tot=0;
@@ -2579,7 +2609,7 @@ function feedbackBlock0(cn){
 function speakerHTML(){
   var me=myName(), h='<section class="card">';
   if(!me){
-    h+='<h2 class="sec" style="margin-top:0">Who are you?</h2><div class="chips">'+memberNames().map(function(n){return '<button class="chip" data-spme="'+esc(n)+'">'+esc(n)+'</button>';}).join("")+'</div><div class="saved" style="margin-top:6px">Or type your name in <b>Your name</b> above.</div></section>';
+    h+='<h2 class="sec" style="margin-top:0">Who are you?</h2><div class="chips">'+meetingNames().map(function(n){return '<button class="chip" data-spme="'+esc(n)+'">'+esc(n)+'</button>';}).join("")+'</div><div class="saved" style="margin-top:6px">Or type your name in <b>Your name</b> above.</div></section>';
     return h;
   }
   var s=speechRec(me)||{type:"ps",title:"",obj:"",lim:""};
@@ -2598,7 +2628,7 @@ function speakerHTML(){
   return h+'</section>';
 }
 function feedbackPinsHTML(){
-  var ms=memberNames(); if(!ms.length) return "";
+  var ms=meetingNames(); if(!ms.length) return "";
   var h='<section class="card" style="margin-top:12px"><h2 class="sec" style="margin-top:0">🔒 Private feedback PINs <span class="cnt">speakers set these themselves in Participant → My feedback card</span></h2><div class="chips">';
   ms.forEach(function(n){ var k=keyRec(n); h+='<span class="chip word">'+(k?'🔒 ':'○ ')+esc(n)+(k?'<button data-keyreset="'+esc(n)+'" title="Reset this PIN">reset</button>':'')+'</span>'; });
   return h+'</div><div class="note">Resetting a PIN lets the speaker set a new one, but feedback encrypted for the old PIN can no longer be read.</div></section>';
@@ -2885,7 +2915,7 @@ document.addEventListener("fullscreenchange",function(){ if(!document.fullscreen
       if(added){ tick(S.members); commit(); } var again=document.getElementById("memIn"); if(again){ again.value=""; again.focus(); } return;
     }
     var kr=t.closest("[data-keyreset]"); if(kr){ var nm=kr.dataset.keyreset; if(!confirm("Reset "+nm+"'s feedback PIN?\n\nThey can set a new one, but feedback encrypted for the old PIN can't be read any more.")) return; var rec=S.keys.find(function(k){return k.id==="k|"+nkey(nm);}); if(rec){ rec.pub=null; rec.wrapped=""; tick(rec); commit(); } return; }
-    var md=t.closest("[data-mdel]"); if(md){ S.members.list=S.members.list.filter(function(m){return m.id!==md.dataset.mdel;}); tick(S.members); commit(); return; }
+    var md=t.closest("[data-mdel]"); if(md){ removeMember(md.dataset.mdel); return; }
     var ra=t.closest("[data-rpadd]"); if(ra){
       var k=ra.dataset.rpadd, box=document.querySelector('[data-rpadd-in="'+k+'"]'), v=(box.value||"").trim(); if(!v) return;
       var arr=asList(k); v.split(/[,;]+/).map(function(x){return x.trim();}).filter(Boolean).forEach(function(n){ if(arr.indexOf(n)<0) arr.push(n); });
@@ -3325,7 +3355,7 @@ function wStartLabel(){
   var o=roleObj(s[0]); return (W.add?"Add ":"Start: ")+o.icon+" "+o.name+(s.length>1?" +"+(s.length-1):"")+" →";
 }
 function wNamesHTML(){
-  var ms=uniq(memberNames().concat(ROLES.flatMap(function(role){ return agendaRoleNames(role.id); }))), nm=wName();
+  var ms=meetingNames(), nm=wName();
   var h='<div class="wlbl">Your name</div>';
   if(ms.length){ var nb=function(n){ return '<button class="chip'+(nkey(n)===nkey(nm)?' active':'')+'" data-wname="'+esc(n)+'">'+esc(n)+kindBadge(n)+'</button>'; };
     var scs=ms.filter(function(n){return memberKind(n)==="sc";}), others=ms.filter(function(n){return memberKind(n)!=="sc";});
@@ -3429,6 +3459,10 @@ function agendaRoleNames(role){
     default: return asList(role);
   }
 }
+function agendaNames(){
+  return uniq(ROLES.flatMap(function(role){ return agendaRoleNames(role.id); }));
+}
+function meetingNames(){ return uniq(memberNames().concat(agendaNames())); }
 function agendaRolesFor(name){
   if(!name) return [];
   var key=nkey(name);
@@ -4667,7 +4701,7 @@ applyDisplay();
   document.addEventListener("keydown",function(e){ if(e.key==="Escape") M.classList.remove("on"); });
 })();
 /* ---------- home, about and clean-up ---------- */
-var APP_VERSION="3.11.1 · November 2026";
+var APP_VERSION="3.11.2 · November 2026";
 function aboutHTML(){
   var on=!!NET.mode, coord=L.role==="coord";
   return '<div class="finhead"><h2 class="sec" style="margin:0">ℹ️ About</h2><button class="btn ghost" id="aboutClose">Close</button></div>'+
