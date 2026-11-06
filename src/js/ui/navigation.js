@@ -54,7 +54,7 @@ function agendaViewHTML(){
   h+='<div class="saved" style="margin:4px 0 10px">'+esc(fmtDate(S.meta.date)||"")+(A.venue?' · '+esc(A.venue):'')+'</div><div class="agv2">';
   runItems().forEach(function(it){
     var who=whoFor(it.role), st=isSkipped(it.id)?"skip":(c.cur&&c.cur.id===it.id)?"cur":(S.run.started&&S.run.started[it.id]!=null)?"done":"";
-    var x=agExtraHTML(it.x);
+    var x=agExtraHTML(it.x,it);
     h+='<div class="agv2i '+st+'"><div class="agv2t">'+esc(fmtHM(rt(it)))+'</div><div><div class="agv2r">'+esc(arole(it.role).n)+(who?' · <b>'+esc(who)+'</b>':'')+(st==="cur"?' <span class="badge on">Now</span>':st==="skip"?' <span class="badge no">Skipped</span>':'')+'</div><div class="agv2x">'+agActivityHTML(Object.assign({},it,{x:""}))+'</div>'+(x?'<div class="agv2s">'+x+'</div>':'')+'</div></div>';
   });
   h+='</div>'+(A.next?'<div class="saved" style="margin-top:10px">Next meeting: '+esc(fmtDate(A.next))+'</div>':'')+'</section>';

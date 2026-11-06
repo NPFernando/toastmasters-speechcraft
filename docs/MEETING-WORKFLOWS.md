@@ -12,9 +12,9 @@ GE checklist and free-text fields now merge independently using field timestamps
 
 ## Person-based ballots
 
-One ballot per category uses a normalized full voting name across devices. Names are self-declared, not authenticated. People with the same name need distinct agreed voting names. Use the same name on each device. This reduces accidental duplicate voting but is not suitable for elections requiring verified identity or secret ballots. Changing a voting name creates a different identity.
+Select your participant ID on each device. Roster members keep their existing member ID, and guests can register a reusable ID with a distinguishing label. Each ID has one ballot per award in each round. Participants select their own identity.
 
-Old device ballots stay readable. When a device casts a new ballot, its own old ballot for that category is removed. Other historical device ballots cannot be safely attributed to names and are retained; start a new meeting before using the new voting system for a fresh vote. Existing ballots have not been silently assigned to guessed identities.
+Older name and device ballots remain in the meeting record. The General Evaluator can use **Start new voting round** to collect ID-based ballots separately. Starting a new round asks everyone to vote again.
 
 ## Handovers
 

@@ -18,7 +18,7 @@ module.exports = async (b) => {
   await P.fill("#wCode", code); await P.click("#wJoin"); await P.waitForSelector("[data-wname]", { timeout: 20000 });
   T.assert.match((await P.innerText("#wbox")).replace(/\s+/g, " "), /Toastmasters · 👋 Guests TM Nalin De Abrew ⭐ TM Kasun Perera 👋 Guest/, "start screen groups Toastmasters and guests");
   await P.click('[data-wname="SC Rashmi Maneesha"]'); await P.click("[data-wrole=member]"); await P.click("#wNext");
-  const ballot = async () => { await P.click("#openVote"); await P.waitForSelector("#voteModal.on"); const t = await P.innerText("#voteBox"); await P.click("#voteClose"); return t; };
+  const ballot = async () => { await P.click("#openVote"); await P.waitForSelector("#voteModal.on"); const t = await P.locator("#voteBox [data-vcat]").allTextContents(); await P.click("#voteClose"); return t.join(" "); };
   const G = await T.device(b); await T.join(G, code, "SC Rashmi Maneesha", ["ge"]);
   await G.click('[data-vote-set="open"]');
   await T.eventually(() => P.isVisible("#openVote"), "voting open on the phone");

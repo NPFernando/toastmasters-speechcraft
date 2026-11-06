@@ -5,7 +5,7 @@ function blank(){
     people:{coord:"",president:"",saa:"",tmod:"",ge:"",rrm:"",timer:"",ttm:"",ah:"",gram:"",keynote:""}, peopleU:{coord:0,president:0,saa:0,tmod:0,ge:0,rrm:0,timer:0,ttm:0,ah:0,gram:0,keynote:0},
     limits:{tt:{g:60,a:90,r:120},ps:{g:240,a:300,r:360},rr:{b:20},ev:{g:90,a:105,r:120},rep:{g:30,a:45,r:60},u:0},
     members:{list:[],u:0,fu:{}}, coorg:[], ideas:[], tpls:[], pin:{hash:"",rhash:"",salt:"",u:0}, agenda:defaultAgenda(), run:{cur:null,started:{},u:0},
-    actions:[], geobs:[], handovers:[], evals:[], notes:[], votes:[], rrq:[], speeches:[], assigns:[], rsvp:[], attend:[], keys:[], fin:[], guests:[], ttassign:[], wrap:{on:false,at:0,u:0}, pres:{chk:{},notes:"",u:0}, saa:{chk:{},u:0}, vote:{state:"closed",u:0}, genotes:{good:"",improve:"",u:0}, rrcur:{id:null,u:0},
+    voterPeople:[], presentations:[], actions:[], geobs:[], handovers:[], evals:[], notes:[], votes:[], rrq:[], speeches:[], assigns:[], rsvp:[], attend:[], keys:[], fin:[], guests:[], ttassign:[], wrap:{on:false,at:0,u:0}, pres:{chk:{},notes:"",u:0}, saa:{chk:{},u:0}, vote:{state:"closed",u:0}, genotes:{good:"",improve:"",u:0}, rrcur:{id:null,u:0},
     rows:{tt:[],ps:[],rr:[],ev:[],rep:[]}, topics:[], cur:{id:null,u:0},
     fill:{words:FILLERS.slice(),u:0}, ahRows:[],
     gram:{wotd:"",meaning:"",u:0}, gramRows:[],
@@ -21,7 +21,8 @@ function normalize(st){
   if(!Array.isArray(o.fill.words)) o.fill.words=FILLERS.slice();
   SESSIONS.forEach(function(s){ var k=s.id; o.rows[k]=Array.isArray(st.rows&&st.rows[k])?st.rows[k]:[]; });
   ["ev","rep"].forEach(function(k){ if(!o.limits[k]) o.limits[k]=blank().limits[k]; });
-  ["actions","geobs","handovers","evals","notes","votes","rrq","speeches","assigns","rsvp","fin","guests","ttassign"].forEach(function(k){ o[k]=Array.isArray(st[k])?st[k]:[]; });
+  ["voterPeople","presentations","actions","geobs","handovers","evals","notes","votes","rrq","speeches","assigns","rsvp","fin","guests","ttassign"].forEach(function(k){ o[k]=Array.isArray(st[k])?st[k]:[]; });
+  ["actions","voterPeople"].forEach(function(k){o[k]=o[k].filter(function(x){return x&&typeof x==="object"&&x.id;}).map(function(x){x.u=+x.u||1;x.ord=+x.ord||1;return x;});});
   o.keys=Array.isArray(st.keys)?st.keys.filter(function(k){return k&&k.id;}).map(function(k){ k.u=+k.u||1; k.ord=+k.ord||1; return k; }):[];
   o.evals.forEach(function(e){ if(e&&(e.c1!=null||e.r!=null||e.c2!=null||e.rate)){ if(e.done==null) e.done=!!(e.c1||e.r||e.c2); delete e.c1; delete e.r; delete e.c2; delete e.rate; } });
   o.notes=o.notes.filter(function(n){ return n&&n.enc; });

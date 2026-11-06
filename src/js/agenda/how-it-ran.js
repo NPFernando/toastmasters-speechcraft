@@ -72,9 +72,9 @@ function liveCtlHTML(){
 })();
 function runAdjReset(){ S.run.by=runBy(); S.run.adj={}; tick(S.run); commit(); }
 function runAdjTotal(){ var c=curItem(), n=c.cur?c.next:null; return n&&S.run.adj?(S.run.adj[n.id]||0):0; }
-function extraText(x){
+function extraText(x,item){
   if(x==="speakers"){ var sp=uniq(asList("speakers").concat(S.speeches.filter(function(s){return s.type!=="tt";}).map(function(s){return s.name;}))); return sp.length?"Speakers: "+sp.map(function(n){ var t=speechTitle(n); return n+(t?" — “"+t+"”":""); }).join(", "):""; }
-  if(x==="keynote"){ var k=assigned("keynote"); return k?(k+(S.agenda.korg?" ("+S.agenda.korg+")":"")+(S.agenda.ktopic?" — "+S.agenda.ktopic:"")+(S.agenda.kobjective?"\nObjectives: "+S.agenda.kobjective:"")+(S.agenda.kintro?"\nIntroduction: "+S.agenda.kintro:"")+(S.agenda.kmaterials?"\nMaterials: "+S.agenda.kmaterials:"")):""; }
+  if(x==="keynote"){var p=presentationOf(item&&item.id||keynoteItems()[0]&&keynoteItems()[0].id);return p?(p.name||assigned("keynote")||"")+(p.organization?" ("+p.organization+")":"")+(p.topic?" — "+p.topic:"")+(p.objective?"\nObjectives: "+p.objective:"")+(p.intro?"\nIntroduction: "+p.intro:"")+(p.materials?"\nMaterials: "+p.materials:""):"";}
   if(x==="ttevals"){ var tv=asList("ttevals"); return tv.length?"Evaluators: "+tv.join(", "):""; }
   if(x==="evals"){
     var p=[]; ["timer","ah","gram"].forEach(function(k){ if(assigned(k)) p.push(arole(k).n+" – "+assigned(k)); });
@@ -109,7 +109,7 @@ function applyAgenda(){
     /* drop planned rows that are no longer on the agenda (only if never timed) */
     S.rows[sid].slice().forEach(function(r){ if(r.ak && /^(ps:|ev:|rep:)/.test(r.ak) && !keys[r.ak] && rowState(r)==="idle" && r.manual==null){ S.rows[sid]=S.rows[sid].filter(function(x){return x!==r;}); S.dead[r.id]=Math.max(now(),(r.u||0)+1); } });
     want[sid].forEach(function(w){
-      var ex=S.rows[sid].find(function(r){return r.ak===w.ak || (sid==="ps" && nkey(baseName(r.name))===nkey(w.name));});
+      var ex=S.rows[sid].find(function(r){return r.ak===w.ak || (sid==="ps" && !String(r.ak||"").startsWith("keynote:") && nkey(baseName(r.name))===nkey(w.name));});
       if(ex){ if(rowState(ex)==="idle" && ex.name!==w.name){ ex.name=w.name; if(w.lim) ex.lim=w.lim; tick(ex); } return; }
       var r=newRow(sid,w.name); r.ak=w.ak; if(w.lim) r.lim=w.lim; if(sid==="ps"){ var sl=presetLim((speechRec(w.name)||{}).lim); if(sl) r.lim=sl; } S.rows[sid].push(r);
     });

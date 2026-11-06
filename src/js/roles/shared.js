@@ -32,18 +32,26 @@ var VCATS=[
   {k:"ev",n:"Best Evaluator",c:function(){ return evaluatorNames().filter(awardEligible).map(function(n){return {name:n};}); }},
   {k:"role",n:"Best Role Player",c:function(){ return rolePlayerList().filter(function(p){return awardEligible(p.name);}).map(function(p){return {name:p.name,sub:p.roles.join(", ")};}); }}
 ];
-function voterKey(name){return "person:"+encodeURIComponent(nkey(name));}
-function voteIdentity(){return nkey(L.voterName||myName());}
-function effectiveVotes(){var by={};S.votes.forEach(function(v){var key=(v.voter||v.id.split("|").slice(2).join("|"))+"|"+v.cat,old=by[key];if(!old||v.u>old.u||(v.u===old.u&&v.id>old.id))by[key]=v;});return Object.keys(by).map(function(k){return by[k];});}
-function myVote(cat){var key=voterKey(voteIdentity()),v=effectiveVotes().find(function(x){return x.cat===cat&&x.voter===key;});return v?v.choice:"";}
+function votingPeople(){
+ var list=S.members.list.map(function(m){return {id:'member:'+m.id,name:m.name,label:m.club||'Member'};});
+ return list.concat(S.voterPeople.filter(function(p){return !p.archived;}).map(function(p){return {id:p.id,name:p.name,label:p.label||'Guest / participant'};}));
+}
+function voterKey(id){return 'participant:'+encodeURIComponent(id);}
+function voteIdentity(){var id=L.voterId||'';return votingPeople().some(function(p){return p.id===id;})?id:'';}
+function votingRound(){return S.vote.round||'initial';}
+function currentBallots(){return S.votes.filter(function(v){return (v.round||'initial')===votingRound();});}
+function legacyBallots(){return currentBallots().filter(function(v){return !v.participantId;});}
+function effectiveVotes(){var by={};currentBallots().forEach(function(v){var key=(v.participantId||v.voter||v.id.split('|').slice(2).join('|'))+'|'+v.cat,old=by[key];if(!old||v.u>old.u||(v.u===old.u&&v.id>old.id))by[key]=v;});return Object.keys(by).map(function(k){return by[k];});}
+function myVote(cat){var id=voteIdentity();if(!id)return '';var v=effectiveVotes().find(function(x){return x.cat===cat&&x.participantId===id;});return v?v.choice:'';}
 function castVote(cat,choice){
- if(S.vote.state!=="open"||!VCATS.some(function(c){return c.k===cat&&c.c().some(function(n){return nkey(n.name)===nkey(choice);});}))return;
- var name=voteIdentity();if(!name){alert("Enter your voting name first.");return;}
- var key=voterKey(name),id="v|"+cat+"|"+key,v=upsert(["votes"],id,{cat:cat,voter:key,choice:""});
- S.votes=S.votes.filter(function(x){if(x.id==="v|"+cat+"|"+devId()){S.dead[x.id]=now();return false;}return true;});
- v.voter=key;v.choice=nkey(v.choice)===nkey(choice)?"":choice;tick(v);commit();
+ if(S.vote.state!=='open'||!VCATS.some(function(c){return c.k===cat&&c.c().some(function(n){return nkey(n.name)===nkey(choice);});}))return;
+ var who=voteIdentity();if(!who){alert('Select your participant identity before voting.');return;}
+ if(legacyBallots().length){alert('Older ballots use names or devices. Ask the General Evaluator to start a new voting round.');return;}
+ var key=voterKey(who),round=votingRound(),id='v|'+round+'|'+cat+'|'+key,v=upsert(['votes'],id,{cat:cat,participantId:who,voter:key,round:round,choice:''});
+ v.choice=nkey(v.choice)===nkey(choice)?'':choice;tick(v);commit();
 }
 function tally(cat){var c={};effectiveVotes().forEach(function(v){if(v.cat===cat&&v.choice){var k=nkey(v.choice);c[k]=c[k]||{name:v.choice,n:0};c[k].n++;}});var list=Object.keys(c).map(function(k){return c[k];}).sort(function(a,b){return b.n-a.n;});var top=list.length?list[0].n:0;return {list:list,winners:list.filter(function(x){return x.n===top&&top>0;})};}
-function votersCount(){var s={};effectiveVotes().forEach(function(v){if(v.choice)s[v.voter||v.id.split("|").slice(2).join("|")]=1;});return Object.keys(s).length;}
+function votersCount(){var s={};effectiveVotes().forEach(function(v){if(v.choice)s[v.participantId||v.voter||v.id.split('|').slice(2).join('|')]=1;});return Object.keys(s).length;}
+function startVotingRound(){if(!confirm('Start a new voting round? Current results are retained in the meeting record but excluded from the new tally. Everyone must vote again.'))return;S.vote.round=uid();S.vote.state='open';tick(S.vote);commit();}
 function voteStateText(){ return {closed:"Voting not open yet",open:"🗳 Voting is open",done:"Voting closed — waiting for the Toastmaster to reveal",shown:"🏆 Winners revealed"}[S.vote.state]||""; }
 

@@ -5,6 +5,7 @@
     var t=e.target;
     if(t.closest("#openVote")){ openVote(); return; }
     if(t.closest("#showWinners")){ maybeShowWinners(true); return; }
+    if(t.closest("[data-new-voting-round]")&&L.role==="ge"){startVotingRound();return;}
     var vs=t.closest("[data-vote-set]"); if(vs){ var s=vs.dataset.voteSet; if(s==="shown"&&!confirm("Reveal the winners on every screen now?")) return; setVoteState(s); if(s==="shown") maybeShowWinners(true); return; }
     if(t.closest("#geReport")){ document.getElementById("openReport").click(); return; }
     var ck=t.closest("[data-checkin]"); if(ck){ var n=ck.dataset.checkin; setPresent(n,!present(n)); if(L.role==="member"&&!myName()) setMyName(n); return; }
