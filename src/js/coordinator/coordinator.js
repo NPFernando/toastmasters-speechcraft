@@ -86,7 +86,10 @@ function dryBannerHTML(){ return S.meta&&S.meta.test?'<div class="drybanner" rol
       if(!confirm("Finish the dry run and clean up?\n\n• Clears this meeting’s speakers, times, topics, counts, feedback and votes on every connected device\n• Removes today’s test attendance"+(tm.length?"\n• Removes "+tm.length+" test member"+(tm.length===1?"":"s")+" ("+tm.map(function(m){return m.name;}).join(", ")+")":"")+"\n\nMembers, PIN, agenda, role players and settings are kept.")) return;
       var mid=S.mid;
       S.attend.forEach(function(a){ if(a.mid===mid){ a.void=true; a.present=false; a.u=Math.max(now(),(a.u||0)+1); } });
-      if(tm.length){ S.members.list=S.members.list.filter(function(m){return !m.test;}); tick(S.members); }
+      S.members.list=S.members.list.filter(function(m){return !m.test;});
+      // Keep the dry-run agenda as a draft without turning its test names into saved members.
+      agendaNames().forEach(function(name){ if(!memberRec(name)) excludeAgendaMember(name); });
+      tick(S.members);
       var keepAssign=clone(S.agenda.assign), keepAssigns=clone(S.assigns||[]), keepMeta={date:S.meta.date,week:S.meta.week}, keepNo=S.agenda.no, keepNext=S.agenda.next;
       newMeetingCore(false);
       S.agenda.assign=keepAssign; S.agenda.no=keepNo; S.agenda.next=keepNext; S.assigns=keepAssigns; S.meta.date=keepMeta.date; S.meta.week=keepMeta.week; delete S.meta.test; tick(S.meta); tick(S.agenda); applyAgenda(); commit();

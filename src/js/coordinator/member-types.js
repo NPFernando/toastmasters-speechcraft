@@ -15,12 +15,15 @@ function populateAgendaMembers(){
   });
   if(added) commitQuiet();
 }
+// Record a deletion for the automatic entry even when the saved member had a manual ID.
+function excludeAgendaMember(name){
+  var key="m."+agendaMemberId(name);
+  S.members.fu[key]=Math.max(now(),(S.members.fu[key]||0)+1);
+}
 function removeMember(id){
   var member=S.members.list.find(function(m){ return m.id===id; });
   if(!member) return;
-  // Keep the automatic roster entry deleted across devices and future meetings.
-  var key="m."+agendaMemberId(member.name);
-  S.members.fu[key]=Math.max(now(),(S.members.fu[key]||0)+1);
+  excludeAgendaMember(member.name);
   S.members.list=S.members.list.filter(function(m){ return m.id!==id && m.id!==agendaMemberId(member.name); });
   tick(S.members);
   commit();
