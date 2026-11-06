@@ -4,13 +4,22 @@ function myRoles(){ if(!Array.isArray(L.roles)||!L.roles.length) L.roles=[L.role
 function switchRole(id){ L.view="role"; myRoles(); if(L.roles.indexOf(id)<0) L.roles.push(id); L.role=id; saveL(); NET.hello(); renderAll(); window.scrollTo(0,0); }
 function dropRole(id){ myRoles(); if(L.roles.length<2) return; L.roles=L.roles.filter(function(r){return r!==id;}); if(L.role===id) L.role=L.roles[0]; saveL(); NET.hello(); renderAll(); }
 /* roles the agenda gives this person today */
+function agendaRoleNames(role){
+  switch(role){
+    case "keynote": return asList("keynote").concat(S.presentations.map(function(p){ return p.name; }));
+    case "speaker": return asList("speakers").concat(S.assigns.map(function(a){ return a.speaker; }));
+    case "seval": return asList("sevals").concat(S.assigns.map(function(a){ return a.evaluator; }));
+    case "tteval": return asList("ttevals").concat(S.ttassign.map(function(a){ return a.evaluator; }));
+    case "member": return [];
+    default: return asList(role);
+  }
+}
 function agendaRolesFor(name){
-  if(!name) return []; var k=nkey(name), out=[];
-  ["keynote","coord","president","saa","tmod","ge","ttm","rrm","timer","ah","gram"].forEach(function(r){ if(nkey(assigned(r))===k) out.push(r); });
-  if(asList("sevals").some(function(n){return nkey(n)===k;})||S.assigns.some(function(a){return nkey(a.evaluator)===k;})) out.push("seval");
-  if(asList("ttevals").some(function(n){return nkey(n)===k;})) out.push("tteval");
-  if(asList("speakers").some(function(n){return nkey(n)===k;})) out.push("speaker");
-  return out;
+  if(!name) return [];
+  var key=nkey(name);
+  return ROLES.filter(function(role){
+    return agendaRoleNames(role.id).some(function(assignedName){ return nkey(assignedName)===key; });
+  }).map(function(role){ return role.id; });
 }
 function roleTabsHTML(){
   var rs=myRoles(), h='<div class="rtabs">';
