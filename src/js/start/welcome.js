@@ -36,7 +36,7 @@ function refreshWelcome(){
   if(document.getElementById("welcome").classList.contains("on") && W.step==="connect"){
     renderWelcome();
     if(W.auto && NET.status==="on" && (NET.peers.length>1||NET.mode==="host")){ W.auto=false; setTimeout(closeWelcome,900); }
-    else if(W.advance && NET.status==="on" && NET.peers.length>1){ W.advance=false; setTimeout(function(){ if(W.step==="connect"){ W.step="role"; renderWelcome(); } },700); }
+    else if(W.advance && NET.status==="on" && NET.synced && NET.peers.length>1){ W.advance=false; setTimeout(function(){ if(W.step==="connect"){ W.step="role"; renderWelcome(); } },700); }
   }
   if(document.getElementById("qrModal").classList.contains("on")) renderPhoneQR();
 }
@@ -63,7 +63,7 @@ function wStartLabel(){
   var o=roleObj(s[0]); return (W.add?"Add ":"Start: ")+o.icon+" "+o.name+(s.length>1?" +"+(s.length-1):"")+" →";
 }
 function wNamesHTML(){
-  var ms=memberNames(), nm=wName();
+  var ms=uniq(memberNames().concat(ROLES.flatMap(function(role){ return agendaRoleNames(role.id); }))), nm=wName();
   var h='<div class="wlbl">Your name</div>';
   if(ms.length){ var nb=function(n){ return '<button class="chip'+(nkey(n)===nkey(nm)?' active':'')+'" data-wname="'+esc(n)+'">'+esc(n)+kindBadge(n)+'</button>'; };
     var scs=ms.filter(function(n){return memberKind(n)==="sc";}), others=ms.filter(function(n){return memberKind(n)!=="sc";});
@@ -96,7 +96,7 @@ function renderWelcome(){
     if(!W.fresh) h+=welcomeBackHTML();
     if(NET.mode){
       h+=connStatusHTML();
-      h+='<div class="wfoot sticky"><button class="linkbtn" id="wLeave">'+(NET.mode==="host"?"Cancel this meeting":"Use a different code")+'</button><button class="btn primary big1" id="wNextWho"'+(NET.status==="on"||NET.mode==="host"?'':' disabled')+'>Next →</button></div>';
+      h+='<div class="wfoot sticky"><button class="linkbtn" id="wLeave">'+(NET.mode==="host"?"Cancel this meeting":"Use a different code")+'</button><button class="btn primary big1" id="wNextWho"'+(NET.mode==="host"||NET.status==="on"&&NET.synced?'':' disabled')+'>Next →</button></div>';
     } else {
       h+='<div class="wcard"><b class="t">Join a meeting</b><div class="saved" style="margin:4px 0 10px">Scan the host’s QR code with your phone camera, or type the code.</div>'+
          '<div class="row"><input class="t" id="wCode" placeholder="e.g. K7Q-M4P" maxlength="9" autocomplete="off" aria-label="Meeting code" value="'+esc(W.code?fmtCode(W.code):"")+'" style="text-transform:uppercase;letter-spacing:3px;font-weight:800;font-size:20px"><button class="btn primary big1" id="wJoin">Join</button></div></div>'+
@@ -129,7 +129,7 @@ wbox.addEventListener("click",function(e){
   if(t.closest("#wPractice")){ location.href=practiceUrl(true); return; }
   if(t.closest("#wReport")){ openFb(); return; }
   if((b=t.closest("[data-wrole]"))){ var r=b.dataset.wrole; W.sel=W.sel||[]; var i=W.sel.indexOf(r); if(i>=0) W.sel.splice(i,1); else W.sel.push(r); wRefreshWho(); return; }
-  if((b=t.closest("[data-wname]"))){ W.name=b.dataset.wname; var ni=document.getElementById("wName"); if(ni) ni.value=""; var td=agendaRolesFor(W.name); if(td.length&&!W.add) W.sel=td.slice(); wRefreshWho(); return; }
+  if((b=t.closest("[data-wname]"))){ W.name=b.dataset.wname; var ni=document.getElementById("wName"); if(ni) ni.value=""; var td=agendaRolesFor(W.name); if(!W.add) W.sel=td.slice(); wRefreshWho(); return; }
   if(t.closest("#wSelToday")){ W.sel=uniq((W.sel||[]).concat(agendaRolesFor(wName().trim()))); wRefreshWho(); return; }
   if(t.closest("#wNext")){ wFinish(); return; }
   if(t.closest("#wNextWho")||t.closest("#wChange")){ W.step="role"; renderWelcome(); return; }
