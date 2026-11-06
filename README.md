@@ -74,7 +74,7 @@ One **Meeting report** combines every role and can be saved as a PDF.
 
 ### Voting
 
-When the General Evaluator opens voting, a vote bar appears on every connected device: Best Prepared Speaker, Best Table Topics Speaker, Best Evaluator and Best Role Player, one vote per normalized full voting name per award across devices (names are self-declared, not verified). Results stay hidden until the Toastmaster taps **Reveal winners**, then they appear on every screen together.
+When the General Evaluator opens voting, a vote bar appears on every connected device: Best Prepared Speaker, Best Table Topics Speaker, Best Evaluator and Best Role Player, one ballot per participant ID per award across devices. Select the same participant ID on every device. Results stay hidden until the Toastmaster taps **Reveal winners**, then they appear on every screen together.
 
 ### Private feedback
 
@@ -136,4 +136,4 @@ Everything is saved in the browser on each device. The Coordinator saves the **m
 
 ## Meeting workflow update (3.10.0)
 
-Educational Presenter, agenda-linked GE observations, persistent follow-up actions, name-based voting across devices, per-field GE sync, explicit accepted handovers, and a downloadable offline role pack are described in [Meeting workflows](docs/MEETING-WORKFLOWS.md).
+Educational Presenter, agenda-linked GE observations, persistent follow-up actions, participant-ID voting across devices, per-field GE sync, explicit accepted handovers, and a downloadable offline role pack are described in [Meeting workflows](docs/MEETING-WORKFLOWS.md).

@@ -8,7 +8,7 @@ function agLines(arr){ return arr.map(function(x){ return '<div class="agl">'+x+
 function agExtraHTML(x,item){
   if(x==="speakers"){ var sp=uniq(asList("speakers").concat(S.speeches.filter(function(s){return s.type!=="tt";}).map(function(s){return s.name;}))); if(!sp.length) return "";
     return '<div class="agsub">'+agLines(sp.map(function(n){ var t=speechTitle(n), e=evaluatorOf(n); return esc(n)+(t?' – “'+esc(t)+'”':'')+(e?' <span class="agev">· evaluator '+esc(e)+'</span>':''); }))+'</div>'; }
-  if(x==="keynote"){var p=presentationOf(item&&item.id||keynoteItems()[0]&&keynoteItems()[0].id);return p?'<div class="agsub">'+agLines([esc(p.name||assigned("keynote")||""),esc(p.topic||"")])+'</div>':"";}
+  if(x==="keynote"){var p=presentationOf(item&&item.id||keynoteItems()[0]&&keynoteItems()[0].id);return p?'<div class="agsub">'+agLines([esc(p.name||assigned("keynote")||"")+(p.organization?" ("+esc(p.organization)+")":""),esc(p.topic||"")])+'</div>':"";}
   if(x==="ttevals"){ var tv=asList("ttevals"); return tv.length?'<div class="agsub">'+agLines(tv.map(esc))+'</div>':""; }
   if(x==="evals"){
     var h="", rep=["timer","ah","gram"].filter(function(k){return assigned(k);}).map(function(k){ return esc(arole(k).n)+' – '+esc(assigned(k)); });
