@@ -9,7 +9,7 @@ var TIPS={
   ttm:["Add your topics before the meeting, one per line.","Pick or 🎲 randomise a topic, show it on screen, then type who takes it and tap Call speaker.","The Timer gets each speaker's name automatically."],
   rrm:["Add your Round Robin questions before the meeting.","Tap a name to queue them on the Timer (20-second bell).","Show the question on screen with 📺 so everyone can read it."],
   ah:["When the Timer starts someone, their name appears here automatically.","Tap a word each time you hear it.","🎯 Focus gives big buttons with Undo. Copy report text gives your report."],
-  gram:["Enter the Word of the Day before the meeting starts.","Tap +1 each time a speaker uses it, and note good phrases and slips.","🎯 Focus gives a big +1 button. Copy report text gives your report."],
+  gram:["Draft the word, meaning and example, then tap Reveal to everyone when you introduce it.","Tap +1 each time a speaker uses it, and note good phrases and slips.","🎯 Focus gives a big +1 button. Copy report text gives your report."],
   speaker:["Add your speech title and objectives so your evaluator and the Toastmaster can see them.","When the Timer starts you, your screen shows your time and the green / amber / red signal.","Set a feedback PIN so only you can read your evaluation."],
   seval:["Your speaker and their speech title are listed under 'Your speakers'.","Write Commend · Recommend · Commend; it stays a private draft.","Tap Submit when you're done; only the speaker can read it."],
   tteval:["Pick each Table Topics speaker you're evaluating.","Write Commend · Recommend · Commend; it stays a private draft.","Tap Submit when you're done; only the speaker can read it."],

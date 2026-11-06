@@ -46,7 +46,7 @@ var ROLE_GUIDE={
     after:["Give your report: 📋 Copy report text."],
     app:["🎯 Focus gives big buttons with Undo.","With another role on the same device, you follow the same speaker in both."]},
   gram:{what:"Introduces the Word of the Day and notes good language and slips.",
-    before:["Choose a Word of the Day and its meaning; enter it before the meeting."],
+    before:["Draft the Word of the Day, its meaning and an example before the meeting. Reveal it to everyone when you introduce it."],
     during:["Introduce the word at the start.","Tap +1 each time a speaker uses it; note great phrases and slips."],
     after:["Give your report: 📋 Copy report text."],
     app:["🎯 Focus gives a big +1 button and quick Good / Slip notes.","The Word of the Day shows on the projector and dashboard."]},

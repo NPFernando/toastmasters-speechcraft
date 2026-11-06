@@ -47,7 +47,7 @@ body.v-agenda .meta,body.v-agenda #roles,body.v-agenda #companion,body.v-agenda 
 .pj-topic{font-size:clamp(32px,5.4vw,88px);font-weight:800;line-height:1.15;max-width:1500px;margin-top:2vh}
 .pj-win{display:flex;gap:2vw;align-items:baseline;font-size:clamp(22px,3.4vw,56px);margin-top:2vh} .pj-win span{opacity:.8} .pj-win b{color:#f2df74}
 .pj-wotd{display:flex;gap:2vw;align-items:baseline;justify-content:center;flex-wrap:wrap;background:#772432;border-radius:18px;padding:1.6vh 2vw;font-size:clamp(16px,2.2vw,34px)}
-.pj-wotd span{text-transform:uppercase;letter-spacing:.14em;font-size:.7em;opacity:.85} .pj-wotd b{font-size:1.4em} .pj-wotd i{opacity:.85}
+.pj-wotd span{text-transform:uppercase;letter-spacing:.14em;font-size:.7em;opacity:.85} .pj-wotd>b{font-size:1.4em} .pj-wotd i{opacity:.85}
 .pj-ctl{position:absolute;right:18px;bottom:14px;display:flex;gap:8px;opacity:.35;transition:opacity .2s} .pj-ctl:hover{opacity:1}
 .pj-ctl .btn{background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.4)}
 

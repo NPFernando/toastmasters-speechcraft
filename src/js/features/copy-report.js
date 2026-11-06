@@ -9,6 +9,7 @@ function reportText(role){
     S.ahRows.forEach(function(r){ var w=S.fill.words.filter(function(x){return r.c[x];}).map(function(x){return x+" "+r.c[x];}); L1.push("• "+r.name+": "+(w.join(", ")||"none")+" (total "+ahTotal(r)+")"); });
   } else if(role==="gram"){
     L1.push("📝 Grammarian's report — "+hd); if(S.gram.wotd) L1.push("Word of the Day: "+S.gram.wotd+(S.gram.meaning?" — "+S.gram.meaning:""));
+    if(S.gram.wotd && S.gram.example) L1.push("Example: "+S.gram.example);
     S.gramRows.forEach(function(r){ L1.push("• "+r.name+": WOTD ×"+(r.w||0)+(r.good.length?"; great: "+r.good.join("; "):"")+(r.slips.length?"; to polish: "+r.slips.join("; "):"")); });
   } else if(role==="ge"){
     L1.push("🧭 General Evaluator's notes — "+hd);

@@ -86,6 +86,7 @@ view.addEventListener("click",function(e){
   var tp2=t.closest("[data-word]"); if(tp2){ var s2=selRow("ah"), w2=tp2.dataset.word; if(s2){ s2.c[w2]=(s2.c[w2]||0)+1; tick(s2); commit(); var nt=document.querySelector('#view [data-word="'+CSS.escape(w2)+'"]'); if(nt) nt.classList.add("bump"); } return; }
   var wd=t.closest("[data-wdel]"); if(wd){ var wsnap=S.fill.words.slice(); offerUndo("“"+wd.dataset.wdel+"” removed",function(){ S.fill.words=wsnap; tick(S.fill); }); S.fill.words=S.fill.words.filter(function(x){return x!==wd.dataset.wdel;}); tick(S.fill); commit(); return; }
   if(t.closest("#wordAdd")){ var wi=document.getElementById("wordInput"), nw=wi.value.trim(); if(nw&&S.fill.words.indexOf(nw)<0){ S.fill.words.push(nw); tick(S.fill); commit(); } return; }
+  if(t.closest("#wotdReveal")){ revealWordOfDay(); return; }
   if(t.closest("#wPlus")){ var g=selRow("gram"); if(g){ g.w=(g.w||0)+1; tick(g); commit(); } return; }
   if(t.closest("#wMinus")){ var g2=selRow("gram"); if(g2&&g2.w>0){ g2.w--; tick(g2); commit(); } return; }
   if(t.closest("#goodAdd")||t.closest("#slipAdd")){
@@ -109,7 +110,7 @@ view.addEventListener("input",function(e){
   if(t.dataset.edit==="topic"){ var tp=topicById(t.closest("[data-tid]").dataset.tid); tp.text=t.value; tick(tp); commitQuiet(); return; }
   if(t.dataset.ttev!=null){ setTTAssign(t.dataset.ttev,t.value); return; }
   if(t.dataset.edit==="tspeaker"){ var tp2=topicById(t.closest("[data-tid]").dataset.tid); tp2.speaker=t.value; tick(tp2); commitQuiet(); return; }
-  if(t.id==="wotd"||t.id==="wotdMeaning"){ S.gram[t.id==="wotd"?"wotd":"meaning"]=t.value; tick(S.gram); commitQuiet(); return; }
+  if(L.role==="gram" && Object.hasOwn(WORD_FIELDS,t.id)){ workflowDraft()[t.id]=t.value; saveL(); }
 });
 view.addEventListener("change",function(e){
   var t=e.target, sid=L.tab;

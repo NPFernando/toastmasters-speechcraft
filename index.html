@@ -529,7 +529,7 @@ body.v-agenda .meta,body.v-agenda #roles,body.v-agenda #companion,body.v-agenda 
 .pj-topic{font-size:clamp(32px,5.4vw,88px);font-weight:800;line-height:1.15;max-width:1500px;margin-top:2vh}
 .pj-win{display:flex;gap:2vw;align-items:baseline;font-size:clamp(22px,3.4vw,56px);margin-top:2vh} .pj-win span{opacity:.8} .pj-win b{color:#f2df74}
 .pj-wotd{display:flex;gap:2vw;align-items:baseline;justify-content:center;flex-wrap:wrap;background:#772432;border-radius:18px;padding:1.6vh 2vw;font-size:clamp(16px,2.2vw,34px)}
-.pj-wotd span{text-transform:uppercase;letter-spacing:.14em;font-size:.7em;opacity:.85} .pj-wotd b{font-size:1.4em} .pj-wotd i{opacity:.85}
+.pj-wotd span{text-transform:uppercase;letter-spacing:.14em;font-size:.7em;opacity:.85} .pj-wotd>b{font-size:1.4em} .pj-wotd i{opacity:.85}
 .pj-ctl{position:absolute;right:18px;bottom:14px;display:flex;gap:8px;opacity:.35;transition:opacity .2s} .pj-ctl:hover{opacity:1}
 .pj-ctl .btn{background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.4)}
 
@@ -825,7 +825,7 @@ function blank(){
     voterPeople:[], presentations:[], actions:[], geobs:[], handovers:[], evals:[], notes:[], votes:[], rrq:[], speeches:[], assigns:[], rsvp:[], attend:[], keys:[], fin:[], guests:[], ttassign:[], wrap:{on:false,at:0,u:0}, pres:{chk:{},notes:"",u:0}, saa:{chk:{},u:0}, vote:{state:"closed",u:0}, genotes:{good:"",improve:"",u:0}, rrcur:{id:null,u:0},
     rows:{tt:[],ps:[],rr:[],ev:[],rep:[]}, topics:[], cur:{id:null,u:0},
     fill:{words:FILLERS.slice(),u:0}, ahRows:[],
-    gram:{wotd:"",meaning:"",u:0}, gramRows:[],
+    gram:{wotd:"",meaning:"",example:"",u:0}, gramRows:[],
     dead:{}, names:[] };
 }
 function normalize(st){
@@ -1149,6 +1149,9 @@ function renderAll(){
   else if(L.role==="ah") v.innerHTML=ahHTML();
   else v.innerHTML=gramHTML();
   if(curView()==="role") v.insertAdjacentHTML("beforeend",handoverHTML());
+  if(curView()!=="now" && (curView()!=="role" || L.role!=="gram" || inFocus()) && S.gram.wotd){
+    v.insertAdjacentHTML("afterbegin",'<section class="card" id="publishedWord"><h2 class="sec" style="margin-top:0">📝 Word of the Day · '+esc(S.gram.wotd)+'</h2>'+wordOfDayDetailsHTML()+'</section>');
+  }
   var tp=tipsHTML(); if(tp) v.insertAdjacentHTML("afterbegin",tp);
   var db=dryBannerHTML(); if(db) v.insertAdjacentHTML("afterbegin",db);
   if(curView()==="role" && !inFocus() && L.role!=="coord" && !(S.run&&S.run.cur)){ var up=upcomingHTML(false); if(up) v.insertAdjacentHTML("afterbegin",up); }
@@ -1385,9 +1388,38 @@ function ahHTML(){
   }
   return h+'</section>';
 }
+var WORD_FIELDS={wotd:"wotd",wotdMeaning:"meaning",wotdExample:"example"};
+function wordOfDayDetailsHTML(){
+  return (S.gram.meaning?'<div><b>Meaning:</b> '+esc(S.gram.meaning)+'</div>':'')+
+    (S.gram.example?'<div><b>Example:</b> '+esc(S.gram.example)+'</div>':'');
+}
+function revealWordOfDay(){
+  if(L.role!=="gram") return;
+  var word={};
+  for(var id of Object.keys(WORD_FIELDS)){
+    var field=document.getElementById(id);
+    if(!field||!field.reportValidity()) return;
+    var value=field.value.trim();
+    if(!value){ field.focus(); return; }
+    word[WORD_FIELDS[id]]=value;
+  }
+  Object.assign(S.gram,word);
+  tick(S.gram);
+  var draft=workflowDraft();
+  Object.keys(WORD_FIELDS).forEach(function(id){ delete draft[id]; });
+  saveL();
+  commit();
+}
 function gramHTML(){
   var sel=selRow("gram");
-  var h='<section class="card"><h2 class="sec" style="margin-top:0">Word of the Day</h2><div class="row"><input class="t" id="wotd" placeholder="Word" value="'+esc(S.gram.wotd)+'" style="max-width:260px"><input class="t" id="wotdMeaning" placeholder="Meaning / example sentence" value="'+esc(S.gram.meaning)+'"></div>';
+  var draft=workflowDraft(), labels={wotd:"Word",wotdMeaning:"Meaning",wotdExample:"Example sentence"};
+  var h='<section class="card"><h2 class="sec" style="margin-top:0">Word of the Day</h2>'+
+    '<div class="saved">'+(S.gram.wotd?'Published: '+esc(S.gram.wotd)+'. Changes stay private until you publish again.':'This draft stays on this device until you reveal it.')+'</div>'+
+    Object.keys(WORD_FIELDS).map(function(id){
+      var value=draft[id]??S.gram[WORD_FIELDS[id]];
+      return '<label class="lbl" for="'+id+'">'+labels[id]+'</label><input class="t" id="'+id+'" value="'+esc(value)+'" required pattern=".*\\S.*" style="width:100%;margin-bottom:8px">';
+    }).join("")+
+    '<button class="btn go" id="wotdReveal">'+(S.gram.wotd?'Publish updated word':'Reveal to everyone')+'</button>';
   h+='<h2 class="sec">Speakers</h2>'+speakerPicker("gram");
   if(sel){
     h+='<div class="selcard"><div class="hd"><b>'+esc(sel.name)+'</b><button class="iconbtn" data-rowdel="gram" title="Remove speaker">✕</button></div>'+
@@ -2828,6 +2860,7 @@ view.addEventListener("click",function(e){
   var tp2=t.closest("[data-word]"); if(tp2){ var s2=selRow("ah"), w2=tp2.dataset.word; if(s2){ s2.c[w2]=(s2.c[w2]||0)+1; tick(s2); commit(); var nt=document.querySelector('#view [data-word="'+CSS.escape(w2)+'"]'); if(nt) nt.classList.add("bump"); } return; }
   var wd=t.closest("[data-wdel]"); if(wd){ var wsnap=S.fill.words.slice(); offerUndo("“"+wd.dataset.wdel+"” removed",function(){ S.fill.words=wsnap; tick(S.fill); }); S.fill.words=S.fill.words.filter(function(x){return x!==wd.dataset.wdel;}); tick(S.fill); commit(); return; }
   if(t.closest("#wordAdd")){ var wi=document.getElementById("wordInput"), nw=wi.value.trim(); if(nw&&S.fill.words.indexOf(nw)<0){ S.fill.words.push(nw); tick(S.fill); commit(); } return; }
+  if(t.closest("#wotdReveal")){ revealWordOfDay(); return; }
   if(t.closest("#wPlus")){ var g=selRow("gram"); if(g){ g.w=(g.w||0)+1; tick(g); commit(); } return; }
   if(t.closest("#wMinus")){ var g2=selRow("gram"); if(g2&&g2.w>0){ g2.w--; tick(g2); commit(); } return; }
   if(t.closest("#goodAdd")||t.closest("#slipAdd")){
@@ -2851,7 +2884,7 @@ view.addEventListener("input",function(e){
   if(t.dataset.edit==="topic"){ var tp=topicById(t.closest("[data-tid]").dataset.tid); tp.text=t.value; tick(tp); commitQuiet(); return; }
   if(t.dataset.ttev!=null){ setTTAssign(t.dataset.ttev,t.value); return; }
   if(t.dataset.edit==="tspeaker"){ var tp2=topicById(t.closest("[data-tid]").dataset.tid); tp2.speaker=t.value; tick(tp2); commitQuiet(); return; }
-  if(t.id==="wotd"||t.id==="wotdMeaning"){ S.gram[t.id==="wotd"?"wotd":"meaning"]=t.value; tick(S.gram); commitQuiet(); return; }
+  if(L.role==="gram" && Object.hasOwn(WORD_FIELDS,t.id)){ workflowDraft()[t.id]=t.value; saveL(); }
 });
 view.addEventListener("change",function(e){
   var t=e.target, sid=L.tab;
@@ -3085,7 +3118,7 @@ function buildReport(){
   }
   if(inc("gram")){
     h+='<h4>📝 Grammarian’s Report</h4>';
-    if(S.gram.wotd) h+='<div><b>Word of the Day:</b> '+esc(S.gram.wotd)+(S.gram.meaning?' — '+esc(S.gram.meaning):'')+'</div>';
+    if(S.gram.wotd) h+='<div><b>Word of the Day:</b> '+esc(S.gram.wotd)+(S.gram.meaning?' — '+esc(S.gram.meaning):'')+'</div>'+(S.gram.example?'<div><b>Example:</b> '+esc(S.gram.example)+'</div>':'');
     if(S.gramRows.length){
       h+='<table style="margin-top:6px"><thead><tr><th>Speaker</th><th class="c">WOTD uses</th><th>Great phrases</th><th>Slips / corrections</th></tr></thead><tbody>';
       S.gramRows.forEach(function(r){ h+='<tr><td>'+esc(r.name)+'</td><td class="c">'+(r.w||0)+'</td><td>'+esc(r.good.join("; "))+'</td><td>'+esc(r.slips.join("; "))+'</td></tr>'; });
@@ -3583,6 +3616,7 @@ function reportText(role){
     S.ahRows.forEach(function(r){ var w=S.fill.words.filter(function(x){return r.c[x];}).map(function(x){return x+" "+r.c[x];}); L1.push("• "+r.name+": "+(w.join(", ")||"none")+" (total "+ahTotal(r)+")"); });
   } else if(role==="gram"){
     L1.push("📝 Grammarian's report — "+hd); if(S.gram.wotd) L1.push("Word of the Day: "+S.gram.wotd+(S.gram.meaning?" — "+S.gram.meaning:""));
+    if(S.gram.wotd && S.gram.example) L1.push("Example: "+S.gram.example);
     S.gramRows.forEach(function(r){ L1.push("• "+r.name+": WOTD ×"+(r.w||0)+(r.good.length?"; great: "+r.good.join("; "):"")+(r.slips.length?"; to polish: "+r.slips.join("; "):"")); });
   } else if(role==="ge"){
     L1.push("🧭 General Evaluator's notes — "+hd);
@@ -3867,7 +3901,7 @@ function dashHTML(){
   h+='<section class="card"><h2 class="sec" style="margin-top:0">🟢 Online <span class="cnt">'+(NET.mode?ppl.length:0)+'</span></h2>'+(NET.mode&&ppl.length?'<div class="chips">'+ppl.map(function(p){ return '<span class="chip word">'+p.roles.map(function(r){var o=roleObj(r);return o?o.icon:"";}).join("")+' '+esc(p.name||peopleRoleNames(p))+(p.devices>1?' <small>· '+p.devices+'</small>':'')+'</span>'; }).join("")+'</div>':'<div class="note" style="margin:0">Not connected. Tap the connection button at the top to join the meeting.</div>')+'</section>';
   var rp=AG_SIDE.filter(function(a){return asList(a[0]).length;});
   h+='<section class="card"><h2 class="sec" style="margin-top:0">👥 Role players</h2>'+(rp.length?'<div class="dplayers">'+rp.map(function(a){ return '<div><span class="muted">'+esc(a[1])+'</span><b>'+asList(a[0]).map(function(n){ return (isOnlineName(n)?'<i class="dotg" title="online"></i>':'')+esc(n)+kindBadge(n); }).join(", ")+'</b></div>'; }).join("")+'</div>':'<div class="note" style="margin:0">The Coordinator hasn’t set the role players yet.</div>')+'</section>';
-  h+='<section class="card"><h2 class="sec" style="margin-top:0">📝 Word of the Day</h2>'+(S.gram.wotd?'<div class="dwotd">'+esc(S.gram.wotd)+'</div>'+(S.gram.meaning?'<div class="muted">'+esc(S.gram.meaning)+'</div>':''):'<div class="note" style="margin:0">The Grammarian hasn’t set it yet.</div>')+
+  h+='<section class="card"><h2 class="sec" style="margin-top:0">📝 Word of the Day</h2>'+(S.gram.wotd?'<div class="dwotd">'+esc(S.gram.wotd)+'</div>'+wordOfDayDetailsHTML():'<div class="note" style="margin:0">The Grammarian will reveal it during the meeting.</div>')+
      '<h2 class="sec">🗳 Voting</h2><div>'+voteStateText()+'</div>'+(S.vote.state==="shown"?winnersLine():'')+'</section>';
   h+='</div>';
   return h;
@@ -3968,7 +4002,7 @@ var TIPS={
   ttm:["Add your topics before the meeting, one per line.","Pick or 🎲 randomise a topic, show it on screen, then type who takes it and tap Call speaker.","The Timer gets each speaker's name automatically."],
   rrm:["Add your Round Robin questions before the meeting.","Tap a name to queue them on the Timer (20-second bell).","Show the question on screen with 📺 so everyone can read it."],
   ah:["When the Timer starts someone, their name appears here automatically.","Tap a word each time you hear it.","🎯 Focus gives big buttons with Undo. Copy report text gives your report."],
-  gram:["Enter the Word of the Day before the meeting starts.","Tap +1 each time a speaker uses it, and note good phrases and slips.","🎯 Focus gives a big +1 button. Copy report text gives your report."],
+  gram:["Draft the word, meaning and example, then tap Reveal to everyone when you introduce it.","Tap +1 each time a speaker uses it, and note good phrases and slips.","🎯 Focus gives a big +1 button. Copy report text gives your report."],
   speaker:["Add your speech title and objectives so your evaluator and the Toastmaster can see them.","When the Timer starts you, your screen shows your time and the green / amber / red signal.","Set a feedback PIN so only you can read your evaluation."],
   seval:["Your speaker and their speech title are listed under 'Your speakers'.","Write Commend · Recommend · Commend; it stays a private draft.","Tap Submit when you're done; only the speaker can read it."],
   tteval:["Pick each Table Topics speaker you're evaluating.","Write Commend · Recommend · Commend; it stays a private draft.","Tap Submit when you're done; only the speaker can read it."],
@@ -4397,7 +4431,7 @@ var ROLE_GUIDE={
     after:["Give your report: 📋 Copy report text."],
     app:["🎯 Focus gives big buttons with Undo.","With another role on the same device, you follow the same speaker in both."]},
   gram:{what:"Introduces the Word of the Day and notes good language and slips.",
-    before:["Choose a Word of the Day and its meaning; enter it before the meeting."],
+    before:["Draft the Word of the Day, its meaning and an example before the meeting. Reveal it to everyone when you introduce it."],
     during:["Introduce the word at the start.","Tap +1 each time a speaker uses it; note great phrases and slips."],
     after:["Give your report: 📋 Copy report text."],
     app:["🎯 Focus gives a big +1 button and quick Good / Slip notes.","The Word of the Day shows on the projector and dashboard."]},
@@ -4656,7 +4690,7 @@ function projHTML(){
   } else {
     main='<div class="pj-lbl">Welcome to</div><div class="pj-name">'+esc(S.agenda.title||GROUP)+'</div><div class="pj-who">Speechcraft'+(S.meta.week?' · '+esc(S.meta.week):'')+'</div><div class="pj-sub">'+esc(fmtDate(S.meta.date)||"")+'</div>'+(guestLink()?'<div class="pj-guest">'+qrSvg(guestLink())+'<div>👋 Guests: scan to check in</div></div>':'');
   }
-  var foot=S.gram.wotd?'<div class="pj-wotd"><span>Word of the Day</span><b>'+esc(S.gram.wotd)+'</b>'+(S.gram.meaning?'<i>'+esc(S.gram.meaning)+'</i>':'')+'</div>':'';
+  var foot=S.gram.wotd?'<div class="pj-wotd"><span>Word of the Day</span><b>'+esc(S.gram.wotd)+'</b>'+wordOfDayDetailsHTML()+'</div>':'';
   return '<div class="pj-head"><img src="'+tm+'" alt=""><div>'+esc(GROUP)+(S.meta.week?' · '+esc(S.meta.week):'')+'</div><img class="r" src="'+co+'" alt=""></div><div class="pj-main '+cls+'">'+main+'</div>'+foot+
     '<div class="pj-ctl"><button class="btn" data-pjfull>⛶ Full screen</button><button class="btn" data-pjclose>✕ Close</button></div>';
 }
@@ -4701,7 +4735,7 @@ applyDisplay();
   document.addEventListener("keydown",function(e){ if(e.key==="Escape") M.classList.remove("on"); });
 })();
 /* ---------- home, about and clean-up ---------- */
-var APP_VERSION="3.11.2 · November 2026";
+var APP_VERSION="3.11.3 · November 2026";
 function aboutHTML(){
   var on=!!NET.mode, coord=L.role==="coord";
   return '<div class="finhead"><h2 class="sec" style="margin:0">ℹ️ About</h2><button class="btn ghost" id="aboutClose">Close</button></div>'+

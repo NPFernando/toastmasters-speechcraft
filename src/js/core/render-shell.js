@@ -47,6 +47,9 @@ function renderAll(){
   else if(L.role==="ah") v.innerHTML=ahHTML();
   else v.innerHTML=gramHTML();
   if(curView()==="role") v.insertAdjacentHTML("beforeend",handoverHTML());
+  if(curView()!=="now" && (curView()!=="role" || L.role!=="gram" || inFocus()) && S.gram.wotd){
+    v.insertAdjacentHTML("afterbegin",'<section class="card" id="publishedWord"><h2 class="sec" style="margin-top:0">📝 Word of the Day · '+esc(S.gram.wotd)+'</h2>'+wordOfDayDetailsHTML()+'</section>');
+  }
   var tp=tipsHTML(); if(tp) v.insertAdjacentHTML("afterbegin",tp);
   var db=dryBannerHTML(); if(db) v.insertAdjacentHTML("afterbegin",db);
   if(curView()==="role" && !inFocus() && L.role!=="coord" && !(S.run&&S.run.cur)){ var up=upcomingHTML(false); if(up) v.insertAdjacentHTML("afterbegin",up); }

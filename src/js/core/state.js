@@ -8,7 +8,7 @@ function blank(){
     voterPeople:[], presentations:[], actions:[], geobs:[], handovers:[], evals:[], notes:[], votes:[], rrq:[], speeches:[], assigns:[], rsvp:[], attend:[], keys:[], fin:[], guests:[], ttassign:[], wrap:{on:false,at:0,u:0}, pres:{chk:{},notes:"",u:0}, saa:{chk:{},u:0}, vote:{state:"closed",u:0}, genotes:{good:"",improve:"",u:0}, rrcur:{id:null,u:0},
     rows:{tt:[],ps:[],rr:[],ev:[],rep:[]}, topics:[], cur:{id:null,u:0},
     fill:{words:FILLERS.slice(),u:0}, ahRows:[],
-    gram:{wotd:"",meaning:"",u:0}, gramRows:[],
+    gram:{wotd:"",meaning:"",example:"",u:0}, gramRows:[],
     dead:{}, names:[] };
 }
 function normalize(st){

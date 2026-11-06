@@ -31,9 +31,38 @@ function ahHTML(){
   }
   return h+'</section>';
 }
+var WORD_FIELDS={wotd:"wotd",wotdMeaning:"meaning",wotdExample:"example"};
+function wordOfDayDetailsHTML(){
+  return (S.gram.meaning?'<div><b>Meaning:</b> '+esc(S.gram.meaning)+'</div>':'')+
+    (S.gram.example?'<div><b>Example:</b> '+esc(S.gram.example)+'</div>':'');
+}
+function revealWordOfDay(){
+  if(L.role!=="gram") return;
+  var word={};
+  for(var id of Object.keys(WORD_FIELDS)){
+    var field=document.getElementById(id);
+    if(!field||!field.reportValidity()) return;
+    var value=field.value.trim();
+    if(!value){ field.focus(); return; }
+    word[WORD_FIELDS[id]]=value;
+  }
+  Object.assign(S.gram,word);
+  tick(S.gram);
+  var draft=workflowDraft();
+  Object.keys(WORD_FIELDS).forEach(function(id){ delete draft[id]; });
+  saveL();
+  commit();
+}
 function gramHTML(){
   var sel=selRow("gram");
-  var h='<section class="card"><h2 class="sec" style="margin-top:0">Word of the Day</h2><div class="row"><input class="t" id="wotd" placeholder="Word" value="'+esc(S.gram.wotd)+'" style="max-width:260px"><input class="t" id="wotdMeaning" placeholder="Meaning / example sentence" value="'+esc(S.gram.meaning)+'"></div>';
+  var draft=workflowDraft(), labels={wotd:"Word",wotdMeaning:"Meaning",wotdExample:"Example sentence"};
+  var h='<section class="card"><h2 class="sec" style="margin-top:0">Word of the Day</h2>'+
+    '<div class="saved">'+(S.gram.wotd?'Published: '+esc(S.gram.wotd)+'. Changes stay private until you publish again.':'This draft stays on this device until you reveal it.')+'</div>'+
+    Object.keys(WORD_FIELDS).map(function(id){
+      var value=draft[id]??S.gram[WORD_FIELDS[id]];
+      return '<label class="lbl" for="'+id+'">'+labels[id]+'</label><input class="t" id="'+id+'" value="'+esc(value)+'" required pattern=".*\\S.*" style="width:100%;margin-bottom:8px">';
+    }).join("")+
+    '<button class="btn go" id="wotdReveal">'+(S.gram.wotd?'Publish updated word':'Reveal to everyone')+'</button>';
   h+='<h2 class="sec">Speakers</h2>'+speakerPicker("gram");
   if(sel){
     h+='<div class="selcard"><div class="hd"><b>'+esc(sel.name)+'</b><button class="iconbtn" data-rowdel="gram" title="Remove speaker">✕</button></div>'+
