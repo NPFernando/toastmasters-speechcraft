@@ -23,11 +23,11 @@ module.exports=async b=>{
  await T.eventually(async()=>{const a=await read(G),b=await read(G2);return a.genotes.good==='Warm welcome'&&a.genotes.improve==='Clearer handovers'&&b.genotes.good==='Warm welcome'&&b.genotes.improve==='Clearer handovers';},'independent GE fields merge');
  await G.click('[data-vote-set="open"]');
  const A=await T.device(b),B=await T.device(b);await T.join(A,code,'Voter',['member']);await T.join(B,code,'Voter',['member']);
- await A.click('#voteBar');await A.click('[data-vcat="ps"]');
+ await A.click('#voteBar');const voterId=(await read(C)).members.list.find(m=>m.name==='Voter').id;await A.selectOption('#voterIdentity','member:'+voterId);await A.click('[data-vcat="ps"]');
  await T.eventually(async()=>(await read(B)).votes.length===1,'first ballot syncs');
- await B.click('#voteBar');await B.click('[data-vcat="ps"]'); // toggles the same person's choice off
+ await B.click('#voteBar');await B.selectOption('#voterIdentity','member:'+voterId);await B.click('[data-vcat="ps"]'); // toggles the same person's choice off
  await T.eventually(async()=>(await read(A)).votes.length===1&&(await read(A)).votes[0].choice==='', 'second device edits same ballot');
  await B.click('[data-vcat="ps"]');await T.eventually(async()=>(await read(A)).votes[0].choice==='Candidate','same ballot restored');
- s=await read(A);T.assert.equal(s.votes[0].voter,'person:voter');T.assert.equal(s.votes.length,1);
+ s=await read(A);T.assert.equal(s.votes[0].participantId,'member:'+voterId);T.assert.equal(s.votes.length,1);
  T.noErrors(E,C,G,G2,A,B);
 };

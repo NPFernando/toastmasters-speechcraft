@@ -5,10 +5,10 @@ function agDateLong(iso){ var d=isoDate(iso); if(!d) return iso||""; return ordi
 function agDateShort(iso){ var d=isoDate(iso); if(!d) return iso||""; return ordinal(d.getDate())+" of "+d.toLocaleDateString("en-AU",{month:"long"}); }
 var AG_SIDE=[["president","President"],["saa","Sergeant at Arms"],["tmod","Toastmaster"],["ttm","Table Topics Master"],["keynote","Keynote Presenter"],["rrm","Round Robin Master"],["ge","General Evaluator"],["timer","Timer"],["ah","Ah-Counter"],["gram","Grammarian"],["speakers","Prepared Speakers"],["sevals","Speech Evaluator"],["ttevals","Table Topics Evaluator"],["coord","Speechcraft Coordinator"]];
 function agLines(arr){ return arr.map(function(x){ return '<div class="agl">'+x+'</div>'; }).join(""); }
-function agExtraHTML(x){
+function agExtraHTML(x,item){
   if(x==="speakers"){ var sp=uniq(asList("speakers").concat(S.speeches.filter(function(s){return s.type!=="tt";}).map(function(s){return s.name;}))); if(!sp.length) return "";
     return '<div class="agsub">'+agLines(sp.map(function(n){ var t=speechTitle(n), e=evaluatorOf(n); return esc(n)+(t?' – “'+esc(t)+'”':'')+(e?' <span class="agev">· evaluator '+esc(e)+'</span>':''); }))+'</div>'; }
-  if(x==="keynote"){ var k=assigned("keynote"); if(!k) return ""; return '<div class="agsub">'+agLines([esc(k)+(S.agenda.korg?' ('+esc(S.agenda.korg)+')':'')].concat(S.agenda.ktopic?['<i>'+esc(S.agenda.ktopic)+'</i>']:[]))+'</div>'; }
+  if(x==="keynote"){var p=presentationOf(item&&item.id||keynoteItems()[0]&&keynoteItems()[0].id);return p?'<div class="agsub">'+agLines([esc(p.name||assigned("keynote")||""),esc(p.topic||"")])+'</div>':"";}
   if(x==="ttevals"){ var tv=asList("ttevals"); return tv.length?'<div class="agsub">'+agLines(tv.map(esc))+'</div>':""; }
   if(x==="evals"){
     var h="", rep=["timer","ah","gram"].filter(function(k){return assigned(k);}).map(function(k){ return esc(arole(k).n)+' – '+esc(assigned(k)); });
@@ -25,7 +25,7 @@ function agActivityHTML(it){
   if(it.role==="coord" && A.next){ var nd=agDateShort(A.next); txt=/next meeting\.?$/i.test(txt)?txt.replace(/next meeting\.?$/i,"next meeting on "+nd+"."):txt+" Next meeting: "+nd+"."; }
   var i=txt.indexOf(" — "), h;
   h = i>0 ? '<b class="aghd">'+esc(txt.slice(0,i))+'</b><div>'+esc(txt.slice(i+3).charAt(0).toUpperCase()+txt.slice(i+4))+'</div>' : esc(txt);
-  return h+agExtraHTML(it.x);
+  return h+agExtraHTML(it.x,it);
 }
 function buildAgendaDoc(){
   var A=S.agenda, tm=document.querySelector(".logo img").src;

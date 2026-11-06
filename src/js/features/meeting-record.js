@@ -5,14 +5,14 @@ function bumpNum(t){ var m=String(t).match(/^(.*?)(\d+)(\D*)$/); if(!m) return t
 function newMeetingCore(carry){
   autoSaveRecord("Before new meeting");
   var keep={people:S.people,peopleU:S.peopleU,limits:S.limits,fill:S.fill,members:S.members,pin:S.pin,agenda:S.agenda};
-  var n=blank(); n.people=keep.people; n.peopleU=keep.peopleU; n.limits=keep.limits; n.fill=keep.fill; n.members=keep.members; n.pin=keep.pin; n.attend=S.attend; n.keys=S.keys; n.coorg=S.coorg; n.ideas=S.ideas; n.tpls=S.tpls; n.actions=clone(S.actions);
+  var n=blank(); n.people=keep.people; n.peopleU=keep.peopleU; n.limits=keep.limits; n.fill=keep.fill; n.members=keep.members; n.pin=keep.pin; n.attend=S.attend; n.keys=S.keys; n.coorg=S.coorg; n.ideas=S.ideas; n.tpls=S.tpls; n.actions=clone(S.actions); n.voterPeople=clone(S.voterPeople);
   n.agenda=clone(keep.agenda); n.agenda.ktopic=""; n.agenda.korg=""; ["kobjective","kintro","kmaterials","kminutes"].forEach(function(k){delete n.agenda[k];}); n.agenda.u=now();
   if(carry){
     n.assigns=clone(S.assigns||[]);
     var nd=S.agenda.next||(S.meta.date?addDaysISO(S.meta.date,7):""); if(nd) n.meta.date=nd;
     n.meta.week=nextWeek(S.meta.week||""); n.agenda.no=bumpNum(S.agenda.no||""); n.agenda.next=nd?addDaysISO(nd,7):""; n.meta.u=now();
   } else { n.agenda.assign={}; n.agenda.no=""; n.agenda.next=""; }
-  S=n; L.ahSel=null; L.gramSel=null; saveL(); lastSig={}; commit(); wake();
+  S=n; L.workflowDraft={mid:n.mid,fields:{}}; L.ahSel=null; L.gramSel=null; saveL(); lastSig={}; commit(); wake();
 }
 document.getElementById("newMeeting").addEventListener("click",function(){
   if(!confirm("Start a new meeting?\n\nThis clears speakers, times, topics, counts and this week's role players"+(NET.mode?" on all connected devices":"")+". The member list, agenda layout, time limits and word lists are kept.")) return;

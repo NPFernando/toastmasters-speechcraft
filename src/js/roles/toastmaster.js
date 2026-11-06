@@ -16,7 +16,7 @@ function scheduleStatus(){
 }
 function itemCard(it,big){
   if(!it) return '<div class="muted">End of agenda.</div>';
-  var who=whoFor(it.role), x=extraText(it.x);
+  var who=whoFor(it.role), x=extraText(it.x,it);
   return '<div class="'+(big?'nowtxt':'nexttxt')+'"><span class="tm">'+fmtHM(rt(it))+'</span> <b>'+arole(it.role).n+'</b>'+(who?' · '+esc(who):'')+'</div><div class="'+(big?'nowact':'muted')+'">'+esc(it.text)+'</div>'+(x?'<div class="agx2">'+esc(x).replace(/\n/g,'<br>')+'</div>':'');
 }
 function tmodHTML(){

@@ -9,7 +9,7 @@ function reportsSummary(){
 }
 function voteControlHTML(canOpen,canReveal){
   var st=S.vote.state, h='<div class="selcard"><div class="hd"><b>🗳 Voting</b><span class="pill">'+votersCount()+' voted</span></div><div style="margin-bottom:8px">'+voteStateText()+'</div><div class="row">';
-  if(canOpen){ if(st==="closed"||st==="done") h+='<button class="btn go" data-vote-set="open">'+(st==="done"?"Re-open voting":"Open voting")+'</button>'; if(st==="open") h+='<button class="btn stop" data-vote-set="done">Close voting</button>'; }
+  if(canOpen){ h+='<button class="btn" data-new-voting-round>Start new voting round</button>'; if(st==="closed"||st==="done") h+='<button class="btn go" data-vote-set="open">'+(st==="done"?"Re-open voting":"Open voting")+'</button>'; if(st==="open") h+='<button class="btn stop" data-vote-set="done">Close voting</button>'; }
   if(canReveal){ if(st==="done") h+='<button class="btn go big1" data-vote-set="shown">🏆 Reveal winners</button>'; if(st==="shown") h+='<button class="btn" id="showWinners">Show winners again</button>'; if(st==="open") h+='<span class="saved">The General Evaluator closes voting, then you can reveal the winners.</span>'; }
   h+='<button class="btn" id="openVote">My vote</button></div></div>';
   return h;

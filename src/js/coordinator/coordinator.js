@@ -150,7 +150,7 @@ function coordHTML(){
       h+='<div class="rprow"><span class="rpl">'+a.n+rsvpBadge(assigned(a.k))+(assigned(a.k)?' '+onDot(assigned(a.k),true):'')+'</span><div class="rpv"><input class="t" data-rp="'+a.k+'" list="memberlist" autocomplete="off" value="'+esc(assigned(a.k))+'" placeholder="Pick a member or type a guest\'s name"></div></div>';
     }
   });
-  h+='<div class="rprow"><span class="rpl">Keynote topic</span><div class="rpv row"><input class="t" data-ag="ktopic" value="'+esc(A.ktopic)+'" placeholder="e.g. Effective use of Humor"><input class="t" data-ag="korg" value="'+esc(A.korg)+'" placeholder="Club / organisation (optional)"></div></div></div>';
+  h+='</div>'+keynoteHTML();
   h+=assignTableHTML();
   h+='<div class="note">Role players fill in automatically on every device: names for each role, the Timer\'s Prepared Speech, Evaluations and Role reports lists, and the report header.</div>';
   }
@@ -179,7 +179,7 @@ function coordHTML(){
 }
 function agendaPreviewHTML(){
   var A=S.agenda, h='<section class="card" style="margin-top:12px"><h2 class="sec" style="margin-top:0">📋 Agenda'+(A.no?' · No '+esc(A.no):'')+'</h2>';
-  itemsSorted().forEach(function(it){ var who=whoFor(it.role); h+='<div class="agview"><b>'+fmtHM(it.time)+'</b><span>'+arole(it.role).n+(who?' · '+esc(who):'')+'</span><div class="muted">'+esc(it.text)+(extraText(it.x)?'<br>'+esc(extraText(it.x)).replace(/\n/g,'<br>'):'')+'</div></div>'; });
+  itemsSorted().forEach(function(it){ var who=whoFor(it.role); h+='<div class="agview"><b>'+fmtHM(it.time)+'</b><span>'+arole(it.role).n+(who?' · '+esc(who):'')+'</span><div class="muted">'+esc(it.text)+(extraText(it.x,it)?'<br>'+esc(extraText(it.x,it)).replace(/\n/g,'<br>'):'')+'</div></div>'; });
   return h+'<div class="row" style="margin-top:8px"><button class="btn" id="agPrint">📄 Print agenda</button></div></section>';
 }
 
