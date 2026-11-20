@@ -17,7 +17,7 @@ function summarise(st){
     asList("speakers").forEach(function(n){ if(!o.speeches.some(function(x){return nkey(x.name)===nkey(n);})) addRole(n,"speaker"); });
     S.rows.tt.forEach(function(r,i){ if(rowState(r)!=="done") return; o.tt.push({name:baseName(displayName(r,i)),sec:elapsed(r,t),ok:!!status("tt",r,t).ok}); });
     var evs=uniq(asList("sevals").concat(asList("ttevals"),S.assigns.map(function(a){return a.evaluator;}))); evs.forEach(function(n){ addRole(n,"evaluator"); o.evals.push(n); });
-    S.ahRows.forEach(function(r){ o.ah[r.name]=ahTotal(r); });
+    S.ahRows.forEach(function(r){ o.ah[r.name]=(o.ah[r.name]||0)+ahTotal(r); });
     S.gramRows.forEach(function(r){ if(r.w) o.wotd[r.name]=r.w; });
     if(S.vote.state==="shown") VCATS.forEach(function(c){ tally(c.k).winners.forEach(function(w){ o.awards.push({cat:c.n,name:w.name}); }); });
     o.present=uniq(S.attend.filter(function(a){return a.mid===S.mid&&a.present;}).map(function(a){return a.name;}));

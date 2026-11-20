@@ -88,9 +88,9 @@ function companionHTML(){
   var rs=myRoles(), h="";
   if(rs.indexOf("ah")>=0 && L.role!=="ah"){
     var who=speakingNowName()||((S.ahRows.find(function(r){return r.id===L.ahSel;})||{}).name||"");
-    var rec=who?S.ahRows.find(function(r){return nkey(r.name)===nkey(who);}):null;
+    var format=runningList()[0]?.sid||ahFormat(), rec=who?ahRecord(who,format):null;
     h+='<div class="cmp"><b>🔢 Ah-Counter</b> <span class="muted">'+(who?esc(who)+(speakingNowName()?' (speaking now)':''):'— no one speaking')+'</span><div class="cmpbtns">'+
-       (who?S.fill.words.map(function(w){ return '<button class="cmpb" data-cmpah="'+esc(w)+'" data-who="'+esc(who)+'">'+esc(w)+' <b>'+((rec&&rec.c[w])||0)+'</b></button>'; }).join(""):'')+'</div></div>';
+       (who?S.fill.words.map(function(w){ return '<button class="cmpb" data-format="'+format+'" data-cmpah="'+esc(w)+'" data-who="'+esc(who)+'">'+esc(w)+' <b>'+((rec&&rec.c[w])||0)+'</b></button>'; }).join(""):'')+'</div></div>';
   }
   if(rs.indexOf("gram")>=0 && L.role!=="gram"){
     var g=personNow(); var gr=g?S.gramRows.find(function(r){return nkey(r.name)===nkey(g);}):null;

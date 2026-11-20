@@ -82,9 +82,9 @@ function buildReport(){
   }
   if(inc("ah")){
     var words=S.fill.words.filter(function(w){return S.ahRows.some(function(r){return r.c[w];});}), grand=0;
-    h+='<h4>🔢 Ah-Counter’s Report</h4><table><thead><tr><th>Speaker</th>'+words.map(function(w){return '<th class="c">'+esc(w)+'</th>';}).join("")+'<th class="c">Total</th></tr></thead><tbody>';
-    S.ahRows.forEach(function(r){ var tot=ahTotal(r); grand+=tot; h+='<tr><td>'+esc(r.name)+'</td>'+words.map(function(w){return '<td class="c">'+(r.c[w]||0)+'</td>';}).join("")+'<td class="c"><b>'+tot+'</b></td></tr>'; });
-    h+='</tbody></table><div style="margin-top:4px;color:#444">'+grand+' filler words counted across '+S.ahRows.length+' speakers.'+(S.ahRows.length?' Cleanest: '+esc(S.ahRows.slice().sort(function(a,b){return ahTotal(a)-ahTotal(b);})[0].name)+'.':'')+'</div>';
+    h+='<h4>🔢 Ah-Counter’s Report</h4><table><thead><tr><th>Speaker</th><th>Format</th>'+words.map(function(w){return '<th class="c">'+esc(w)+'</th>';}).join("")+'<th class="c">Total</th></tr></thead><tbody>';
+    S.ahRows.forEach(function(r){ var tot=ahTotal(r); grand+=tot; h+='<tr><td>'+esc(r.name)+'</td><td>'+esc(ahFormatName(r.format))+'</td>'+words.map(function(w){return '<td class="c">'+(r.c[w]||0)+'</td>';}).join("")+'<td class="c"><b>'+tot+'</b></td></tr>'; });
+    h+='</tbody></table><div style="margin-top:4px;color:#444">'+grand+' filler words counted across '+S.ahRows.length+' speaker entries.'+'</div>';
   }
   if(inc("gram")){
     h+='<h4>📝 Grammarian’s Report</h4>';

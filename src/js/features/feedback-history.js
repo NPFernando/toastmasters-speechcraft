@@ -10,10 +10,10 @@ function histCapture(name){
   var ev=submittedEvals(name).map(function(e){ return {by:e.by||"",kind:e.kind||"",enc:e.enc}; });
   var nt=S.notes.filter(function(n){return nkey(n.to)===k&&n.enc;}).map(function(n){ return {enc:n.enc}; });
   var tm=timesFor(name).filter(function(x){return rowState(x.r)==="done";}).map(function(x){ return {s:x.s.name,sec:x.sec,res:x.st.text}; });
-  var ah=S.ahRows.find(function(r){return nkey(r.name)===k;}), g=S.gramRows.find(function(r){return nkey(r.name)===k;});
+  var ah=S.ahRows.filter(function(r){return nkey(r.name)===k;}), g=S.gramRows.find(function(r){return nkey(r.name)===k;});
   var won=S.vote.state==="shown"?VCATS.filter(function(c){ return tally(c.k).winners.some(function(w){return nkey(w.name)===k;}); }).map(function(c){return c.n;}):[];
   if(!ev.length&&!nt.length&&!tm.length&&!won.length) return;
-  var rec={date:S.meta.date||"",week:S.meta.week||"",title:speechTitle(name),times:tm,ah:ah?ahTotal(ah):null,wotd:g?(g.w||0):null,good:g?g.good.slice():[],slips:g?g.slips.slice():[],awards:won,evals:ev,notes:nt};
+  var rec={date:S.meta.date||"",week:S.meta.week||"",title:speechTitle(name),times:tm,ah:ah.length?ah.reduce(function(sum,r){return sum+ahTotal(r);},0):null,wotd:g?(g.w||0):null,good:g?g.good.slice():[],slips:g?g.slips.slice():[],awards:won,evals:ev,notes:nt};
   var prev=mine.meetings[S.mid]; if(prev&&JSON.stringify(prev)===JSON.stringify(rec)) return;
   mine.meetings[S.mid]=rec; histSave(H);
 }

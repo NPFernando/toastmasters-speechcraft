@@ -79,7 +79,8 @@ view.addEventListener("click",function(e){
     return;
   }
   /* counters */
-  var kind=L.role;
+  var kind=L.role, suggested=t.closest("[data-ah-suggest]");
+  if(suggested&&kind==="ah"){ addCounterSpeaker("ah",suggested.dataset.ahSuggest); return; }
   if(t.closest("#spkAdd")){ addCounterSpeaker(kind,document.getElementById("spkInput").value); return; }
   var ch=t.closest("[data-sel]"); if(ch){ if(kind==="ah") L.ahSel=ch.dataset.sel; else L.gramSel=ch.dataset.sel; var sr0=selRow(kind); if(sr0&&selectPerson(sr0.name,kind)) commit(); else { saveL(); renderAll(); } return; }
   var rd=t.closest("[data-rowdel]"); if(rd){ var sr=selRow(kind); if(sr) removeItem([kind==="ah"?"ahRows":"gramRows"],sr.id,sr.name); return; }
@@ -115,6 +116,13 @@ view.addEventListener("input",function(e){
 });
 view.addEventListener("change",function(e){
   var t=e.target, sid=L.tab;
+  if(t.id==="ahFormat"){ L.ahFormat=t.value; saveL(); renderAll(); document.getElementById("ahFormat")?.focus(); return; }
+  if(t.id==="ahSpeakerName"){
+    var speaker=selRow("ah"), name=t.value.trim();
+    var existing=name&&ahRecord(name,ahFormat());
+    if(!speaker||!name||(existing&&existing!==speaker)){ if(speaker) t.value=speaker.name; return; }
+    speaker.sourceName=speaker.sourceName||speaker.name; speaker.name=name; tick(speaker); remember(name); commit(); return;
+  }
   if(t.dataset.edit==="time"){
     var r=findRow(sid,t.closest("tr").dataset.id), v=parseTime(t.value);
     if(v===null){ if(r.manual!=null){ r.manual=null; if(r.start==null) delete r.timedLim; tick(r); } commit(); return; }
