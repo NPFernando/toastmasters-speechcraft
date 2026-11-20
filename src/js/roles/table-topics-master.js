@@ -24,7 +24,7 @@ function ttmHTML(){
   h+='</ul><h2 class="sec">Used <span class="cnt">('+used.length+')</span></h2><ul class="tlist used">';
   if(!used.length) h+='<li class="muted">No topics used yet.</li>';
   used.slice().sort(function(a,b){return (a.usedAt||0)-(b.usedAt||0);}).forEach(function(x,i){
-    h+='<li data-tid="'+x.id+'"><span class="n">'+(i+1)+'</span><span class="txt">'+esc(x.text)+'</span><input class="name spk" data-edit="tspeaker" list="roster" autocomplete="off" value="'+esc(x.speaker||"")+'" placeholder="Speaker">'+(x.speaker&&asList("ttevals").length?'<select class="t ttevsel" data-ttev="'+esc(x.speaker)+'" aria-label="Evaluator for '+esc(x.speaker)+'"><option value="">Evaluator…</option>'+uniq(asList("ttevals").concat(ttEvaluatorOf(x.speaker)?[ttEvaluatorOf(x.speaker)]:[])).map(function(ev){ return '<option'+(nkey(ev)===nkey(ttEvaluatorOf(x.speaker))?' selected':'')+'>'+esc(ev)+'</option>'; }).join("")+'</select>':'')+
+    h+='<li data-tid="'+x.id+'"><span class="n">'+(i+1)+'</span><span class="txt">'+esc(x.text)+'</span><input class="name spk" data-edit="tspeaker" list="roster" autocomplete="off" value="'+esc(x.speaker||"")+'" placeholder="Speaker">'+(x.speaker&&asList("ttevals").length?'<select class="t ttevsel" data-ttev="'+esc(ttTurnKey(x))+'" aria-label="Evaluator for '+esc(x.speaker)+'"><option value="">Evaluator…</option>'+uniq(asList("ttevals").concat(ttEvaluatorOf(ttTurnKey(x))?[ttEvaluatorOf(ttTurnKey(x))]:[])).map(function(ev){ return '<option'+(nkey(ev)===nkey(ttEvaluatorOf(ttTurnKey(x)))?' selected':'')+'>'+esc(ev)+'</option>'; }).join("")+'</select>':'')+
        '<button class="btn sm" data-tact="show">📺</button><button class="btn sm" data-tact="back" title="Move back to Remaining">↺ Put back</button><button class="iconbtn" data-tact="del" title="Remove topic">✕</button></li>';
   });
   h+='</ul></section>';
@@ -46,7 +46,7 @@ function callSpeaker(){
   var nm=(document.getElementById("callName").value||"").trim();
   if(!nm){ alert("Type who is taking this topic first."); document.getElementById("callName").focus(); return; }
   clearDeviceDraft("callName");
-  cur.speaker=nm; cur.used=true; cur.usedAt=now(); tick(cur); remember(nm); autoAssignTT(nm); if(linkRoles().length) selectPerson(nm,"ttm");
+  cur.speaker=nm; cur.used=true; cur.usedAt=now(); tick(cur); remember(nm); autoAssignTT(ttTurnKey(cur)); if(linkRoles().length) selectPerson(nm,"ttm");
   /* queue them on the Timer's Table Topics list */
   var r=cur.rowId && findRow("tt",cur.rowId);
   if(r){ if(rowState(r)==="idle"){ r.name=nm; tick(r); } }

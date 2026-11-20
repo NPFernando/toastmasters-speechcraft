@@ -1,10 +1,13 @@
 /* ---------- Focus mode: only what the role needs right now ---------- */
 var FOCUS_ROLES={timer:1,ah:1,gram:1,tmod:1,ttm:1};
 function inFocus(){ return curView()==="role" && !!L.focus && !!FOCUS_ROLES[L.role]; }
-function focusWho(){ return (L.role==="ah"&&L.ahFormat&&runningList()[0]?.sid!==L.ahFormat?"":speakingNowName()) || L.fsel || ""; }
+function focusWho(){ return (["ah","gram"].includes(L.role)&&L[L.role+"Format"]&&runningList()[0]?.sid!==L[L.role+"Format"]?"":speakingNowName()) || L.fsel || ""; }
 function focusPeople(){ return uniq(asList("speakers").concat(S.ahRows.map(function(r){return r.name;}),S.gramRows.map(function(r){return r.name;}),S.topics.filter(function(t){return t.used;}).map(function(t){return t.speaker;}))); }
 function focusWhoPicker(who){
-  var live=!!speakingNowName()&&(L.role!=="ah"||!L.ahFormat||runningList()[0]?.sid===L.ahFormat), ppl=L.role==="ah"?uniq(ahNames(ahFormat()).concat(S.ahRows.filter(function(r){return (r.format||"other")===ahFormat();}).map(function(r){return r.name;}))):focusPeople();
+  var counter=["ah","gram"].includes(L.role), format=counter?counterFormat(L.role):null;
+  var live=!!speakingNowName()&&(!counter||!L[L.role+"Format"]||runningList()[0]?.sid===format);
+  var rows=L.role==="ah"?S.ahRows:S.gramRows;
+  var ppl=counter?uniq(ahNames(format).concat(rows.filter(function(r){return (r.format||"other")===format;}).map(function(r){return r.name;}))):focusPeople();
   return '<div class="fwho"><div class="flbl">'+(live?'🎙 Speaking now':'Who are you listening to?')+'</div><div class="fname">'+(who?esc(who):'<span class="muted">Waiting for the Timer…</span>')+'</div>'+
     (!live?'<div class="chips" style="justify-content:center;margin-top:8px">'+ppl.map(function(n){ return '<button class="chip'+(nkey(n)===nkey(who)?' active':'')+'" data-fsel="'+esc(n)+'">'+esc(n)+'</button>'; }).join("")+'<input class="t" id="fselNew" list="roster" autocomplete="off" placeholder="Other name" style="max-width:170px"></div>':'')+'</div>';
 }
@@ -22,7 +25,8 @@ function focusHTML(){
     h+=ahTabs();
     h+='<section class="card fcard">'+focusWhoPicker(who)+(who?'<div class="fgrid">'+S.fill.words.map(function(w){ return '<button class="fbtn" data-fah="'+esc(w)+'"><span>'+esc(w)+'</span><b>'+((rec&&rec.c[w])||0)+'</b></button>'; }).join("")+'</div><div class="row" style="justify-content:center;margin-top:10px"><button class="btn" data-fundo>↶ Undo last</button><span class="saved">Total for '+esc(who)+': '+(rec?ahTotal(rec):0)+'</span></div>':'')+'</section>';
   } else if(r==="gram"){
-    var g=focusWho(), gr=g?S.gramRows.find(function(x){return nkey(x.name)===nkey(g);}):null;
+    var g=focusWho(), gr=g?formatRecord("gram",g,counterFormat("gram")):null;
+    h+=ahTabs("gram");
     h+='<section class="card fcard">'+focusWhoPicker(g)+(g?'<button class="fbtn fwide" data-fwotd><span>+1 Word of the Day'+(S.gram.wotd?' “'+esc(S.gram.wotd)+'”':'')+'</span><b>'+((gr&&gr.w)||0)+'</b></button>'+
       '<div class="row" style="margin-top:10px"><input class="t" id="fNote" autocomplete="off" placeholder="Phrase or slip you heard"><button class="btn go" data-fnote="good">👍 Good</button><button class="btn" data-fnote="slips">✎ Slip</button></div>'+
       (gr&&(gr.good.length||gr.slips.length)?'<div class="saved" style="margin-top:6px">'+gr.good.length+' good · '+gr.slips.length+' slips noted</div>':''):'')+'</section>';
@@ -41,7 +45,7 @@ function focusHTML(){
   }
   return h;
 }
-function fRec(kind,name){ if(kind==="ah") return counterRow("ah",name); var arr=kind==="ah"?S.ahRows:S.gramRows, ex=arr.find(function(x){return nkey(x.name)===nkey(name);}); if(!ex){ ex=kind==="ah"?{id:uid(),name:name,c:{},ord:maxOrd(arr)+1,u:now()}:{id:uid(),name:name,w:0,good:[],slips:[],ord:maxOrd(arr)+1,u:now()}; arr.push(ex); } return ex; }
+function fRec(kind,name){ return counterRow(kind,name); }
 var fUndo=null;
 (function(){
   var V=document.getElementById("view");

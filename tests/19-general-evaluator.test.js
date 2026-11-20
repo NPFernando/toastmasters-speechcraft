@@ -6,7 +6,7 @@ module.exports=async function(b){
  await p.fill('[data-ge="actualStart"]','17:35'); await p.press('[data-ge="actualStart"]','Tab');
  await p.fill('[data-ge="check_start_note"]','Opened five minutes late'); await p.press('[data-ge="check_start_note"]','Tab');
  // Seed a saved queue entry through the persistence boundary, not private app scope.
- await p.evaluate(()=>{const k='speechcraftMeeting.v2',s=JSON.parse(localStorage.getItem(k)); s.rows.rr.push({id:'handover-test',name:'Speaker <one>',start:null,end:null,manual:null,ord:1,u:Date.now()});localStorage.setItem(k,JSON.stringify(s));});
+ await p.evaluate(()=>{const k='speechcraftMeeting.v2',s=JSON.parse(localStorage.getItem(k)); s.rows.rr.push({id:'handover-test',name:'Speaker <one>',start:Date.now()-3000,end:Date.now(),manual:null,ord:1,u:Date.now()});localStorage.setItem(k,JSON.stringify(s));});
  await p.reload();
  await p.locator('summary').filter({hasText:'Round Robin word handovers'}).click();
  await p.locator('summary').filter({hasText:'Speaker <one>'}).click();
