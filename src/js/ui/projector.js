@@ -16,7 +16,8 @@ function projHTML(){
   } else if(ss){ var c=ss.c, who=whoFor(c.cur.role);
     main='<div class="pj-lbl">Now</div><div class="pj-name">'+esc(arole(c.cur.role).n)+'</div>'+(who?'<div class="pj-who">'+esc(who)+'</div>':'')+'<div class="pj-sub">'+esc(String(c.cur.text||"").split(" — ")[0])+'</div>'+(c.next?'<div class="pj-next">Next · '+esc(fmtHM(rt(c.next)))+' '+esc(arole(c.next.role).n)+(whoFor(c.next.role)?' · '+esc(whoFor(c.next.role)):'')+'</div>':'');
   } else {
-    main='<div class="pj-lbl">Welcome to</div><div class="pj-name">'+esc(S.agenda.title||GROUP)+'</div><div class="pj-who">Speechcraft'+(S.meta.week?' · '+esc(S.meta.week):'')+'</div><div class="pj-sub">'+esc(fmtDate(S.meta.date)||"")+'</div>'+(guestLink()?'<div class="pj-guest">'+qrSvg(guestLink())+'<div>👋 Guests: scan to check in</div></div>':'');
+    main='<div class="pj-lbl">Welcome to</div><div class="pj-name">'+esc(S.agenda.title||GROUP)+'</div><div class="pj-who">Speechcraft'+(S.meta.week?' · '+esc(S.meta.week):'')+'</div><div class="pj-sub">'+esc(fmtDate(S.meta.date)||"")+'</div>'+
+      (S.agenda.theme?'<div class="pj-who">'+esc(S.agenda.theme)+'</div>':'')+(guestLink()?'<div class="pj-guest">'+qrSvg(guestLink())+'<div>👋 Guests: scan to check in</div></div>':'');
   }
   var foot=S.gram.wotd?'<div class="pj-wotd"><span>Word of the Day</span><b>'+esc(S.gram.wotd)+'</b>'+wordOfDayDetailsHTML()+'</div>':'';
   return '<div class="pj-head"><img src="'+tm+'" alt=""><div>'+esc(GROUP)+(S.meta.week?' · '+esc(S.meta.week):'')+'</div><img class="r" src="'+co+'" alt=""></div><div class="pj-main '+cls+'">'+main+'</div>'+foot+

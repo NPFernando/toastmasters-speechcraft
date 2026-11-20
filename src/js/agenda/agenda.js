@@ -26,7 +26,7 @@ function defaultItems(){
     ["19:30","coord","Discussion with participants on meeting remarks. Call for role players for the next meeting.",""]
   ].map(function(x,i){ return {id:"d"+(i+1),time:x[0],role:x[1],text:x[2],x:x[3],ord:i+1}; });
 }
-function defaultAgenda(){ return {title:"Dijital Team Batch 4",no:"",venue:"",next:"",ktopic:"",korg:"",assign:{},items:defaultItems(),u:0}; }
+function defaultAgenda(){ return {title:"Dijital Team Batch 4",theme:"",no:"",venue:"",next:"",ktopic:"",korg:"",assign:{},items:defaultItems(),u:0}; }
 function arole(k){ return AROLES.find(function(a){return a.k===k;}); }
 function assigned(k){ var v=S.agenda.assign[k]; return Array.isArray(v)?v.filter(Boolean):(v?String(v):""); }
 function asList(k){ var v=assigned(k); return Array.isArray(v)?v:(v?[v]:[]); }

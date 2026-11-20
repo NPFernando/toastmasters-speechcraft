@@ -1596,7 +1596,7 @@ function defaultItems(){
     ["19:30","coord","Discussion with participants on meeting remarks. Call for role players for the next meeting.",""]
   ].map(function(x,i){ return {id:"d"+(i+1),time:x[0],role:x[1],text:x[2],x:x[3],ord:i+1}; });
 }
-function defaultAgenda(){ return {title:"Dijital Team Batch 4",no:"",venue:"",next:"",ktopic:"",korg:"",assign:{},items:defaultItems(),u:0}; }
+function defaultAgenda(){ return {title:"Dijital Team Batch 4",theme:"",no:"",venue:"",next:"",ktopic:"",korg:"",assign:{},items:defaultItems(),u:0}; }
 function arole(k){ return AROLES.find(function(a){return a.k===k;}); }
 function assigned(k){ var v=S.agenda.assign[k]; return Array.isArray(v)?v.filter(Boolean):(v?String(v):""); }
 function asList(k){ var v=assigned(k); return Array.isArray(v)?v:(v?[v]:[]); }
@@ -2085,7 +2085,9 @@ function coordHTML(){
      '<label class="f">Program title<input class="t" data-ag="title" value="'+esc(A.title)+'"></label>'+
      '<label class="f">Meeting no<input class="t" data-ag="no" value="'+esc(A.no)+'" placeholder="e.g. 05"></label>'+
      '<label class="f">Venue<input class="t" data-ag="venue" value="'+esc(A.venue)+'" placeholder="e.g. Level 12 East Tower WTC"></label>'+
-     '<label class="f">Next meeting date<input class="t" type="date" data-ag="next" value="'+esc(A.next)+'"></label></div>';
+     '<label class="f">Next meeting date<input class="t" type="date" data-ag="next" value="'+esc(A.next)+'"></label></div>'+
+     '<label class="f">Meeting theme<input class="t" data-ag="theme" maxlength="160" value="'+esc(A.theme||"")+'" placeholder="Optional session theme"></label>'+
+     '<button class="linkbtn" id="useWelcomingTheme">Use “Welcoming 2027: New Voices, New Possibilities”</button>';
   /* members */
   var ms=memberNames();
   if(CT==="people") h+='<h2 class="sec">👥 Members <span class="cnt">('+ms.length+') · remembered for every meeting · tap a name to set Speechcrafter / Toastmaster / Guest</span></h2>'+membersEditorHTML();
@@ -2169,7 +2171,7 @@ function agActivityHTML(it){
 }
 function buildAgendaDoc(){
   var A=S.agenda, tm=document.querySelector(".logo img").src;
-  var h='<div class="agdoc"><div class="aghead"><img src="'+tm+'" alt="Toastmasters International"><div><div class="agt1">SPEECHCRAFT PROGRAM</div><div class="agt2">'+esc(A.title||GROUP)+'</div><div class="agt3">Agenda for Speechcraft Program'+(A.no?' - No '+esc(A.no):'')+'</div></div></div>';
+  var h='<div class="agdoc"><div class="aghead"><img src="'+tm+'" alt="Toastmasters International"><div><div class="agt1">SPEECHCRAFT PROGRAM</div><div class="agt2">'+esc(A.title||GROUP)+'</div><div class="agt3">Agenda for Speechcraft Program'+(A.no?' - No '+esc(A.no):'')+'</div>'+(A.theme?'<div class="agt3">Meeting theme · '+esc(A.theme)+'</div>':'')+'</div></div>';
   h+='<div class="agmeta"><b>Date:</b> '+esc(agDateLong(S.meta.date)||"—")+(A.venue?'<br><b>Venue:</b> '+esc(A.venue):'')+(S.meta.week?'<br><b>Week:</b> '+esc(S.meta.week):'')+'</div>';
   h+='<div class="aggrid"><div><div class="agbox"><b>Club Mission</b><div class="agmission">'+CLUB_MISSION+'</div></div><div class="agbox"><b class="rpt">Role Players</b>';
   AG_SIDE.forEach(function(a){ var v=asList(a[0]); if(!v.length) return; h+='<div class="agrp"><div class="agrpn">'+a[1]+'</div>'+v.map(function(n){return '<div>'+esc(n)+'</div>';}).join("")+'</div>'; });
@@ -3307,6 +3309,10 @@ document.addEventListener("fullscreenchange",function(){ if(!document.fullscreen
       if(!replaceRolePlayer(replace.dataset.replaceRole,replace.dataset.oldName,name)) showToastMsg("Choose an available replacement for this assignment.");
       return;
     }
+    if(t.closest("#useWelcomingTheme")){
+      S.agenda.theme="Welcoming 2027: New Voices, New Possibilities";
+      agChanged(); commit(); return;
+    }
     var fit=t.closest("[data-fit-speeches]");
     if(fit){
       var needed=preparedBlockRequirement(), items=itemsSorted(), index=items.findIndex(function(it){return it.id===fit.dataset.fitSpeeches;});
@@ -3375,7 +3381,7 @@ function newMeetingCore(carry){
   autoSaveRecord("Before new meeting");
   var keep={people:S.people,peopleU:S.peopleU,limits:S.limits,fill:S.fill,members:S.members,pin:S.pin,agenda:S.agenda};
   var n=blank(); n.people=keep.people; n.peopleU=keep.peopleU; n.limits=keep.limits; n.fill=keep.fill; n.members=keep.members; n.pin=keep.pin; n.attend=S.attend; n.keys=S.keys; n.coorg=S.coorg; n.ideas=S.ideas; n.tpls=S.tpls; n.actions=clone(S.actions); n.voterPeople=clone(S.voterPeople);
-  n.agenda=clone(keep.agenda); n.agenda.ktopic=""; n.agenda.korg=""; ["kobjective","kintro","kmaterials","kminutes"].forEach(function(k){delete n.agenda[k];}); n.agenda.u=now();
+  n.agenda=clone(keep.agenda); n.agenda.theme=""; n.agenda.ktopic=""; n.agenda.korg=""; ["kobjective","kintro","kmaterials","kminutes"].forEach(function(k){delete n.agenda[k];}); n.agenda.u=now();
   if(carry){
     n.assigns=clone(S.assigns||[]);
     var nd=S.agenda.next||(S.meta.date?addDaysISO(S.meta.date,7):""); if(nd) n.meta.date=nd;
@@ -4447,7 +4453,7 @@ function dashHTML(){
 /* the agenda for everyone, with where the meeting is up to */
 function agendaViewHTML(){
   var A=S.agenda, c=curItem(), h='<section class="card"><div class="row" style="justify-content:space-between"><h2 class="sec" style="margin:0">📋 Agenda'+(A.no?' · No '+esc(A.no):'')+'</h2><button class="btn" id="agPrint">📄 Print / PDF</button></div>';
-  h+='<div class="saved" style="margin:4px 0 10px">'+esc(fmtDate(S.meta.date)||"")+(A.venue?' · '+esc(A.venue):'')+'</div><div class="agv2">';
+  h+='<div class="saved" style="margin:4px 0 10px">'+esc(fmtDate(S.meta.date)||"")+(A.venue?' · '+esc(A.venue):'')+'</div>'+(A.theme?'<p><b>Meeting theme</b> · '+esc(A.theme)+'</p>':'')+'<div class="agv2">';
   runItems().forEach(function(it){
     var who=whoFor(it.role), st=isSkipped(it.id)?"skip":(c.cur&&c.cur.id===it.id)?"cur":(S.run.started&&S.run.started[it.id]!=null)?"done":"";
     var x=agExtraHTML(it.x,it);
@@ -5232,7 +5238,8 @@ function projHTML(){
   } else if(ss){ var c=ss.c, who=whoFor(c.cur.role);
     main='<div class="pj-lbl">Now</div><div class="pj-name">'+esc(arole(c.cur.role).n)+'</div>'+(who?'<div class="pj-who">'+esc(who)+'</div>':'')+'<div class="pj-sub">'+esc(String(c.cur.text||"").split(" — ")[0])+'</div>'+(c.next?'<div class="pj-next">Next · '+esc(fmtHM(rt(c.next)))+' '+esc(arole(c.next.role).n)+(whoFor(c.next.role)?' · '+esc(whoFor(c.next.role)):'')+'</div>':'');
   } else {
-    main='<div class="pj-lbl">Welcome to</div><div class="pj-name">'+esc(S.agenda.title||GROUP)+'</div><div class="pj-who">Speechcraft'+(S.meta.week?' · '+esc(S.meta.week):'')+'</div><div class="pj-sub">'+esc(fmtDate(S.meta.date)||"")+'</div>'+(guestLink()?'<div class="pj-guest">'+qrSvg(guestLink())+'<div>👋 Guests: scan to check in</div></div>':'');
+    main='<div class="pj-lbl">Welcome to</div><div class="pj-name">'+esc(S.agenda.title||GROUP)+'</div><div class="pj-who">Speechcraft'+(S.meta.week?' · '+esc(S.meta.week):'')+'</div><div class="pj-sub">'+esc(fmtDate(S.meta.date)||"")+'</div>'+
+      (S.agenda.theme?'<div class="pj-who">'+esc(S.agenda.theme)+'</div>':'')+(guestLink()?'<div class="pj-guest">'+qrSvg(guestLink())+'<div>👋 Guests: scan to check in</div></div>':'');
   }
   var foot=S.gram.wotd?'<div class="pj-wotd"><span>Word of the Day</span><b>'+esc(S.gram.wotd)+'</b>'+wordOfDayDetailsHTML()+'</div>':'';
   return '<div class="pj-head"><img src="'+tm+'" alt=""><div>'+esc(GROUP)+(S.meta.week?' · '+esc(S.meta.week):'')+'</div><img class="r" src="'+co+'" alt=""></div><div class="pj-main '+cls+'">'+main+'</div>'+foot+

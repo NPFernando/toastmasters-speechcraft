@@ -29,7 +29,7 @@ function agActivityHTML(it){
 }
 function buildAgendaDoc(){
   var A=S.agenda, tm=document.querySelector(".logo img").src;
-  var h='<div class="agdoc"><div class="aghead"><img src="'+tm+'" alt="Toastmasters International"><div><div class="agt1">SPEECHCRAFT PROGRAM</div><div class="agt2">'+esc(A.title||GROUP)+'</div><div class="agt3">Agenda for Speechcraft Program'+(A.no?' - No '+esc(A.no):'')+'</div></div></div>';
+  var h='<div class="agdoc"><div class="aghead"><img src="'+tm+'" alt="Toastmasters International"><div><div class="agt1">SPEECHCRAFT PROGRAM</div><div class="agt2">'+esc(A.title||GROUP)+'</div><div class="agt3">Agenda for Speechcraft Program'+(A.no?' - No '+esc(A.no):'')+'</div>'+(A.theme?'<div class="agt3">Meeting theme · '+esc(A.theme)+'</div>':'')+'</div></div>';
   h+='<div class="agmeta"><b>Date:</b> '+esc(agDateLong(S.meta.date)||"—")+(A.venue?'<br><b>Venue:</b> '+esc(A.venue):'')+(S.meta.week?'<br><b>Week:</b> '+esc(S.meta.week):'')+'</div>';
   h+='<div class="aggrid"><div><div class="agbox"><b>Club Mission</b><div class="agmission">'+CLUB_MISSION+'</div></div><div class="agbox"><b class="rpt">Role Players</b>';
   AG_SIDE.forEach(function(a){ var v=asList(a[0]); if(!v.length) return; h+='<div class="agrp"><div class="agrpn">'+a[1]+'</div>'+v.map(function(n){return '<div>'+esc(n)+'</div>';}).join("")+'</div>'; });
