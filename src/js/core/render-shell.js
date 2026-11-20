@@ -29,6 +29,7 @@ function renderAll(){
   renderMeta(); renderRoles(); renderRoster();
   renderLive(); renderNow();
   var v=document.getElementById("view");
+  var draftPanel=v.querySelector("#draftPin")?.closest("details");
   document.body.classList.toggle("focus",inFocus());
   if(curView()!=="role") v.innerHTML=curView()==="now"?dashHTML():agendaViewHTML();
   else if(inFocus()) v.innerHTML=focusHTML();
@@ -50,6 +51,8 @@ function renderAll(){
   if(curView()==="role"){
     v.insertAdjacentHTML("beforeend",handoverHTML());
     if(!["gram","seval","tteval"].includes(L.role)) v.insertAdjacentHTML("beforeend",draftAccessHTML());
+    var nextDraftPanel=v.querySelector("#draftPin")?.closest("details");
+    if(draftPanel&&nextDraftPanel) nextDraftPanel.open=draftPanel.open;
     restoreDeviceForms();
   }
   if(curView()!=="now" && (curView()!=="role" || L.role!=="gram" || inFocus()) && S.gram.wotd){
