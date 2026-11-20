@@ -186,24 +186,36 @@ function renderConnBtn(){
   b.title=NET.lastSync?"Last meeting data received at "+new Date(NET.lastSync).toLocaleTimeString():syncStatusLabel();
 }
 function renderConnBox(){
-  var h="";
+  var h="", box=document.getElementById("connBox"), title=NET.mode+":"+NET.code+":"+NET.synced;
   if(!NET.mode){
     h+='<h3>Connect devices</h3><p class="muted" style="margin-top:0">Link the Timer, Table Topics Master, Ah-Counter and Grammarian so everyone sees the same speakers, topics and results live.</p>'+
        '<div class="card" style="margin-bottom:10px"><b>Host this meeting</b><div class="saved" style="margin:4px 0 8px">Usually the Coordinator or Timer. You get a code and QR for the others.</div><button class="btn primary" id="hostBtn">Host meeting &amp; get code</button></div>'+
        '<div class="card"><b>Join a meeting</b><div class="saved" style="margin:4px 0 8px">Type the code the host gives you.</div><div class="row"><input class="t" id="joinCode" placeholder="e.g. K7Q-M4P" maxlength="9" style="text-transform:uppercase;letter-spacing:2px;font-weight:700"><button class="btn primary" id="joinBtn">Join</button></div></div>';
   } else {
     h+='<h3>'+(NET.mode==="host"?"You're hosting this meeting":(NET.synced?"Connected to meeting":"Joining meeting"))+'</h3>';
-    h+='<div class="saved">Share the meeting code or invite link, or ask others to scan the QR code.</div>';
-    h+='<div class="code">'+fmtCode(NET.code)+'</div><div role="status"><b>'+syncStatusLabel()+'</b>'+
-      (NET.lastSync?' · Last meeting data received at '+esc(new Date(NET.lastSync).toLocaleTimeString()):'')+'</div>';
-    if(NET.status!=="on") h+='<div class="'+(NET.status==="err"?"connerr":"saved")+'">'+esc(NET.msg||"Connecting…")+'</div>';
-    if(NET.peers.length){ var ppl=onlinePeople(); h+='<b>Online: '+ppl.length+' '+(ppl.length===1?'person':'people')+' on '+NET.peers.length+' device'+(NET.peers.length===1?'':'s')+'</b><ul class="devlist">'+ppl.map(function(p){ return '<li>'+peopleRoleNames(p)+(p.name?' — '+esc(p.name):'')+devTag(p)+(p.me?' <span class="saved">(you)</span>':'')+(p.host?' <span class="saved">(started the meeting)</span>':'')+'</li>'; }).join("")+'</ul>'; }
-    h+='<div class="qrwrap"><b>Join this meeting</b>'+qrSvg(inviteLink(NET.code))+'<div class="saved">Scan to join and choose a role</div></div>';
-    h+='<div class="row" style="justify-content:space-between;margin-top:10px"><span class="row"><button class="btn" id="copyCode">Copy code</button><button class="btn" id="copyLink">Copy invite link</button></span><button class="btn" id="leaveBtn">Leave meeting</button></div>';
+    var live='<div role="status"><b>'+syncStatusLabel()+'</b>'+
+      (NET.lastSync?' <span class="saved">· Last meeting data received at '+esc(new Date(NET.lastSync).toLocaleTimeString())+'</span>':'')+'</div>';
+    if(NET.status!=="on") live+='<div class="'+(NET.status==="err"?"connerr":"saved")+'">'+esc(NET.msg||"Connecting…")+'</div>';
+    if(NET.peers.length){ var ppl=onlinePeople(); live+='<b>Online: '+ppl.length+' '+(ppl.length===1?'person':'people')+' on '+NET.peers.length+' device'+(NET.peers.length===1?'':'s')+'</b><ul class="devlist">'+ppl.map(function(p){ return '<li>'+peopleRoleNames(p)+(p.name?' — '+esc(p.name):'')+devTag(p)+(p.me?' <span class="saved">(you)</span>':'')+(p.host?' <span class="saved">(started the meeting)</span>':'')+'</li>'; }).join("")+'</ul>'; }
+    var devices=box.querySelector(".conn-devices");
+    if(box.connectionTitle===title&&devices){
+      if(devices.liveHTML!==live){ devices.innerHTML=live; devices.liveHTML=live; }
+      return;
+    }
+    var link=inviteLink(NET.code), qr=qrSvg(link);
+    h+='<section class="conn-share card'+(qr?'':' no-qr')+'" aria-label="Share this meeting"><div class="conn-invite">'+
+      '<h4>Invite others</h4><div class="saved">Share this code or copy the invite link.</div>'+
+      '<div class="code">'+fmtCode(NET.code)+'</div>'+
+      '<div class="row"><button class="btn" id="copyCode">Copy code</button><button class="btn primary" id="copyLink">Copy invite link</button></div></div>'+
+      (qr?'<figure class="conn-qr"><figcaption>Scan to join</figcaption>'+qr+'</figure>':'')+
+      '<div id="connCopyStatus" class="saved" role="status"></div></section>';
+    h+='<section class="conn-devices" aria-label="Connected devices">'+live+'</section>';
   }
-  h+='<div class="note">🔒 Devices connect directly to each other and the link is encrypted (WebRTC). Public Nostr relays only help devices find each other, and even those messages are encrypted with your meeting code. Your meeting data never passes through them. Needs internet on every device. If a strict office network blocks it, use the same Wi-Fi or a phone hotspot. Anyone can close the page; the others stay connected.</div>'+
-     '<div style="text-align:right;margin-top:10px"><button class="btn" id="connClose">Close</button></div>';
-  document.getElementById("connBox").innerHTML=h;
+  h+='<details class="note conn-help"><summary>How devices connect</summary><p>Devices need internet access and exchange meeting data directly over encrypted WebRTC. Public Nostr relays help devices find each other. If an office network blocks the connection, try a phone hotspot. You can close this page while others stay connected.</p></details>'+
+     '<div class="row conn-footer">'+(NET.mode?'<button class="btn danger" id="leaveBtn">Leave meeting</button>':'')+'<button class="btn" id="connClose">Close</button></div>';
+  box.connectionTitle=title;
+  box.innerHTML=h;
+  if(NET.mode) box.querySelector(".conn-devices").liveHTML=live;
 }
 document.getElementById("connBtn").addEventListener("click",function(){ renderConnBox(); document.getElementById("connModal").classList.add("on"); var j=document.getElementById("joinCode"); if(j) j.focus(); });
 document.getElementById("connBox").addEventListener("click",function(e){
@@ -211,8 +223,12 @@ document.getElementById("connBox").addEventListener("click",function(e){
   if(t.closest("#hostBtn")){ startHost(makeCode()); renderConnBox(); }
   else if(t.closest("#joinBtn")){ var c=cleanCode(document.getElementById("joinCode").value); if(c.length!==6){ alert("The code has 6 letters/numbers, e.g. K7Q-M4P."); return; } document.getElementById("connModal").classList.remove("on"); W.code=c; W.advance=!L.setup; W.auto=!!L.setup; startJoin(c); openWelcome("connect"); }
   else if(t.closest("#leaveBtn")){ if(confirm("Leave this meeting on this device? The others stay connected, and you keep your data.")){ stopNet(false); renderConnBox(); } }
-  else if(t.closest("#copyCode")){ try{ navigator.clipboard.writeText(fmtCode(NET.code)); t.textContent="Copied"; }catch(err){} }
-  else if(t.closest("#copyLink")){ try{ navigator.clipboard.writeText(inviteLink(NET.code)); t.textContent="Link copied"; }catch(err){} }
+  else if(t.closest("#copyCode,#copyLink")){
+    var copyingCode=!!t.closest("#copyCode"), status=document.getElementById("connCopyStatus");
+    Promise.resolve().then(function(){ return navigator.clipboard.writeText(copyingCode?fmtCode(NET.code):inviteLink(NET.code)); }).then(function(){
+      status.textContent=copyingCode?"Meeting code copied.":"Invite link copied.";
+    },function(){ status.textContent="Couldn’t copy. Share the meeting code shown above."; });
+  }
   else if(t.closest("#connClose")) document.getElementById("connModal").classList.remove("on");
 });
 document.getElementById("connBox").addEventListener("keydown",function(e){ if(e.key==="Enter"&&e.target.id==="joinCode"){ e.preventDefault(); document.getElementById("joinBtn").click(); } });

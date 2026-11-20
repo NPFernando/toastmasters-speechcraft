@@ -24,9 +24,9 @@
     </div>
     <div class="hbtns">
       <span class="saved" id="saved"></span>
-      <button class="conn" id="connBtn" title="Connect devices"><i></i><span id="connTxt">Not connected</span></button>
+      <button class="conn" id="connBtn" aria-haspopup="dialog" aria-controls="connModal" title="Connect devices"><i></i><span id="connTxt">Not connected</span></button>
       <button class="btn ghost" id="homeBtn" title="Back to the start screen: choose your role and meeting">🏠 Home</button>
-      <span class="morewrap"><button class="btn ghost" id="moreBtn" aria-haspopup="true" aria-expanded="false" title="More options">⋯ More</button>
+      <span class="morewrap"><button class="btn ghost" id="moreBtn" aria-controls="moreMenu" aria-expanded="false" title="More options">⋯ More</button>
         <span class="moremenu" id="moreMenu" role="group" aria-label="More options">
           <button class="mi mobonly" id="homeMi">🏠 Home<small>Start screen: change your role or meeting</small></button>
           <button class="mi" id="backupBtn">⤓ Save meeting record<small>Download this meeting as a file (backup)</small></button>
@@ -46,7 +46,7 @@
             <label class="tgl"><input type="checkbox" id="bigText"> <span>Bigger text</span></label></span>
         </span></span>
       <input type="file" id="restoreFile" accept=".json,application/json" style="display:none">
-      <button class="btn primary" id="openReport">Meeting report</button>
+      <button class="btn primary" id="openReport" aria-haspopup="dialog" aria-controls="reportWrap">Meeting report</button>
     </div>
   </header>
   <nav class="bnav" id="bnav" aria-label="Sections"></nav>
@@ -72,6 +72,9 @@
   <div id="nudge" role="status" aria-live="polite"></div>
   <div id="companion" class="companion"></div>
   <main id="view"></main>
+  <div id="voteBar" class="votebar"></div>
+  <div id="finSheet"></div>
+  <div id="toast" role="status"><span id="toastMsg"></span><button id="toastUndo">Undo</button></div>
 
 </div>
 
@@ -108,11 +111,8 @@
 </div></div>
 <div id="aboutModal" class="modal" role="dialog" aria-modal="true" aria-label="About"><div class="mbox" id="aboutBox"></div></div>
 <div id="welcome" role="dialog" aria-modal="true" aria-label="Get started"><div class="wbox" id="wbox"></div></div>
-<div id="voteBar" class="votebar"></div>
-<div id="finSheet"></div>
 <div id="voteModal" class="modal" role="dialog" aria-modal="true" aria-label="Vote"><div class="mbox" id="voteBox"></div></div>
 <div id="winModal" class="modal" role="dialog" aria-modal="true" aria-label="Winners"><div class="mbox" id="winBox"></div></div>
-<div id="toast" role="status"><span id="toastMsg"></span><button id="toastUndo">Undo</button></div>
 <datalist id="roster"></datalist>
 <datalist id="memberlist"></datalist>
 
@@ -132,8 +132,8 @@
   </div>
 </div>
 
-<div id="proj" role="dialog" aria-label="Projector view"></div>
-<div id="stage" role="dialog" aria-label="Table topic">
+<div id="proj" role="dialog" aria-modal="true" aria-label="Projector view"></div>
+<div id="stage" role="dialog" aria-modal="true" aria-label="Table topic">
   <img class="l" alt=""><img class="r" alt="">
   <div class="lbl" id="stageLbl">Table Topic</div>
   <div class="txt" id="stageTxt"></div>

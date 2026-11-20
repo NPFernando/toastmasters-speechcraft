@@ -13,9 +13,14 @@ function hasData(k){
   return S.gramRows.length>0||!!S.gram.wotd;
 }
 function renderRepPick(){
-  document.getElementById("repPick").innerHTML=REPSECS.map(function(r){
+  var picker=document.getElementById("repPick"), focused=document.activeElement?.dataset.rep;
+  var html=REPSECS.map(function(r){
     return '<label><input type="checkbox" data-rep="'+r.id+'"'+(L.rep[r.id]!==false?' checked':'')+(hasData(r.id)?'':' disabled')+'> '+r.name+(hasData(r.id)?'':' <span style="color:#999">(no data)</span>')+'</label>';
   }).join("");
+  if(picker.repHTML===html&&picker.querySelector("[data-rep]")) return;
+  picker.repHTML=html;
+  picker.innerHTML=html;
+  if(focused) (picker.querySelector('[data-rep="'+focused+'"]:not(:disabled)')||document.getElementById("closeReport")).focus({preventScroll:true});
 }
 function refreshOpenMeetingReport(){
   var wrap=document.getElementById("reportWrap");
@@ -120,5 +125,3 @@ document.getElementById("printReport").addEventListener("click",function(){ var 
   if(document.getElementById("reportWrap").dataset.kind==="guide"){ document.title="Speechcraft Role Guides"; window.print(); setTimeout(function(){document.title=old;},500); return; }
   if(document.getElementById("reportWrap").dataset.kind==="agenda"){ document.title="Speechcraft Agenda "+(S.agenda.no?"No "+S.agenda.no+" ":"")+(S.meta.date||""); window.print(); setTimeout(function(){document.title=old;},500); return; } document.title="Speechcraft Report "+(S.meta.date||"")+(S.meta.week?" "+S.meta.week:""); window.print(); setTimeout(function(){document.title=old;},500); });
 ["reportWrap","connModal"].forEach(function(id){ document.getElementById(id).addEventListener("click",function(e){ if(e.target.id===id) e.target.classList.remove("on"); }); });
-document.addEventListener("keydown",function(e){ if(e.key==="Escape"){ document.getElementById("reportWrap").classList.remove("on"); document.getElementById("connModal").classList.remove("on"); closeStage(); } });
-

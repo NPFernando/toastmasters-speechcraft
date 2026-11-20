@@ -1,9 +1,9 @@
 const vm=require('vm'),fs=require('fs'),path=require('path'),assert=require('assert');
 module.exports=async()=>{
- const c={localStorage:{getItem:()=>null,setItem:()=>{}},document:{getElementById:()=>({})},console};vm.createContext(c);
+ const c={localStorage:{getItem:()=>null,setItem:()=>{}},document:{addEventListener(){},getElementById:()=>({addEventListener(){}})},console};vm.createContext(c);
  const read=p=>fs.readFileSync(path.join(__dirname,'../src/js',p),'utf8');
  vm.runInContext(read('core/config.js').replace('(function(){',''),c);
- for(const p of ['core/helpers.js','agenda/agenda.js','core/state.js','core/merge.js','core/field-sync.js','roles/shared.js'])vm.runInContext(read(p),c);
+ for(const p of ['core/helpers.js','agenda/agenda.js','core/state.js','core/merge.js','core/field-sync.js','core/timer-logic.js','roles/shared.js'])vm.runInContext(read(p),c);
  const clone=x=>JSON.parse(JSON.stringify(x));
  let a=c.blank(),b=clone(a);a.genotes={good:'Warm welcome',improve:'',fu:{good:100,improve:0},u:100};b.genotes={good:'',improve:'Clear introductions',fu:{good:0,improve:100},u:100};
  c.mergeGENotes(a,b);assert.equal(a.genotes.good,'Warm welcome');assert.equal(a.genotes.improve,'Clear introductions');

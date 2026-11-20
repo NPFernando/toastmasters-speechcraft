@@ -489,7 +489,7 @@ body.v-agenda .meta,body.v-agenda #roles,body.v-agenda #companion,body.v-agenda 
   .bnav button.on{background:transparent;color:var(--brand)} .bnav button.on span{transform:scale(1.1)}
   body{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
   #homeBtn,#moreBtn,#openReport{display:none!important} .mi.mobonly{display:block}
-  #toast{bottom:calc(80px + env(safe-area-inset-bottom))} #finSheet{bottom:calc(80px + env(safe-area-inset-bottom))}
+  #voteBar,#toast{bottom:calc(80px + env(safe-area-inset-bottom))} #finSheet{bottom:calc(80px + env(safe-area-inset-bottom))}
 }
 /* dashboard */
 .dash-hero .dh-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
@@ -499,7 +499,7 @@ body.v-agenda .meta,body.v-agenda #roles,body.v-agenda #companion,body.v-agenda 
 .dh-lbl{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding-top:3px} .dh-now .dh-lbl{color:var(--brand)}
 .dh-item{font-size:15px} .dh-next{padding:0 12px}
 .dh-prog{display:flex;align-items:center;gap:10px;margin-top:12px} .dh-prog .bar{flex:1;height:8px;background:var(--chip);border-radius:999px;overflow:hidden} .dh-prog .bar i{display:block;height:100%;background:var(--mar);border-radius:999px}
-.dgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-top:12px}
+.dgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:12px;margin-top:12px}
 .dstats{display:flex;gap:8px;flex-wrap:wrap} .dstat{flex:1 1 90px;border:1px solid var(--line);border-radius:10px;padding:8px 10px} .dstat b{display:block;font-size:22px} .dstat span{display:block;font-weight:700;font-size:13px} .dstat small{color:var(--muted)}
 .dplayers{display:grid;gap:6px} .dplayers div{display:flex;justify-content:space-between;gap:10px;border-bottom:1px dashed var(--line);padding-bottom:4px} .dplayers b{text-align:right}
 .dwotd{font-size:24px;font-weight:800;color:var(--mar)}
@@ -516,6 +516,7 @@ body.v-agenda .meta,body.v-agenda #roles,body.v-agenda #companion,body.v-agenda 
 .pj-main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;border-radius:28px;margin:2.5vh 0;padding:3vh 3vw;background:rgba(255,255,255,.06);transition:background .3s}
 .pj-main.sg{background:#1e9e57} .pj-main.sa{background:#e0a300;color:#1d2330} .pj-main.sr{background:#d63a3a}
 .pj-lbl{font-size:clamp(16px,2.4vw,34px);letter-spacing:.2em;text-transform:uppercase;opacity:.8;font-weight:800}
+.pj-name,.pj-topic{overflow-wrap:anywhere}
 .pj-name{font-size:clamp(34px,6vw,96px);font-weight:900;line-height:1.1;margin-top:1vh}
 .pj-who{font-size:clamp(22px,3.6vw,56px);font-weight:700;margin-top:1vh;color:#f2df74} .pj-main.sa .pj-who{color:#1d2330}
 .pj-clock{font-size:clamp(90px,22vw,340px);font-weight:900;line-height:1;font-variant-numeric:tabular-nums;margin-top:1vh}
@@ -526,7 +527,7 @@ body.v-agenda .meta,body.v-agenda #roles,body.v-agenda #companion,body.v-agenda 
 .pj-win{display:flex;gap:2vw;align-items:baseline;font-size:clamp(22px,3.4vw,56px);margin-top:2vh} .pj-win span{opacity:.8} .pj-win b{color:#f2df74}
 .pj-wotd{display:flex;gap:2vw;align-items:baseline;justify-content:center;flex-wrap:wrap;background:#772432;border-radius:18px;padding:1.6vh 2vw;font-size:clamp(16px,2.2vw,34px)}
 .pj-wotd span{text-transform:uppercase;letter-spacing:.14em;font-size:.7em;opacity:.85} .pj-wotd>b{font-size:1.4em} .pj-wotd i{opacity:.85}
-.pj-ctl{position:absolute;right:18px;bottom:14px;display:flex;gap:8px;opacity:.35;transition:opacity .2s} .pj-ctl:hover{opacity:1}
+.pj-ctl{position:absolute;right:18px;bottom:14px;display:flex;gap:8px;opacity:.35;transition:opacity .2s} .pj-ctl:hover,.pj-ctl:focus-within{opacity:1}
 .pj-ctl .btn{background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.4)}
 
 /* focus mode */
@@ -578,7 +579,7 @@ table.prog{width:100%;border-collapse:collapse;font-size:13px} table.prog th,tab
 #wGrid .rolecard .today,#wGrid .rolecard .taken{display:block;font-size:11.5px;margin-top:2px} #wGrid .rolecard .taken{color:var(--muted)} #wGrid .rolecard .taken::before{content:"👤 "}
 .wfoot.sticky{position:sticky;bottom:-22px;background:var(--card);margin:12px -20px -22px;padding:12px 20px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--line);border-radius:0 0 20px 20px;z-index:2}
 @media (max-width:520px){
-  #wGrid .rolegrid{grid-template-columns:1fr 1fr} #wGrid .rolecard{flex-direction:column;gap:2px;padding:9px 10px;display:flex} #wGrid .rolecard .rdesc{display:none} #wGrid .rolecard .ic{font-size:20px}
+  #wGrid .rolegrid{grid-template-columns:repeat(2,minmax(0,1fr))} #wGrid .rolecard{flex-direction:column;gap:2px;padding:9px 10px;display:flex} #wGrid .rolecard .rdesc{display:none} #wGrid .rolecard .ic{font-size:20px}
   .wfoot.sticky{bottom:-16px;margin:12px -12px -16px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));border-radius:0 0 16px 16px} .wfoot.sticky .big1{flex:1}
 }
 .wfoot.sticky .big1{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
@@ -622,6 +623,42 @@ div.timebox::before{font-size:.75em;vertical-align:1px}
 .rrstat{margin:10px 0 2px;font-size:15px}
 .rrpick{font-size:30px;margin:10px 0 4px}
 .updbar{position:fixed;left:50%;top:10px;transform:translateX(-50%);z-index:95;background:var(--card);color:var(--ink);border:2px solid var(--brand);border-radius:12px;padding:8px 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;box-shadow:0 6px 24px rgba(0,0,0,.25);max-width:calc(100% - 24px)}
+
+
+/* Keep scrolling inside overlays and leave room for phone navigation. */
+body.dialog-open{overflow:hidden}
+body.dialog-open #app{isolation:isolate}
+.modal,#welcome{overscroll-behavior:contain}
+.moremenu{box-sizing:border-box;max-width:calc(100vw - 24px);max-height:min(70vh,42rem);overflow:auto;overscroll-behavior:contain}
+.dplayers div > *, .agv2i > *, #report td{min-width:0;overflow-wrap:anywhere}
+@media (max-width:640px){
+  .bnav button{min-height:44px}
+  .bnav button.on{background:var(--chip)}
+  .moremenu{min-width:0;max-height:calc(100dvh - 86px - env(safe-area-inset-bottom))}
+  #wGrid .rolecard{overflow-wrap:anywhere}
+}
+
+/* Meeting sharing and connected devices */
+.conn-share{display:grid;grid-template-columns:minmax(0,1fr) minmax(120px,34%);gap:12px;align-items:center;margin:10px 0 14px}
+.conn-share.no-qr{grid-template-columns:1fr}
+.conn-invite h4{margin:0 0 4px}
+.conn-share .code{font-size:clamp(24px,6vw,34px);letter-spacing:.09em;padding:8px}
+.conn-qr{display:grid;justify-items:center;gap:6px;margin:0;text-align:center}
+.conn-qr figcaption{font-weight:700}
+.conn-qr .qr{width:100%}
+#connCopyStatus{grid-column:1/-1}
+#connCopyStatus:empty{display:none}
+.conn-devices{display:grid;gap:6px;overflow-wrap:anywhere}
+.conn-devices .devlist{margin:0}
+.conn-help summary{cursor:pointer;font-weight:700}
+.conn-help p{margin:6px 0 0}
+.conn-footer{justify-content:space-between;margin-top:14px}
+#leaveBtn{border-color:var(--r)}
+#connClose{margin-left:auto}
+@media (max-width:460px){
+  .conn-share{grid-template-columns:1fr}
+  .conn-qr .qr{width:min(150px,100%)}
+}
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#004165">
@@ -640,9 +677,9 @@ div.timebox::before{font-size:.75em;vertical-align:1px}
     </div>
     <div class="hbtns">
       <span class="saved" id="saved"></span>
-      <button class="conn" id="connBtn" title="Connect devices"><i></i><span id="connTxt">Not connected</span></button>
+      <button class="conn" id="connBtn" aria-haspopup="dialog" aria-controls="connModal" title="Connect devices"><i></i><span id="connTxt">Not connected</span></button>
       <button class="btn ghost" id="homeBtn" title="Back to the start screen: choose your role and meeting">🏠 Home</button>
-      <span class="morewrap"><button class="btn ghost" id="moreBtn" aria-haspopup="true" aria-expanded="false" title="More options">⋯ More</button>
+      <span class="morewrap"><button class="btn ghost" id="moreBtn" aria-controls="moreMenu" aria-expanded="false" title="More options">⋯ More</button>
         <span class="moremenu" id="moreMenu" role="group" aria-label="More options">
           <button class="mi mobonly" id="homeMi">🏠 Home<small>Start screen: change your role or meeting</small></button>
           <button class="mi" id="backupBtn">⤓ Save meeting record<small>Download this meeting as a file (backup)</small></button>
@@ -662,7 +699,7 @@ div.timebox::before{font-size:.75em;vertical-align:1px}
             <label class="tgl"><input type="checkbox" id="bigText"> <span>Bigger text</span></label></span>
         </span></span>
       <input type="file" id="restoreFile" accept=".json,application/json" style="display:none">
-      <button class="btn primary" id="openReport">Meeting report</button>
+      <button class="btn primary" id="openReport" aria-haspopup="dialog" aria-controls="reportWrap">Meeting report</button>
     </div>
   </header>
   <nav class="bnav" id="bnav" aria-label="Sections"></nav>
@@ -688,6 +725,9 @@ div.timebox::before{font-size:.75em;vertical-align:1px}
   <div id="nudge" role="status" aria-live="polite"></div>
   <div id="companion" class="companion"></div>
   <main id="view"></main>
+  <div id="voteBar" class="votebar"></div>
+  <div id="finSheet"></div>
+  <div id="toast" role="status"><span id="toastMsg"></span><button id="toastUndo">Undo</button></div>
 
 </div>
 
@@ -724,11 +764,8 @@ div.timebox::before{font-size:.75em;vertical-align:1px}
 </div></div>
 <div id="aboutModal" class="modal" role="dialog" aria-modal="true" aria-label="About"><div class="mbox" id="aboutBox"></div></div>
 <div id="welcome" role="dialog" aria-modal="true" aria-label="Get started"><div class="wbox" id="wbox"></div></div>
-<div id="voteBar" class="votebar"></div>
-<div id="finSheet"></div>
 <div id="voteModal" class="modal" role="dialog" aria-modal="true" aria-label="Vote"><div class="mbox" id="voteBox"></div></div>
 <div id="winModal" class="modal" role="dialog" aria-modal="true" aria-label="Winners"><div class="mbox" id="winBox"></div></div>
-<div id="toast" role="status"><span id="toastMsg"></span><button id="toastUndo">Undo</button></div>
 <datalist id="roster"></datalist>
 <datalist id="memberlist"></datalist>
 
@@ -748,8 +785,8 @@ div.timebox::before{font-size:.75em;vertical-align:1px}
   </div>
 </div>
 
-<div id="proj" role="dialog" aria-label="Projector view"></div>
-<div id="stage" role="dialog" aria-label="Table topic">
+<div id="proj" role="dialog" aria-modal="true" aria-label="Projector view"></div>
+<div id="stage" role="dialog" aria-modal="true" aria-label="Table topic">
   <img class="l" alt=""><img class="r" alt="">
   <div class="lbl" id="stageLbl">Table Topic</div>
   <div class="txt" id="stageTxt"></div>
@@ -3557,9 +3594,14 @@ function hasData(k){
   return S.gramRows.length>0||!!S.gram.wotd;
 }
 function renderRepPick(){
-  document.getElementById("repPick").innerHTML=REPSECS.map(function(r){
+  var picker=document.getElementById("repPick"), focused=document.activeElement?.dataset.rep;
+  var html=REPSECS.map(function(r){
     return '<label><input type="checkbox" data-rep="'+r.id+'"'+(L.rep[r.id]!==false?' checked':'')+(hasData(r.id)?'':' disabled')+'> '+r.name+(hasData(r.id)?'':' <span style="color:#999">(no data)</span>')+'</label>';
   }).join("");
+  if(picker.repHTML===html&&picker.querySelector("[data-rep]")) return;
+  picker.repHTML=html;
+  picker.innerHTML=html;
+  if(focused) (picker.querySelector('[data-rep="'+focused+'"]:not(:disabled)')||document.getElementById("closeReport")).focus({preventScroll:true});
 }
 function refreshOpenMeetingReport(){
   var wrap=document.getElementById("reportWrap");
@@ -3664,8 +3706,6 @@ document.getElementById("printReport").addEventListener("click",function(){ var 
   if(document.getElementById("reportWrap").dataset.kind==="guide"){ document.title="Speechcraft Role Guides"; window.print(); setTimeout(function(){document.title=old;},500); return; }
   if(document.getElementById("reportWrap").dataset.kind==="agenda"){ document.title="Speechcraft Agenda "+(S.agenda.no?"No "+S.agenda.no+" ":"")+(S.meta.date||""); window.print(); setTimeout(function(){document.title=old;},500); return; } document.title="Speechcraft Report "+(S.meta.date||"")+(S.meta.week?" "+S.meta.week:""); window.print(); setTimeout(function(){document.title=old;},500); });
 ["reportWrap","connModal"].forEach(function(id){ document.getElementById(id).addEventListener("click",function(e){ if(e.target.id===id) e.target.classList.remove("on"); }); });
-document.addEventListener("keydown",function(e){ if(e.key==="Escape"){ document.getElementById("reportWrap").classList.remove("on"); document.getElementById("connModal").classList.remove("on"); closeStage(); } });
-
 /* ---------- live sync between devices ----------
    Devices find each other through public Nostr relays (several at once, for redundancy) using Trystero,
    then talk directly over WebRTC data channels, which are always encrypted. The meeting code is used
@@ -3854,24 +3894,36 @@ function renderConnBtn(){
   b.title=NET.lastSync?"Last meeting data received at "+new Date(NET.lastSync).toLocaleTimeString():syncStatusLabel();
 }
 function renderConnBox(){
-  var h="";
+  var h="", box=document.getElementById("connBox"), title=NET.mode+":"+NET.code+":"+NET.synced;
   if(!NET.mode){
     h+='<h3>Connect devices</h3><p class="muted" style="margin-top:0">Link the Timer, Table Topics Master, Ah-Counter and Grammarian so everyone sees the same speakers, topics and results live.</p>'+
        '<div class="card" style="margin-bottom:10px"><b>Host this meeting</b><div class="saved" style="margin:4px 0 8px">Usually the Coordinator or Timer. You get a code and QR for the others.</div><button class="btn primary" id="hostBtn">Host meeting &amp; get code</button></div>'+
        '<div class="card"><b>Join a meeting</b><div class="saved" style="margin:4px 0 8px">Type the code the host gives you.</div><div class="row"><input class="t" id="joinCode" placeholder="e.g. K7Q-M4P" maxlength="9" style="text-transform:uppercase;letter-spacing:2px;font-weight:700"><button class="btn primary" id="joinBtn">Join</button></div></div>';
   } else {
     h+='<h3>'+(NET.mode==="host"?"You're hosting this meeting":(NET.synced?"Connected to meeting":"Joining meeting"))+'</h3>';
-    h+='<div class="saved">Share the meeting code or invite link, or ask others to scan the QR code.</div>';
-    h+='<div class="code">'+fmtCode(NET.code)+'</div><div role="status"><b>'+syncStatusLabel()+'</b>'+
-      (NET.lastSync?' · Last meeting data received at '+esc(new Date(NET.lastSync).toLocaleTimeString()):'')+'</div>';
-    if(NET.status!=="on") h+='<div class="'+(NET.status==="err"?"connerr":"saved")+'">'+esc(NET.msg||"Connecting…")+'</div>';
-    if(NET.peers.length){ var ppl=onlinePeople(); h+='<b>Online: '+ppl.length+' '+(ppl.length===1?'person':'people')+' on '+NET.peers.length+' device'+(NET.peers.length===1?'':'s')+'</b><ul class="devlist">'+ppl.map(function(p){ return '<li>'+peopleRoleNames(p)+(p.name?' — '+esc(p.name):'')+devTag(p)+(p.me?' <span class="saved">(you)</span>':'')+(p.host?' <span class="saved">(started the meeting)</span>':'')+'</li>'; }).join("")+'</ul>'; }
-    h+='<div class="qrwrap"><b>Join this meeting</b>'+qrSvg(inviteLink(NET.code))+'<div class="saved">Scan to join and choose a role</div></div>';
-    h+='<div class="row" style="justify-content:space-between;margin-top:10px"><span class="row"><button class="btn" id="copyCode">Copy code</button><button class="btn" id="copyLink">Copy invite link</button></span><button class="btn" id="leaveBtn">Leave meeting</button></div>';
+    var live='<div role="status"><b>'+syncStatusLabel()+'</b>'+
+      (NET.lastSync?' <span class="saved">· Last meeting data received at '+esc(new Date(NET.lastSync).toLocaleTimeString())+'</span>':'')+'</div>';
+    if(NET.status!=="on") live+='<div class="'+(NET.status==="err"?"connerr":"saved")+'">'+esc(NET.msg||"Connecting…")+'</div>';
+    if(NET.peers.length){ var ppl=onlinePeople(); live+='<b>Online: '+ppl.length+' '+(ppl.length===1?'person':'people')+' on '+NET.peers.length+' device'+(NET.peers.length===1?'':'s')+'</b><ul class="devlist">'+ppl.map(function(p){ return '<li>'+peopleRoleNames(p)+(p.name?' — '+esc(p.name):'')+devTag(p)+(p.me?' <span class="saved">(you)</span>':'')+(p.host?' <span class="saved">(started the meeting)</span>':'')+'</li>'; }).join("")+'</ul>'; }
+    var devices=box.querySelector(".conn-devices");
+    if(box.connectionTitle===title&&devices){
+      if(devices.liveHTML!==live){ devices.innerHTML=live; devices.liveHTML=live; }
+      return;
+    }
+    var link=inviteLink(NET.code), qr=qrSvg(link);
+    h+='<section class="conn-share card'+(qr?'':' no-qr')+'" aria-label="Share this meeting"><div class="conn-invite">'+
+      '<h4>Invite others</h4><div class="saved">Share this code or copy the invite link.</div>'+
+      '<div class="code">'+fmtCode(NET.code)+'</div>'+
+      '<div class="row"><button class="btn" id="copyCode">Copy code</button><button class="btn primary" id="copyLink">Copy invite link</button></div></div>'+
+      (qr?'<figure class="conn-qr"><figcaption>Scan to join</figcaption>'+qr+'</figure>':'')+
+      '<div id="connCopyStatus" class="saved" role="status"></div></section>';
+    h+='<section class="conn-devices" aria-label="Connected devices">'+live+'</section>';
   }
-  h+='<div class="note">🔒 Devices connect directly to each other and the link is encrypted (WebRTC). Public Nostr relays only help devices find each other, and even those messages are encrypted with your meeting code. Your meeting data never passes through them. Needs internet on every device. If a strict office network blocks it, use the same Wi-Fi or a phone hotspot. Anyone can close the page; the others stay connected.</div>'+
-     '<div style="text-align:right;margin-top:10px"><button class="btn" id="connClose">Close</button></div>';
-  document.getElementById("connBox").innerHTML=h;
+  h+='<details class="note conn-help"><summary>How devices connect</summary><p>Devices need internet access and exchange meeting data directly over encrypted WebRTC. Public Nostr relays help devices find each other. If an office network blocks the connection, try a phone hotspot. You can close this page while others stay connected.</p></details>'+
+     '<div class="row conn-footer">'+(NET.mode?'<button class="btn danger" id="leaveBtn">Leave meeting</button>':'')+'<button class="btn" id="connClose">Close</button></div>';
+  box.connectionTitle=title;
+  box.innerHTML=h;
+  if(NET.mode) box.querySelector(".conn-devices").liveHTML=live;
 }
 document.getElementById("connBtn").addEventListener("click",function(){ renderConnBox(); document.getElementById("connModal").classList.add("on"); var j=document.getElementById("joinCode"); if(j) j.focus(); });
 document.getElementById("connBox").addEventListener("click",function(e){
@@ -3879,8 +3931,12 @@ document.getElementById("connBox").addEventListener("click",function(e){
   if(t.closest("#hostBtn")){ startHost(makeCode()); renderConnBox(); }
   else if(t.closest("#joinBtn")){ var c=cleanCode(document.getElementById("joinCode").value); if(c.length!==6){ alert("The code has 6 letters/numbers, e.g. K7Q-M4P."); return; } document.getElementById("connModal").classList.remove("on"); W.code=c; W.advance=!L.setup; W.auto=!!L.setup; startJoin(c); openWelcome("connect"); }
   else if(t.closest("#leaveBtn")){ if(confirm("Leave this meeting on this device? The others stay connected, and you keep your data.")){ stopNet(false); renderConnBox(); } }
-  else if(t.closest("#copyCode")){ try{ navigator.clipboard.writeText(fmtCode(NET.code)); t.textContent="Copied"; }catch(err){} }
-  else if(t.closest("#copyLink")){ try{ navigator.clipboard.writeText(inviteLink(NET.code)); t.textContent="Link copied"; }catch(err){} }
+  else if(t.closest("#copyCode,#copyLink")){
+    var copyingCode=!!t.closest("#copyCode"), status=document.getElementById("connCopyStatus");
+    Promise.resolve().then(function(){ return navigator.clipboard.writeText(copyingCode?fmtCode(NET.code):inviteLink(NET.code)); }).then(function(){
+      status.textContent=copyingCode?"Meeting code copied.":"Invite link copied.";
+    },function(){ status.textContent="Couldn’t copy. Share the meeting code shown above."; });
+  }
   else if(t.closest("#connClose")) document.getElementById("connModal").classList.remove("on");
 });
 document.getElementById("connBox").addEventListener("keydown",function(e){ if(e.key==="Enter"&&e.target.id==="joinCode"){ e.preventDefault(); document.getElementById("joinBtn").click(); } });
@@ -4003,7 +4059,11 @@ function renderWelcome(){
   if(!who) h+='<div class="wlinks"><button class="linkbtn" id="wReport">💬 Report a problem or idea</button><a class="linkbtn" href="'+REPO_URL+'" target="_blank" rel="noopener">Open on GitHub ↗</a><a class="linkbtn" href="'+REPO_URL+'/issues" target="_blank" rel="noopener">Known issues &amp; ideas ↗</a></div>';
   document.getElementById("wbox").innerHTML=h;
 }
-function wRefreshWho(){ var t=uniq(agendaRolesFor(wName().trim()).concat(selectedRoles(wName()))), g=document.getElementById("wGrid"); if(g) g.innerHTML=roleGridHTML(t); var tt=document.getElementById("wToday"); if(tt) tt.innerHTML=wTodayText(t); var nb=document.getElementById("wNext"); if(nb){ nb.textContent=wStartLabel(); nb.disabled=!(W.sel||[]).length; } document.querySelectorAll("[data-wname]").forEach(function(c){ c.classList.toggle("active",nkey(c.dataset.wname)===nkey(wName())); }); }
+function wRefreshWho(){ var t=uniq(agendaRolesFor(wName().trim()).concat(selectedRoles(wName()))), g=document.getElementById("wGrid"); if(g){
+  var focused=document.activeElement?.dataset.wrole;
+  g.innerHTML=roleGridHTML(t);
+  if(focused) g.querySelector('[data-wrole="'+focused+'"]')?.focus({preventScroll:true});
+} var tt=document.getElementById("wToday"); if(tt) tt.innerHTML=wTodayText(t); var nb=document.getElementById("wNext"); if(nb){ nb.textContent=wStartLabel(); nb.disabled=!(W.sel||[]).length; } document.querySelectorAll("[data-wname]").forEach(function(c){ c.classList.toggle("active",nkey(c.dataset.wname)===nkey(wName())); }); }
 function wFinish(){
   var sel=(W.sel||[]).slice(); if(!sel.length) return;
   var nmEl=document.getElementById("wName"), nm=W.name!=null?String(W.name).trim():(nmEl?nmEl.value.trim():"");
@@ -4564,11 +4624,18 @@ function setView(v){ L.view=v; saveL(); renderAll(); window.scrollTo(0,0); }
 function renderNav(){
   var el=document.getElementById("bnav"); if(!el) return;
   var r=roleObj(L.role)||{icon:"👤",name:"Role"}, v=curView();
-  el.innerHTML='<button data-nav="role" class="'+(v==="role"?"on":"")+'"><span>'+r.icon+'</span>My role</button>'+
-    '<button data-nav="now" class="'+(v==="now"?"on":"")+'"><span>📡</span>Now</button>'+
-    '<button data-nav="agenda" class="'+(v==="agenda"?"on":"")+'"><span>📋</span>Agenda</button>'+
-    '<button data-nav="report" class="mob"><span>📄</span>Report</button>'+
-    '<button data-nav="more" class="mob"><span>⋯</span>More</button>';
+  var html=[["role",r.icon,"My role"],["now","📡","Now"],["agenda","📋","Agenda"],["report","📄","Report"],["more","⋯","More"]].map(function(item){
+    var id=item[0], selected=v===id;
+    return '<button data-nav="'+id+'" class="'+(selected?'on':id==="report"||id==="more"?'mob':'')+'"'+
+      (selected?' aria-current="page"':'')+(id==="report"?' aria-haspopup="dialog" aria-controls="reportWrap"':'')+
+      (id==="more"?' aria-expanded="false" aria-controls="moreMenu"':'')+'><span aria-hidden="true">'+item[1]+'</span>'+item[2]+'</button>';
+  }).join("");
+  if(el.navHTML!==html){
+    var focused=document.activeElement?.dataset.nav;
+    el.navHTML=html;
+    el.innerHTML=html;
+    if(focused) el.querySelector('[data-nav="'+focused+'"]')?.focus({preventScroll:true});
+  }
   document.body.classList.toggle("v-now",v==="now"); document.body.classList.toggle("v-agenda",v==="agenda");
 }
 document.getElementById("bnav").addEventListener("click",function(e){
@@ -4953,7 +5020,80 @@ function autoLabel(root){
     if(t) el.setAttribute("aria-label",String(t).split("\n")[0].slice(0,80));
   });
 }
-new MutationObserver(function(){ autoLabel(document.getElementById("app")); autoLabel(document.getElementById("welcome")); }).observe(document.body,{childList:true,subtree:true});
+/* Keep keyboard focus inside the visible overlay, including nested dialogs. */
+(function(){
+  var dialogs=Array.from(document.querySelectorAll('body > [role="dialog"]'));
+  var app=document.getElementById("app"), active=null, lastFocus=null, openers=new WeakMap();
+  var controls='button:not(:disabled),input:not(:disabled):not([type=hidden]),select:not(:disabled),textarea:not(:disabled),a[href],[tabindex]:not([tabindex="-1"])';
+  function visible(el){ return !!(el&&el.getClientRects().length&&!el.closest("[inert]")); }
+  function focus(el){ if(visible(el)){ el.focus({preventScroll:true}); return document.activeElement===el; } return false; }
+  function items(dialog){ return Array.from(dialog.querySelectorAll(controls)).filter(visible); }
+  function syncDialogs(){
+    var open=dialogs.filter(function(d){ return d.classList.contains("on"); });
+    var top=open.reduce(function(a,d){ return !a||Number(getComputedStyle(d).zIndex)>=Number(getComputedStyle(a).zIndex)?d:a; },null);
+    var previous=active;
+    if(top!==previous&&top&&!openers.has(top)) openers.set(top,lastFocus);
+    active=top;
+    app.inert=!!top;
+    dialogs.forEach(function(d){ d.inert=d!==top&&open.includes(d); if(!open.includes(d)&&d!==previous) openers.delete(d); });
+    if(document.body.classList.contains("dialog-open")!==!!top) document.body.classList.toggle("dialog-open",!!top);
+    if(previous&&previous!==top&&!open.includes(previous)){
+      var opener=openers.get(previous);
+      openers.delete(previous);
+      if(top?.contains(opener||null)&&focus(opener)) return;
+      if(!top){
+        if(focus(opener)||(opener?.id&&focus(document.getElementById(opener.id)))) return;
+        if(opener?.closest("#moreMenu")&&(focus(document.getElementById("moreBtn"))||focus(document.querySelector('[data-nav="more"]')))) return;
+        focus(document.querySelector('[data-nav][aria-current]'));
+        return;
+      }
+    }
+    if(top&&!top.contains(document.activeElement)){
+      if(!focus(items(top)[0])) focus(top);
+    }
+  }
+  dialogs.forEach(function(d){ d.tabIndex=-1; });
+  document.addEventListener("focusin",function(e){
+    var dialog=e.target.closest('[role="dialog"]');
+    if(!dialog||dialog===active) lastFocus=e.target;
+  });
+  document.addEventListener("click",function(e){
+    // Safari does not always focus buttons on click.
+    if(!e.isTrusted) return;
+    var trigger=e.target.closest("button,a[href]");
+    if(trigger) lastFocus=trigger;
+  },true);
+  var observer=new MutationObserver(function(records){
+    var roots=new Set();
+    records.forEach(function(record){
+      if(Array.from(record.addedNodes).some(function(node){return node.nodeType===1;})) roots.add(record.target);
+    });
+    roots.forEach(autoLabel);
+    if(roots.size||records.some(function(record){ return record.type==="attributes"; })) syncDialogs();
+  });
+  observer.observe(document.body,{childList:true,subtree:true});
+  dialogs.forEach(function(d){ observer.observe(d,{attributes:true,attributeFilter:["class"]}); });
+  autoLabel();
+  document.addEventListener("keydown",function(e){
+    if(!active) return;
+    if(e.key==="Escape"){
+      if(document.fullscreenElement) return;
+      e.preventDefault(); e.stopImmediatePropagation();
+      if(active.id==="welcome"){ document.getElementById("wCancel")?.click(); return; }
+      if(active.id==="stage") closeStage();
+      else if(active.id==="proj") closeProj();
+      else active.classList.remove("on");
+      return;
+    }
+    if(e.key!=="Tab") return;
+    var list=items(active), current=document.activeElement;
+    if(!list.length){ e.preventDefault(); focus(active); return; }
+    if(!list.includes(current)||(e.shiftKey&&current===list[0])||(!e.shiftKey&&current===list.at(-1))){
+      e.preventDefault();
+      focus(e.shiftKey?list.at(-1):list[0]);
+    }
+  },true);
+})();
 /* ---------- issues & ideas from members ----------
    Anyone can send a problem, idea or "I like this" from the app. It syncs with the meeting into a
    list the Coordinator and co-organisers review; from there each one becomes a GitHub issue in the
@@ -5429,22 +5569,36 @@ applyDisplay();
 /* ---------- ⋯ More menu ---------- */
 (function(){
   var b=document.getElementById("moreBtn"), m=document.getElementById("moreMenu");
-  function setOpen(o,fromNav){ if(o){ var r=b.getBoundingClientRect(), nar=window.innerWidth<640||fromNav; m.style.position=nar?"fixed":""; m.style.left=nar?"12px":""; m.style.right=nar?"12px":""; m.style.top=(nar&&!fromNav)?(r.bottom+6)+"px":""; m.style.bottom=fromNav?"calc(78px + env(safe-area-inset-bottom))":""; if(fromNav) m.style.top="auto"; } m.classList.toggle("on",o); b.setAttribute("aria-expanded",o?"true":"false"); }
-  b.addEventListener("click",function(e){ e.stopPropagation(); setOpen(!m.classList.contains("on")); });
-  m.addEventListener("click",function(e){ if(e.target.closest("#mset")) return; setTimeout(function(){ setOpen(false); },0); });
+  function setOpen(open,fromNav,restore){
+    var mobile=document.querySelector('[data-nav="more"]'), wasOpen=m.classList.contains("on");
+    var trigger=(fromNav||(!b.getClientRects().length&&mobile))?mobile:b;
+    if(open){
+      var narrow=trigger===mobile;
+      m.style.position=narrow?"fixed":"";
+      m.style.left=m.style.right=narrow?"12px":"";
+      m.style.top=narrow?"auto":"";
+      m.style.bottom=narrow?"calc(66px + env(safe-area-inset-bottom))":"";
+    }
+    m.classList.toggle("on",open);
+    b.setAttribute("aria-expanded",open?"true":"false");
+    mobile?.setAttribute("aria-expanded",open?"true":"false");
+    if(open) Array.from(m.querySelectorAll("button,a[href]")).find(function(el){return !el.disabled&&el.getClientRects().length;})?.focus();
+    else if(wasOpen&&restore) trigger?.focus();
+  }
+  b.addEventListener("click",function(e){ e.stopPropagation(); setOpen(!m.classList.contains("on"),false,true); });
+  m.addEventListener("click",function(e){ if(e.target.closest("#mset")) return; setTimeout(function(){ setOpen(false,false,m.contains(document.activeElement)); },0); });
   document.addEventListener("click",function(e){ if(!e.target.closest(".morewrap")) setOpen(false); });
-  window.openMoreMenu=function(fromNav){ setOpen(!m.classList.contains("on"),fromNav); };
-  document.addEventListener("keydown",function(e){ if(e.key==="Escape") setOpen(false); });
+  window.openMoreMenu=function(fromNav){ setOpen(!m.classList.contains("on"),fromNav,true); };
+  document.addEventListener("keydown",function(e){ if(e.key==="Escape") setOpen(false,false,true); });
 })();
 /* ❓ How to use: kept in ⋯ More so it doesn't take space on every screen */
 (function(){
   var M=document.getElementById("howModal");
   document.getElementById("howBtn").addEventListener("click",function(){ M.classList.add("on"); var c=document.getElementById("howClose"); if(c) c.focus(); });
   M.addEventListener("click",function(e){ if(e.target===M||e.target.closest("#howClose")) M.classList.remove("on"); });
-  document.addEventListener("keydown",function(e){ if(e.key==="Escape") M.classList.remove("on"); });
 })();
 /* ---------- home, about and clean-up ---------- */
-var APP_VERSION="3.11.5 · November 2026";
+var APP_VERSION="3.11.7 · November 2026";
 function aboutHTML(){
   var on=!!NET.mode, coord=L.role==="coord";
   return '<div class="finhead"><h2 class="sec" style="margin:0">ℹ️ About</h2><button class="btn ghost" id="aboutClose">Close</button></div>'+
