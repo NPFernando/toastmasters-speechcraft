@@ -159,3 +159,25 @@ body.dialog-open #app{isolation:isolate}
   .moremenu{min-width:0;max-height:calc(100dvh - 86px - env(safe-area-inset-bottom))}
   #wGrid .rolecard{overflow-wrap:anywhere}
 }
+
+/* Meeting sharing and connected devices */
+.conn-share{display:grid;grid-template-columns:minmax(0,1fr) minmax(120px,34%);gap:12px;align-items:center;margin:10px 0 14px}
+.conn-share.no-qr{grid-template-columns:1fr}
+.conn-invite h4{margin:0 0 4px}
+.conn-share .code{font-size:clamp(24px,6vw,34px);letter-spacing:.09em;padding:8px}
+.conn-qr{display:grid;justify-items:center;gap:6px;margin:0;text-align:center}
+.conn-qr figcaption{font-weight:700}
+.conn-qr .qr{width:100%}
+#connCopyStatus{grid-column:1/-1}
+#connCopyStatus:empty{display:none}
+.conn-devices{display:grid;gap:6px;overflow-wrap:anywhere}
+.conn-devices .devlist{margin:0}
+.conn-help summary{cursor:pointer;font-weight:700}
+.conn-help p{margin:6px 0 0}
+.conn-footer{justify-content:space-between;margin-top:14px}
+#leaveBtn{border-color:var(--r)}
+#connClose{margin-left:auto}
+@media (max-width:460px){
+  .conn-share{grid-template-columns:1fr}
+  .conn-qr .qr{width:min(150px,100%)}
+}

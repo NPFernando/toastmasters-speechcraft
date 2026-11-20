@@ -18,5 +18,17 @@ module.exports = async (b) => {
   await T.join(A2, code, "Afraa", ["ah"]);
   await T.eventually(async () => /2 online/.test(await C.innerText("#connTxt")), "two people online (Afraa's two devices count once)");
   await T.eventually(async () => /2 devices/.test(await C.innerText("#roles")), "Afraa shown with 2 devices");
+  for (const page of [C, A]) {
+    await page.click("#connBtn");
+    T.assert.strictEqual(await page.locator("#connBox .qr").count(), 1);
+    const caption = await page.locator(".conn-qr figcaption").boundingBox();
+    const qr = await page.locator(".conn-qr .qr").boundingBox();
+    T.assert.ok(qr.y >= caption.y + caption.height, "the scan label is above the QR");
+    T.assert.ok(await page.locator("#connModal").evaluate((dialog) => dialog.scrollWidth <= dialog.clientWidth), "the connection dialog fits the viewport");
+    await page.click("#copyLink");
+    await page.waitForFunction(() => document.getElementById("connCopyStatus").textContent === "Invite link copied.");
+    T.assert.match(await page.evaluate(() => navigator.clipboard.readText()), /#join=[A-Z0-9]{3}-[A-Z0-9]{3}$/);
+    await page.click("#connClose");
+  }
   T.noErrors(C, A, A2);
 };
