@@ -8,7 +8,7 @@ module.exports = async (browser) => {
   await laptop.locator("#absentName").selectOption("Taylor");
   await laptop.click("#markAbsent");
   await laptop.getByRole("link", { name: "Find replacements" }).waitFor();
-  await laptop.getByRole("textbox", { name: "Replacement for Timer" }).fill("Morgan");
+  await laptop.locator('[data-replacement][aria-label="Replacement for Timer"]').fill("Morgan");
   await laptop.locator('[data-replace-role="timer"]').click();
   T.assert.equal(await laptop.inputValue('[data-rp="timer"]'), "Morgan");
 

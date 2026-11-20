@@ -50,7 +50,7 @@ function callSpeaker(){
   /* queue them on the Timer's Table Topics list */
   var r=cur.rowId && findRow("tt",cur.rowId);
   if(r){ if(rowState(r)==="idle"){ r.name=nm; tick(r); } }
-  else { r=newRow("tt",nm); r.id="live|"+JSON.stringify([S.mid,"topic",cur.id]); r.u=Math.max(r.u,(S.dead[r.id]||0)+1); r.topicId=cur.id; S.rows.tt.push(r); cur.rowId=r.id; }
+  else { r=newRow("tt",nm); r.id="live|"+encodeURIComponent(JSON.stringify([S.mid,"topic",cur.id])); r.u=Math.max(r.u,(S.dead[r.id]||0)+1); r.topicId=cur.id; S.rows.tt.push(r); cur.rowId=r.id; }
   commit();
   if(document.getElementById("stage").classList.contains("on")) renderStage();
 }

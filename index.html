@@ -1404,7 +1404,7 @@ function callSpeaker(){
   /* queue them on the Timer's Table Topics list */
   var r=cur.rowId && findRow("tt",cur.rowId);
   if(r){ if(rowState(r)==="idle"){ r.name=nm; tick(r); } }
-  else { r=newRow("tt",nm); r.id="live|"+JSON.stringify([S.mid,"topic",cur.id]); r.u=Math.max(r.u,(S.dead[r.id]||0)+1); r.topicId=cur.id; S.rows.tt.push(r); cur.rowId=r.id; }
+  else { r=newRow("tt",nm); r.id="live|"+encodeURIComponent(JSON.stringify([S.mid,"topic",cur.id])); r.u=Math.max(r.u,(S.dead[r.id]||0)+1); r.topicId=cur.id; S.rows.tt.push(r); cur.rowId=r.id; }
   commit();
   if(document.getElementById("stage").classList.contains("on")) renderStage();
 }
@@ -3094,7 +3094,7 @@ function quickStart(){
   if(!allowLiveAction("quick-timer")||!okToStart()) return;
   clearDeviceDraft("qname");
   if(!q.value.trim()&&nx){ startRow(sid,nx.id); }
-  else { var r=newRow(sid,q.value.trim()); var last=S.rows[sid].reduce(function(peak,row){return Math.max(peak,row.ord||0);},0); r.id="live|"+JSON.stringify([S.mid,sid,last,nkey(r.name)]); remember(r.name); S.rows[sid].push(r); q.value=""; startRow(sid,r.id); }
+  else { var r=newRow(sid,q.value.trim()); var last=S.rows[sid].reduce(function(peak,row){return Math.max(peak,row.ord||0);},0); r.id="live|"+encodeURIComponent(JSON.stringify([S.mid,sid,last,nkey(r.name)])); remember(r.name); S.rows[sid].push(r); q.value=""; startRow(sid,r.id); }
   var q2=document.getElementById("qname"); if(q2) q2.focus();
 }
 function planSpeakers(){
