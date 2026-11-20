@@ -29,7 +29,7 @@ function autoLabel(root){
       openers.delete(previous);
       if(top?.contains(opener||null)&&focus(opener)) return;
       if(!top){
-        if(focus(opener)) return;
+        if(focus(opener)||(opener?.id&&focus(document.getElementById(opener.id)))) return;
         if(opener?.closest("#moreMenu")&&(focus(document.getElementById("moreBtn"))||focus(document.querySelector('[data-nav="more"]')))) return;
         focus(document.querySelector('[data-nav][aria-current]'));
         return;
@@ -44,6 +44,12 @@ function autoLabel(root){
     var dialog=e.target.closest('[role="dialog"]');
     if(!dialog||dialog===active) lastFocus=e.target;
   });
+  document.addEventListener("click",function(e){
+    // Safari does not always focus buttons on click.
+    if(!e.isTrusted) return;
+    var trigger=e.target.closest("button,a[href]");
+    if(trigger) lastFocus=trigger;
+  },true);
   var observer=new MutationObserver(function(records){
     var roots=new Set();
     records.forEach(function(record){

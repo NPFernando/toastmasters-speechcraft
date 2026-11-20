@@ -489,7 +489,7 @@ body.v-agenda .meta,body.v-agenda #roles,body.v-agenda #companion,body.v-agenda 
   .bnav button.on{background:transparent;color:var(--brand)} .bnav button.on span{transform:scale(1.1)}
   body{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
   #homeBtn,#moreBtn,#openReport{display:none!important} .mi.mobonly{display:block}
-  #toast{bottom:calc(80px + env(safe-area-inset-bottom))} #finSheet{bottom:calc(80px + env(safe-area-inset-bottom))}
+  #voteBar,#toast{bottom:calc(80px + env(safe-area-inset-bottom))} #finSheet{bottom:calc(80px + env(safe-area-inset-bottom))}
 }
 /* dashboard */
 .dash-hero .dh-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
@@ -627,6 +627,7 @@ div.timebox::before{font-size:.75em;vertical-align:1px}
 
 /* Keep scrolling inside overlays and leave room for phone navigation. */
 body.dialog-open{overflow:hidden}
+body.dialog-open #app{isolation:isolate}
 .modal,#welcome{overscroll-behavior:contain}
 .moremenu{box-sizing:border-box;max-width:calc(100vw - 24px);max-height:min(70vh,42rem);overflow:auto;overscroll-behavior:contain}
 .dplayers div > *, .agv2i > *, #report td{min-width:0;overflow-wrap:anywhere}
@@ -702,6 +703,9 @@ body.dialog-open{overflow:hidden}
   <div id="nudge" role="status" aria-live="polite"></div>
   <div id="companion" class="companion"></div>
   <main id="view"></main>
+  <div id="voteBar" class="votebar"></div>
+  <div id="finSheet"></div>
+  <div id="toast" role="status"><span id="toastMsg"></span><button id="toastUndo">Undo</button></div>
 
 </div>
 
@@ -738,11 +742,8 @@ body.dialog-open{overflow:hidden}
 </div></div>
 <div id="aboutModal" class="modal" role="dialog" aria-modal="true" aria-label="About"><div class="mbox" id="aboutBox"></div></div>
 <div id="welcome" role="dialog" aria-modal="true" aria-label="Get started"><div class="wbox" id="wbox"></div></div>
-<div id="voteBar" class="votebar"></div>
-<div id="finSheet"></div>
 <div id="voteModal" class="modal" role="dialog" aria-modal="true" aria-label="Vote"><div class="mbox" id="voteBox"></div></div>
 <div id="winModal" class="modal" role="dialog" aria-modal="true" aria-label="Winners"><div class="mbox" id="winBox"></div></div>
-<div id="toast" role="status"><span id="toastMsg"></span><button id="toastUndo">Undo</button></div>
 <datalist id="roster"></datalist>
 <datalist id="memberlist"></datalist>
 
@@ -5003,7 +5004,7 @@ function autoLabel(root){
       openers.delete(previous);
       if(top?.contains(opener||null)&&focus(opener)) return;
       if(!top){
-        if(focus(opener)) return;
+        if(focus(opener)||(opener?.id&&focus(document.getElementById(opener.id)))) return;
         if(opener?.closest("#moreMenu")&&(focus(document.getElementById("moreBtn"))||focus(document.querySelector('[data-nav="more"]')))) return;
         focus(document.querySelector('[data-nav][aria-current]'));
         return;
@@ -5018,6 +5019,12 @@ function autoLabel(root){
     var dialog=e.target.closest('[role="dialog"]');
     if(!dialog||dialog===active) lastFocus=e.target;
   });
+  document.addEventListener("click",function(e){
+    // Safari does not always focus buttons on click.
+    if(!e.isTrusted) return;
+    var trigger=e.target.closest("button,a[href]");
+    if(trigger) lastFocus=trigger;
+  },true);
   var observer=new MutationObserver(function(records){
     var roots=new Set();
     records.forEach(function(record){

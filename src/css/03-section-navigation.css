@@ -11,7 +11,7 @@ body.v-agenda .meta,body.v-agenda #roles,body.v-agenda #companion,body.v-agenda 
   .bnav button.on{background:transparent;color:var(--brand)} .bnav button.on span{transform:scale(1.1)}
   body{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
   #homeBtn,#moreBtn,#openReport{display:none!important} .mi.mobonly{display:block}
-  #toast{bottom:calc(80px + env(safe-area-inset-bottom))} #finSheet{bottom:calc(80px + env(safe-area-inset-bottom))}
+  #voteBar,#toast{bottom:calc(80px + env(safe-area-inset-bottom))} #finSheet{bottom:calc(80px + env(safe-area-inset-bottom))}
 }
 /* dashboard */
 .dash-hero .dh-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
@@ -149,6 +149,7 @@ div.timebox::before{font-size:.75em;vertical-align:1px}
 
 /* Keep scrolling inside overlays and leave room for phone navigation. */
 body.dialog-open{overflow:hidden}
+body.dialog-open #app{isolation:isolate}
 .modal,#welcome{overscroll-behavior:contain}
 .moremenu{box-sizing:border-box;max-width:calc(100vw - 24px);max-height:min(70vh,42rem);overflow:auto;overscroll-behavior:contain}
 .dplayers div > *, .agv2i > *, #report td{min-width:0;overflow-wrap:anywhere}
