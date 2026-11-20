@@ -1036,7 +1036,8 @@ function mergeInto(A,B,mode){
 
 /* ---------- timer logic ---------- */
 function sessionOf(id){ for(var i=0;i<SESSIONS.length;i++) if(SESSIONS[i].id===id) return SESSIONS[i]; }
-function elapsed(row,t){ if(row.manual!=null) return row.manual; if(row.start==null) return null; var e=(row.end!=null?row.end:t); return Math.max(0,Math.round((e-row.start-(row.pz||0)-(row.paused?Math.max(0,e-row.paused):0))/1000)); }
+function elapsed(row,t,round){ if(row.manual!=null) return row.manual; if(row.start==null) return null; var e=(row.end!=null?row.end:t); return Math.max(0,(round||Math.round)((e-row.start-(row.pz||0)-(row.paused?Math.max(0,e-row.paused):0))/1000)); }
+function timerElapsed(sid,row,t){ return elapsed(row,t,sid==="rr"?Math.floor:Math.round); }
 function pauseRow(sid,id){ var r=findRow(sid,id); if(!r||rowState(r)!=="running"||r.paused) return; r.paused=now(); tick(r); commit(); }
 function resumeRow(sid,id){ var r=findRow(sid,id); if(!r||!r.paused) return; r.pz=(r.pz||0)+Math.max(0,now()-r.paused); r.paused=null; tick(r); commit(); }
 /* Round Robin has a single bell, not green/amber/red */
@@ -1045,7 +1046,7 @@ function sigLabel(sg,r){ if(r&&r.paused) return "⏸ Paused"; if(isRR(r)&&sg) re
 function pauseNote(r){ return r&&r.pz>=1000?' (paused '+fmt(Math.round(r.pz/1000))+')':''; }
 function rowState(row){ if(row.start!=null&&row.end==null&&row.manual==null) return "running"; if(row.manual!=null||row.end!=null) return "done"; return "idle"; }
 function limOf(sid,row){ return (row&&row.lim)||S.limits[sid]; }
-function signal(sid,sec,row){ if(sec==null) return ""; var L2=limOf(sid,row); if(sid==="rr") return sec<=L2.b?"sg":"sr"; if(sec>=L2.r) return "sr"; if(sec>=L2.a) return "sa"; if(sec>=L2.g) return "sg"; return ""; }
+function signal(sid,sec,row){ if(sec==null) return ""; var L2=limOf(sid,row); if(sid==="rr") return sec<L2.b?"sg":"sr"; if(sec>=L2.r) return "sr"; if(sec>=L2.a) return "sa"; if(sec>=L2.g) return "sg"; return ""; }
 /* each signal has its own shape as well as its colour (● green, ▲ amber, ■ red), so it reads without colour */
 function signalName(c){ return c==="sg"?"● Green":c==="sa"?"▲ Amber":c==="sr"?"■ Red":"No signal yet"; }
 function status(sid,row,t){
@@ -1063,8 +1064,21 @@ function findRow(sid,id){ return S.rows[sid].find(function(x){return x.id===id;}
 function newRow(sid,name){ var r={id:uid(),name:name||"",start:null,end:null,manual:null,ord:maxOrd(S.rows[sid])+1,u:now()}; if(sid==="rr"&&S.rrcur&&S.rrcur.id) r.qid=S.rrcur.id; return r; }
 function runningList(){ var out=[]; SESSIONS.forEach(function(s){ S.rows[s.id].forEach(function(r,i){ if(rowState(r)==="running") out.push({sid:s.id,s:s,r:r,i:i}); }); }); return out; }
 function anyRunning(){ return runningList().length>0; }
-function firstQueued(sid){ return S.rows[sid].find(function(r){return rowState(r)==="idle";}); }
-function startRow(sid,id){ var r=findRow(sid,id); if(!r||rowState(r)!=="idle") return; if(S.timerDemo.until){ S.timerDemo.until=0; tick(S.timerDemo); } r.start=now(); r.end=null; r.manual=null; r.pz=0; r.paused=null; tick(r); commit(); wake(); }
+function timerRows(sid){
+  var rows=S.rows[sid];
+  if(sid!=="rr") return rows;
+  var seen=new Set(rows.filter(function(row){return row.qid&&rowState(row)!=="idle";}).map(roundRobinTurnKey));
+  return rows.filter(function(row){
+    if(!row.qid||rowState(row)!=="idle") return true;
+    if(row.qid!==S.rrcur.id) return false;
+    var key=roundRobinTurnKey(row);
+    if(seen.has(key)) return false;
+    seen.add(key); return true;
+  });
+}
+function roundRobinTurnKey(row){ return JSON.stringify([row.qid,nkey(row.name)]); }
+function firstQueued(sid){ return timerRows(sid).find(function(r){return rowState(r)==="idle";}); }
+function startRow(sid,id){ var r=findRow(sid,id); if(!r||rowState(r)!=="idle"||(sid==="rr"&&!timerRows(sid).includes(r))) return; if(S.timerDemo.until){ S.timerDemo.until=0; tick(S.timerDemo); } r.start=now(); r.end=null; r.manual=null; r.pz=0; r.paused=null; tick(r); commit(); wake(); }
 function stopRow(sid,id){ var r=findRow(sid,id); if(!r||r.start==null||r.end!=null) return; r.end=now(); if(r.paused){ r.pz=(r.pz||0)+Math.max(0,r.end-r.paused); r.paused=null; } tick(r); commit(); wake(); }
 function okToStart(){
   var run=runningList(); if(!run.length) return true;
@@ -1074,7 +1088,7 @@ function okToStart(){
   return true;
 }
 function nextSignalText(sid,sec,row){ var L2=limOf(sid,row);
-  if(sid==="rr") return sec<=L2.b?"bell in "+fmt(L2.b-sec):"over by "+fmt(sec-L2.b);
+  if(sid==="rr") return sec<L2.b?"bell in "+fmt(L2.b-sec):sec===L2.b?"bell · time’s up":"over by "+fmt(sec-L2.b);
   if(sec<L2.g) return "green in "+fmt(L2.g-sec); if(sec<L2.a) return "amber in "+fmt(L2.a-sec); if(sec<L2.r) return "red in "+fmt(L2.r-sec); return "over by "+fmt(sec-L2.r); }
 function bannerText(sid,sg){ if(sid==="rr") return sg==="sr"?"🔔 TIME UP":""; return sg==="sg"?"● SHOW GREEN":sg==="sa"?"▲ SHOW AMBER":sg==="sr"?"■ SHOW RED":""; }
 
@@ -1277,7 +1291,7 @@ function renderNow(){
   var fs=document.fullscreenElement; if(fs && el.contains(fs) && run.some(function(x){return x.r.id===fs.dataset.id;})) return;
   var mine=myNameKeys();
   run.forEach(function(x){
-    var sec=elapsed(x.r,t), sg=signal(x.sid,sec,x.r);
+    var sec=timerElapsed(x.sid,x.r,t), sg=signal(x.sid,sec,x.r);
     if(mine.indexOf(nkey(baseName(x.r.name)))>=0){ h+=meCardHTML(x,sec,sg); return; }
     var add = (L.role==="ah"||L.role==="gram"||L.role==="seval"||L.role==="tteval") ? '<button class="btn sm" data-now-add="'+esc(displayName(x.r,x.i))+'">+ Add / select</button>' : '';
     h+='<div class="nowitem '+sg+'" data-sid="'+x.sid+'" data-id="'+x.r.id+'"><div class="clock" data-live="clock">'+fmt(sec)+'</div>'+
@@ -1311,8 +1325,8 @@ function timeStats(sids,t){
 }
 function statsText(ts,label){ if(!ts.n) return ""; var s="Speaking time "+fmtLong(ts.speak); if(ts.span!=null) s+=" · "+label+" "+clock(ts.from)+" – "+clock(ts.to)+" ("+fmtLong(ts.span)+")"; return s; }
 function timerHTML(){
-  var s=sessionOf(L.tab)||SESSIONS[0], rows=S.rows[s.id], t=now();
-  var h='<nav class="tabs">'+SESSIONS.map(function(x){ var rs=S.rows[x.id], run=rs.some(function(r){return rowState(r)==="running";});
+  var s=sessionOf(L.tab)||SESSIONS[0], rows=timerRows(s.id), t=now();
+  var h='<nav class="tabs">'+SESSIONS.map(function(x){ var rs=timerRows(x.id), run=rs.some(function(r){return rowState(r)==="running";});
       return '<button class="tab'+(x.id===s.id?' active':'')+'" data-tab="'+x.id+'">'+x.name+'<span class="cnt">('+rs.length+')</span>'+(run?'<span class="dot"></span>':'')+'</button>'; }).join("")+'</nav>';
   h+=timerDemoControls(s.id);
   h+='<section class="card panel">'+limitsHTML(s)+
@@ -1324,7 +1338,7 @@ function timerHTML(){
   if(!rows.length) h+='<tr><td colspan="6" class="empty">No speakers yet. Plan ahead with <b>+ Add to list</b> (e.g. <i>Nimal, Kasun, Amali</i>), or press <b>Start speaker</b> when someone begins.</td></tr>';
   var nx=firstQueued(s.id);
   rows.forEach(function(r,i){
-    var st=rowState(r), sec=elapsed(r,t), sg=signal(s.id,sec,r), stx=status(s.id,r,t), isNext=st==="idle"&&r===nx;
+    var st=rowState(r), sec=timerElapsed(s.id,r,t), sg=signal(s.id,sec,r), stx=status(s.id,r,t), isNext=st==="idle"&&r===nx;
     if(st==="idle"&&r.manual==null) stx={text:isNext?"Next up":"Waiting",cls:"st-queue"};
     var ctl= st==="running"?'<button class="btn sm" data-act="'+(r.paused?'resume':'pause')+'">'+(r.paused?'▶':'⏸')+'</button><button class="btn stop sm" data-act="stop">■ Stop</button>': st==="done"?'<span class="donetag">✓ Done</span>':'<button class="btn go sm" data-act="start">▶ Start</button>';
     var timeCell= st==="running"?'<div class="timebox '+sg+'" data-live="time">'+fmt(sec)+'</div>'
@@ -1348,7 +1362,7 @@ function renderLive(){
   var t=now(), h="", focusedId=null, a=document.activeElement;
   if(a&&a.dataset&&a.dataset.edit==="livename"){ focusedId=a.closest(".liveitem").dataset.id; }
   runningList().forEach(function(x){
-    var sec=elapsed(x.r,t), sg=signal(x.sid,sec,x.r);
+    var sec=timerElapsed(x.sid,x.r,t), sg=signal(x.sid,sec,x.r);
     h+='<div class="liveitem '+sg+'" data-sid="'+x.sid+'" data-id="'+x.r.id+'"><div class="clock" data-live="clock">'+fmt(sec)+'</div>'+
       '<div class="who"><input class="livename" data-edit="livename" list="roster" autocomplete="off" value="'+esc(x.r.name)+'" placeholder="Speaker '+(x.i+1)+' – type name"><span>'+x.s.name+' · <span data-live="next">'+nextSignalText(x.sid,sec,x.r)+'</span></span></div>'+
       '<span class="sigbanner" data-live="banner">'+bannerText(x.sid,sg)+'</span><span class="pill '+(sg||"sn")+'" data-live="pill">'+sigLabel(sg,x.r)+'</span>'+
@@ -1356,7 +1370,7 @@ function renderLive(){
   });
   if(focusedId && el.querySelector('.liveitem[data-id="'+focusedId+'"]') && h.indexOf('data-id="'+focusedId+'"')>=0) return; // don't disturb typing
   el.innerHTML=h; el.classList.toggle("on",!!h);
-  el.querySelectorAll(".liveitem").forEach(function(it){ var r=findRow(it.dataset.sid,it.dataset.id); if(r&&lastSig[r.id]===undefined) lastSig[r.id]=signal(it.dataset.sid,elapsed(r,t),r); });
+  el.querySelectorAll(".liveitem").forEach(function(it){ var r=findRow(it.dataset.sid,it.dataset.id); if(r&&lastSig[r.id]===undefined) lastSig[r.id]=signal(it.dataset.sid,timerElapsed(it.dataset.sid,r,t),r); });
 }
 function flashItem(it){ it.classList.remove("flash"); void it.offsetWidth; it.classList.add("flash"); clearTimeout(it._ft); it._ft=setTimeout(function(){ it.classList.remove("flash"); },3200); }
 
@@ -2511,14 +2525,14 @@ function rrById(id){ return S.rrq.find(function(q){return q.id===id;}); }
    (tap a name or 🎲 pick at random); a queued person can be taken off the queue again. */
 function rrHidden(n){ return (S.rrcur.hide||[]).indexOf(nkey(n))>=0; }
 function rrHTML(){
-  var cur=rrById(S.rrcur.id), h='<section class="card">';
+  var cur=rrById(S.rrcur.id), h='<section class="card"><p class="saved">Bell at <b>'+fmt(limOf("rr").b)+'</b> per speaker</p>';
   if(!cur){
     h+='<div class="curtopic empty"><div class="lbl">Round Robin question</div><div style="margin:6px 0 10px">Everyone answers the same question.</div>'+
        '<textarea class="t" id="rrQ" rows="2" aria-label="Round Robin question" placeholder="e.g. What is one thing that made you smile this week?">'+esc((S.rrq.filter(function(q){return !q.used;})[0]||{}).text||"")+'</textarea>'+
        '<div class="row" style="margin-top:8px"><button class="btn go big1" id="rrStart">▶ Start the Round Robin</button></div></div>';
     return h+'</section>';
   }
-  var mine=S.rows.rr.filter(function(r){return r.qid===cur.id;}), stOf={};
+  var mine=timerRows("rr").filter(function(r){return r.qid===cur.id;}), stOf={};
   mine.forEach(function(r){ var k=nkey(r.name), st=rowState(r); if(!stOf[k]||st==="running"||(st==="done"&&stOf[k].st!=="running")) stOf[k]={st:st,r:r}; });
   var answered=Object.keys(stOf), nDone=answered.filter(function(k){return stOf[k].st==="done";}).length, live=mine.find(function(r){return rowState(r)==="running";});
   var nQ=answered.filter(function(k){return stOf[k].st==="idle";}).length;
@@ -2527,7 +2541,8 @@ function rrHTML(){
      (S.rrcur.last?'<div class="rrpick" aria-live="polite">🎲 <b>'+esc(S.rrcur.last)+'</b></div>':'')+
      '<div class="row"><button class="btn go big1" id="rrRandom"'+(left.length?'':' disabled')+'>🎲 Pick next at random</button><button class="btn" id="rrShow">📺 Show on screen</button><button class="linkbtn" id="rrEdit">Edit question</button></div>'+
      '<div class="saved" style="margin-top:6px">'+(pool.length?(left.length?(pool.length-left.length)+' of '+pool.length+' have had a turn or are queued · '+left.length+' to go':'🎉 Everyone has had a turn'):'No one '+(rrHereOnly()?'checked in or connected yet — untick “Only people here”':'on the agenda or member list yet'))+'</div></div>';
-  h+='<div class="rrstat" aria-live="polite">'+(live?'🎙 <b>'+esc(live.name)+'</b> is speaking':'Waiting for the Timer')+' · ✓ '+nDone+' done'+(nQ?' · ⏳ '+nQ+' queued':'')+'</div>';
+  h+='<div class="rrstat" aria-live="polite">'+(live?'🎙 <b>'+esc(live.name)+'</b> is speaking':'Waiting for the Timer')+' · ✓ '+nDone+' done'+(nQ?' · ⏳ '+nQ+' queued':'')+'</div>'+
+    (live?'<p id="rrLiveClock" data-row="'+esc(live.id)+'">'+esc(roundRobinClockText(live,now()))+'</p>':'');
   var people=uniq(pool.concat(mine.map(function(r){return r.name;})));
   var memberK={}; memberNames().forEach(function(n){ memberK[nkey(n)]=1; });
   h+='<h2 class="sec">Participants <span class="cnt">tap a name to add them to the Timer’s queue · tap ⏳ again to take them off</span></h2><div class="chips">'+
@@ -2542,6 +2557,15 @@ function rrHTML(){
   return h+'</section>';
 }
 /* who can be picked: the member list (and names used before), optionally only people here today */
+function roundRobinClockText(row,at){
+  var sec=timerElapsed("rr",row,at);
+  return (row.paused?"Paused at ":"Elapsed ")+fmt(sec)+" · "+nextSignalText("rr",sec,row);
+}
+function refreshRoundRobinClock(at){
+  var el=document.getElementById("rrLiveClock");
+  var row=el&&findRow("rr",el.dataset.row);
+  if(row&&rowState(row)==="running") el.textContent=roundRobinClockText(row,at);
+}
 function rrHereOnly(){ if(L.rrHere!=null) return !!L.rrHere; return uniq(meetingNames().concat(S.names)).some(function(n){ return present(n)||isOnlineName(n); }); }
 function rrPool(){ var all=uniq(meetingNames().concat(S.names)).filter(function(n){return !rrHidden(n);}); return rrHereOnly()?all.filter(function(n){ return present(n)||isOnlineName(n); }):all; }
 function rrLeft(){ var cur=rrById(S.rrcur.id); if(!cur) return []; var done=S.rows.rr.filter(function(r){return r.qid===cur.id;}).map(function(r){return nkey(r.name);}); return rrPool().filter(function(n){ return done.indexOf(nkey(n))<0; }); }
@@ -2553,7 +2577,10 @@ function rrCall(name,quiet){
   var ak="rr:"+cur.id+":"+nkey(name);
   if(rrHidden(name)){ S.rrcur.hide=S.rrcur.hide.filter(function(k){return k!==nkey(name);}); tick(S.rrcur); }
   if(!quiet){ S.rrcur.last=name; tick(S.rrcur); }
-  var r=newRow("rr",name); r.ak=ak; r.qid=cur.id; S.rows.rr.push(r); addName(S,name); commit();
+  var r=newRow("rr",name); r.ak=ak; r.qid=cur.id;
+  r.id="live|rr|"+encodeURIComponent(roundRobinTurnKey(r));
+  r.u=Math.max(r.u,(S.dead[r.id]||0)+1);
+  S.rows.rr.push(r); addName(S,name); commit();
 }
 
 (function(){ document.getElementById("view").addEventListener("change",function(e){ if(e.target.id==="rrHere"&&L.role==="rrm"){ L.rrHere=e.target.checked; saveL(); renderAll(); } }); })();
@@ -3097,7 +3124,7 @@ setInterval(function(){
   var t=now();
   document.querySelectorAll("#live .liveitem").forEach(function(it){
     var sid=it.dataset.sid, r=findRow(sid,it.dataset.id); if(!r||rowState(r)!=="running") return;
-    var sec=elapsed(r,t), sg=signal(sid,sec,r);
+    var sec=timerElapsed(sid,r,t), sg=signal(sid,sec,r);
     it.querySelector('[data-live="clock"]').textContent=fmt(sec);
     it.querySelector('[data-live="next"]').textContent=nextSignalText(sid,sec,r);
     var pill=it.querySelector('[data-live="pill"]'); pill.className="pill "+(sg||"sn"); pill.textContent=sigLabel(sg,r);
@@ -3108,7 +3135,7 @@ setInterval(function(){
   });
   document.querySelectorAll("#nowStrip .nowitem").forEach(function(it){
     var sid=it.dataset.sid, r=findRow(sid,it.dataset.id); if(!r||rowState(r)!=="running") return;
-    var sec=elapsed(r,t), sg=signal(sid,sec,r);
+    var sec=timerElapsed(sid,r,t), sg=signal(sid,sec,r);
     if(it.dataset.me){ it.querySelector('[data-live="clock"]').textContent=fmt(sec); var ps=it.querySelector('[data-live="pill"]'); ps.textContent=sigLabel(sg,r); it.querySelector('[data-live="mestat"]').textContent=meStatus(sid,sec,r)+" · "+nextSignalText(sid,sec,r);
       it.classList.remove("sg","sa","sr","sn"); it.classList.add(sg||"sn"); if(lastSig["me"+r.id]!==undefined && sg && sg!==lastSig["me"+r.id]){ flashItem(it); if(sid==="rr"&&sg==="sr"&&meBellOn()) ringBell(); } lastSig["me"+r.id]=sg; return; }
     it.querySelector('[data-live="clock"]').textContent=fmt(sec);
@@ -3120,11 +3147,12 @@ setInterval(function(){
     if(ps && S.rows[sid].some(function(r){return rowState(r)==="running";})) ps.textContent=statsText(timeStats([sid],t),"ran");
     document.querySelectorAll("#view tr[data-id]").forEach(function(tr){
       var r=findRow(sid,tr.dataset.id); if(!r||rowState(r)!=="running") return;
-      var sec=elapsed(r,t), tb=tr.querySelector('[data-live="time"]'), st=tr.querySelector('[data-live="status"]');
+      var sec=timerElapsed(sid,r,t), tb=tr.querySelector('[data-live="time"]'), st=tr.querySelector('[data-live="status"]');
       if(tb){ tb.textContent=fmt(sec); tb.className="timebox "+signal(sid,sec,r); }
       if(st) st.textContent=status(sid,r,t).text;
     });
   }
+  refreshRoundRobinClock(t);
   renderTimerDemo();
 },250);
 
@@ -4565,7 +4593,7 @@ var TIPS={
   ge:["Your evaluation team and who evaluates whom are listed for you.","Call for the Timer, Ah-Counter and Grammarian reports; their results appear here.","Open and close voting, and write your overall notes as the meeting goes."],
   timer:["Plan speakers ahead with + Add to list, or just press Start speaker.","Show green, amber and red as the screen tells you; your phone vibrates at each signal.","Copy report text gives your report. 🎯 Focus shows big Start buttons."],
   ttm:["Add your topics before the meeting, one per line.","Pick or 🎲 randomise a topic, show it on screen, then type who takes it and tap Call speaker.","The Timer gets each speaker's name automatically."],
-  rrm:["Add your Round Robin questions before the meeting.","Tap a name to queue them on the Timer (20-second bell).","Show the question on screen with 📺 so everyone can read it."],
+  rrm:["Add your Round Robin questions before the meeting.","Tap a name to queue them on the Timer (using the shared bell limit).","Show the question on screen with 📺 so everyone can read it."],
   ah:["When the Timer starts someone, their name appears here automatically.","Tap a word each time you hear it.","🎯 Focus gives big buttons with Undo. Copy report text gives your report."],
   gram:["Draft the word, meaning and example, then tap Reveal to everyone when you introduce it.","Tap +1 each time a speaker uses it, and note good phrases and slips.","🎯 Focus gives a big +1 button. Copy report text gives your report."],
   speaker:["Add your speech title and objectives so your evaluator and the Toastmaster can see them.","When the Timer starts you, your screen shows your time and the green / amber / red signal.","Set a feedback PIN so only you can read your evaluation."],
@@ -5244,7 +5272,7 @@ document.addEventListener("click",function(e){ if(e.target.closest("[data-ics]")
 /* ---------- projector / screen-share view ---------- */
 function projHTML(){
   var t=now(), run=runningList(), ss=scheduleStatus(), tm=document.querySelector(".logo img").src, co=document.querySelector(".logo.co img").src, main="", cls="";
-  if(run.length){ var x=run[0], sec=elapsed(x.r,t), sg=signal(x.sid,sec,x.r); cls=sg||"sn";
+  if(run.length){ var x=run[0], sec=timerElapsed(x.sid,x.r,t), sg=signal(x.sid,sec,x.r); cls=sg||"sn";
     main='<div class="pj-lbl">'+esc(x.s.name)+'</div><div class="pj-name">'+esc(displayName(x.r,x.i))+'</div><div class="pj-clock">'+fmt(sec)+'</div><div class="pj-sig">'+(x.r.paused?"⏸ Paused":sg?sigLabel(sg,x.r):"&nbsp;")+'</div><div class="pj-sub">'+esc(limitsLine(x.sid,x.r))+'</div>';
   } else if(currentTimerDemo()){
     var demo=currentTimerDemo(), step=demo.step;

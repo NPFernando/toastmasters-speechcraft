@@ -1,7 +1,7 @@
 /* ---------- projector / screen-share view ---------- */
 function projHTML(){
   var t=now(), run=runningList(), ss=scheduleStatus(), tm=document.querySelector(".logo img").src, co=document.querySelector(".logo.co img").src, main="", cls="";
-  if(run.length){ var x=run[0], sec=elapsed(x.r,t), sg=signal(x.sid,sec,x.r); cls=sg||"sn";
+  if(run.length){ var x=run[0], sec=timerElapsed(x.sid,x.r,t), sg=signal(x.sid,sec,x.r); cls=sg||"sn";
     main='<div class="pj-lbl">'+esc(x.s.name)+'</div><div class="pj-name">'+esc(displayName(x.r,x.i))+'</div><div class="pj-clock">'+fmt(sec)+'</div><div class="pj-sig">'+(x.r.paused?"⏸ Paused":sg?sigLabel(sg,x.r):"&nbsp;")+'</div><div class="pj-sub">'+esc(limitsLine(x.sid,x.r))+'</div>';
   } else if(currentTimerDemo()){
     var demo=currentTimerDemo(), step=demo.step;

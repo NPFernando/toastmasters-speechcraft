@@ -7,7 +7,7 @@ var TIPS={
   ge:["Your evaluation team and who evaluates whom are listed for you.","Call for the Timer, Ah-Counter and Grammarian reports; their results appear here.","Open and close voting, and write your overall notes as the meeting goes."],
   timer:["Plan speakers ahead with + Add to list, or just press Start speaker.","Show green, amber and red as the screen tells you; your phone vibrates at each signal.","Copy report text gives your report. 🎯 Focus shows big Start buttons."],
   ttm:["Add your topics before the meeting, one per line.","Pick or 🎲 randomise a topic, show it on screen, then type who takes it and tap Call speaker.","The Timer gets each speaker's name automatically."],
-  rrm:["Add your Round Robin questions before the meeting.","Tap a name to queue them on the Timer (20-second bell).","Show the question on screen with 📺 so everyone can read it."],
+  rrm:["Add your Round Robin questions before the meeting.","Tap a name to queue them on the Timer (using the shared bell limit).","Show the question on screen with 📺 so everyone can read it."],
   ah:["When the Timer starts someone, their name appears here automatically.","Tap a word each time you hear it.","🎯 Focus gives big buttons with Undo. Copy report text gives your report."],
   gram:["Draft the word, meaning and example, then tap Reveal to everyone when you introduce it.","Tap +1 each time a speaker uses it, and note good phrases and slips.","🎯 Focus gives a big +1 button. Copy report text gives your report."],
   speaker:["Add your speech title and objectives so your evaluator and the Toastmaster can see them.","When the Timer starts you, your screen shows your time and the green / amber / red signal.","Set a feedback PIN so only you can read your evaluation."],
