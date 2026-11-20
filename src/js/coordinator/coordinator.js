@@ -4,9 +4,9 @@ function memberNames(){ return S.members.list.map(function(m){return m.name;}); 
 var RKEY="speechcraftRecords"+NS, autoLastSig="";
 function recLoad(){ try{ return JSON.parse(localStorage.getItem(RKEY)||"[]")||[]; }catch(e){ return []; } }
 function meetingHasContent(st){ st=st||S; var n=0; SESSIONS.forEach(function(x){ n+=(st.rows[x.id]||[]).filter(function(r){return rowState(r)!=="idle";}).length; }); return n>0||st.topics.length>0||st.evals.length>0||Object.keys((st.run&&st.run.started)||{}).length>0; }
-function autoSaveRecord(why){
+function autoSaveRecord(why,preserve){
   try{
-    if(!myRoles().some(function(r){return r==="coord";})||!meetingHasContent()) return false;
+    if(!preserve&&(!myRoles().includes("coord")||!meetingHasContent())) return false;
     var sig=stable(S); if(sig===autoLastSig) return false; autoLastSig=sig;
     var list=recLoad().filter(function(r){ return r.sig!==sig.length+":"+S.mid+":"+(S.u||0); });
     var data=JSON.stringify({app:"speechcraft-meeting",version:2,savedAt:new Date().toISOString(),state:S});

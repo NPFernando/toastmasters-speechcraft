@@ -38,8 +38,8 @@ function refreshWelcome(){
   if(document.getElementById("welcome").classList.contains("on") && W.step==="guest" && !W.guestDone){ var gc=document.getElementById("gCheck"); if(gc){ var ok=NET.status==="on"&&NET.synced; gc.disabled=!ok; if(gc.nextElementSibling) gc.nextElementSibling.textContent=ok?"":(NET.msg||"Connecting to the meeting…"); } }
   if(document.getElementById("welcome").classList.contains("on") && W.step==="connect"){
     renderWelcome();
-    if(W.auto && NET.status==="on" && (NET.peers.length>1||NET.mode==="host")){ W.auto=false; setTimeout(closeWelcome,900); }
-    else if(W.advance && NET.status==="on" && NET.synced && NET.peers.length>1){ W.advance=false; setTimeout(function(){ if(W.step==="connect"){ W.step="role"; renderWelcome(); } },700); }
+    if(W.auto && NET.synced && NET.status==="on" && (NET.peers.length>1||NET.mode==="host")){ W.auto=false; closeWelcome(); }
+    else if(W.advance && NET.status==="on" && NET.synced && NET.peers.length>1){ W.advance=false; W.step="role"; renderWelcome(); }
   }
   if(document.getElementById("qrModal").classList.contains("on")) renderPhoneQR();
 }
@@ -83,7 +83,7 @@ function connStatusHTML(){
 }
 function welcomeBackHTML(){ var w=welcomeBack0(); return w?w+upcomingHTML(true):""; }
 function welcomeBack0(){
-  if(!L.setup) return "";
+  if(!L.setup||(NET.mode==="join"&&!NET.synced)) return "";
   var nm=L.me||myName(), rs=myRoles().map(roleObj).filter(Boolean); if(!nm&&!rs.length) return "";
   var last=L.lastCode&&!NET.mode?L.lastCode:"";
   return '<div class="wcard wback"><div class="wbh">👋 Welcome back'+(nm?', <b>'+esc(nm)+'</b>':'')+'</div><div class="saved">'+rs.map(function(r){return r.icon+' '+r.name;}).join(" + ")+'</div>'+
@@ -136,15 +136,15 @@ wbox.addEventListener("click",function(e){
   if((b=t.closest("[data-wname]"))){ W.name=b.dataset.wname; var ni=document.getElementById("wName"); if(ni) ni.value=""; var td=uniq(agendaRolesFor(W.name).concat(selectedRoles(W.name))); if(!W.add) W.sel=td.slice(); wRefreshWho(); return; }
   if(t.closest("#wSelToday")){ W.sel=uniq((W.sel||[]).concat(agendaRolesFor(wName().trim()),selectedRoles(wName()))); wRefreshWho(); return; }
   if(t.closest("#wNext")){ wFinish(); return; }
-  if(t.closest("#wNextWho")||t.closest("#wChange")){ W.step="role"; renderWelcome(); return; }
+  if(t.closest("#wNextWho")||t.closest("#wChange")){ if(NET.mode==="join"&&(!NET.synced||NET.status!=="on")) return; W.step="role"; renderWelcome(); return; }
   if(t.closest("#wToJoin")||t.closest("#wToJoin2")){ if(W.add) return; W.step="connect"; renderWelcome(); return; }
   if(t.closest("#wCancel")){ W.add=false; closeWelcome(); return; }
   if(t.closest("#wJoin")){ var code=cleanCode(document.getElementById("wCode").value); if(code.length!==6){ alert("The meeting code has 6 letters/numbers, e.g. K7Q-M4P."); return; } W.code=code; W.advance=true; startJoin(code); renderWelcome(); return; }
   if(t.closest("#wHost")){ startHost(makeCode()); renderWelcome(); return; }
   if(t.closest("#wRejoin")){ var lc=L.lastCode; W.code=lc; if(L.lastHost) startHost(lc); else startJoin(lc); W.auto=true; renderWelcome(); return; }
-  if(t.closest("#wSolo2")){ closeWelcome(); return; }
+  if(t.closest("#wSolo2")){ if(NET.mode==="join"&&!NET.synced) return; closeWelcome(); return; }
   if(t.closest("#wSolo")){ if(L.setup&&!W.fresh){ closeWelcome(); return; } W.step="role"; renderWelcome(); return; }
-  if(t.closest("#wDone")){ closeWelcome(); return; }
+  if(t.closest("#wDone")){ if(NET.mode==="join"&&(!NET.synced||NET.status!=="on")) return; closeWelcome(); return; }
   if(t.closest("#wLeave")){ stopNet(false); W.code=""; W.step="connect"; document.getElementById("welcome").classList.add("on"); renderWelcome(); return; }
   if(t.closest("#wCopyCode")){ try{ navigator.clipboard.writeText(fmtCode(NET.code)); t.textContent="Copied ✓"; }catch(err){} return; }
   if(t.closest("#wCopyLink")){ try{ navigator.clipboard.writeText(inviteLink(NET.code)); t.textContent="Link copied ✓"; }catch(err){} return; }

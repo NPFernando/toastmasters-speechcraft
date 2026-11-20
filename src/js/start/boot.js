@@ -16,8 +16,8 @@ else if(hashCode.length===6 && hashRole){
   if(!L.setup||hashPerson){ L.roles=[hashRole]; if(hashPerson){ L.me=hashPerson; L.myNames={}; } } L.role=hashRole; L.setup=true; saveL(); renderAll();
   W.code=hashCode; W.auto=true; startJoin(hashCode); openWelcome("connect");
 }
-else if(hashCode.length===6 && !(resumeCode===hashCode)){ W.code=hashCode; startJoin(hashCode); W.advance=true; openWelcome("connect"); }
-else if(resumeCode){ if(L.conn.mode==="host") startHost(L.conn.code); else startJoin(L.conn.code); if(!L.setup) openWelcome("connect"); }
+else if(hashCode.length===6){ W.code=hashCode; startJoin(hashCode); W.advance=true; openWelcome("connect"); }
+else if(resumeCode){ if(L.conn.mode==="host") startHost(L.conn.code); else { W.auto=!!L.setup; W.advance=!L.setup; startJoin(L.conn.code); } if(!L.setup||L.conn.mode==="join") openWelcome("connect"); }
 else if(!L.setup) openWelcome("connect");
 window.addEventListener("pagehide",sayBye);
 window.addEventListener("beforeunload",sayBye);
