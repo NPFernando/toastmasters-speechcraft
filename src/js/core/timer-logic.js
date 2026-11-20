@@ -28,7 +28,7 @@ function newRow(sid,name){ var r={id:uid(),name:name||"",start:null,end:null,man
 function runningList(){ var out=[]; SESSIONS.forEach(function(s){ S.rows[s.id].forEach(function(r,i){ if(rowState(r)==="running") out.push({sid:s.id,s:s,r:r,i:i}); }); }); return out; }
 function anyRunning(){ return runningList().length>0; }
 function firstQueued(sid){ return S.rows[sid].find(function(r){return rowState(r)==="idle";}); }
-function startRow(sid,id){ var r=findRow(sid,id); if(!r) return; r.start=now(); r.end=null; r.manual=null; r.pz=0; r.paused=null; tick(r); commit(); wake(); }
+function startRow(sid,id){ var r=findRow(sid,id); if(!r||rowState(r)!=="idle") return; if(S.timerDemo.until){ S.timerDemo.until=0; tick(S.timerDemo); } r.start=now(); r.end=null; r.manual=null; r.pz=0; r.paused=null; tick(r); commit(); wake(); }
 function stopRow(sid,id){ var r=findRow(sid,id); if(!r||r.start==null||r.end!=null) return; r.end=now(); if(r.paused){ r.pz=(r.pz||0)+Math.max(0,r.end-r.paused); r.paused=null; } tick(r); commit(); wake(); }
 function okToStart(){
   var run=runningList(); if(!run.length) return true;
@@ -109,3 +109,13 @@ function wake(){ try{
 }catch(e){} }
 document.addEventListener("visibilitychange",function(){ if(document.visibilityState==="visible") wake(); });
 
+
+
+/* The next rendered button can sit under a second click from the same gesture. */
+var lastLiveAction={};
+function allowLiveAction(action){
+  var at=now(), key=S.mid+"|"+action;
+  if(at-(lastLiveAction[key]||0)<500) return false;
+  lastLiveAction[key]=at;
+  return true;
+}

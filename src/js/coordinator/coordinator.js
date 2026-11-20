@@ -4,9 +4,9 @@ function memberNames(){ return S.members.list.map(function(m){return m.name;}); 
 var RKEY="speechcraftRecords"+NS, autoLastSig="";
 function recLoad(){ try{ return JSON.parse(localStorage.getItem(RKEY)||"[]")||[]; }catch(e){ return []; } }
 function meetingHasContent(st){ st=st||S; var n=0; SESSIONS.forEach(function(x){ n+=(st.rows[x.id]||[]).filter(function(r){return rowState(r)!=="idle";}).length; }); return n>0||st.topics.length>0||st.evals.length>0||Object.keys((st.run&&st.run.started)||{}).length>0; }
-function autoSaveRecord(why){
+function autoSaveRecord(why,preserve){
   try{
-    if(!myRoles().some(function(r){return r==="coord";})||!meetingHasContent()) return false;
+    if(!preserve&&(!myRoles().includes("coord")||!meetingHasContent())) return false;
     var sig=stable(S); if(sig===autoLastSig) return false; autoLastSig=sig;
     var list=recLoad().filter(function(r){ return r.sig!==sig.length+":"+S.mid+":"+(S.u||0); });
     var data=JSON.stringify({app:"speechcraft-meeting",version:2,savedAt:new Date().toISOString(),state:S});
@@ -53,6 +53,10 @@ function healthRows(){
   else rows.push({st:"warn",t:"Prepared speakers",d:"None on the agenda yet",tab:"setup"});
   var empty=its.filter(function(it){return !String(it.text||"").trim();}).length, zero=its.filter(function(it,i){return agDur(its,i)===0;}).length;
   rows.push({st:(empty||zero)?"warn":"ok",t:"Agenda",d:its.length+" items · "+(agSpanText()||"no times")+(empty?" · "+empty+" without an activity":"")+(zero?" · "+zero+" with 0 min":""),tab:(empty||zero)?"agenda":""});
+  var required=preparedBlockRequirement(), short=its.some(function(it,i){return it.x==="speakers"&&agDur(its,i)!=null&&agDur(its,i)<required;});
+  if(required) rows.push({st:short?"warn":"ok",t:"Prepared speech timing",d:short?"Allow "+required+" minutes including transitions":"Prepared speeches have time for "+required+" minutes including transitions",tab:short?"agenda":""});
+  var unavailable=uniq(roleClashes().filter(function(x){return x.status==="no";}).map(function(x){return x.name;}));
+  rows.push({st:unavailable.length?"warn":"ok",t:"Role availability",d:unavailable.length?"Needs a replacement: "+unavailable.join(", "):"No assigned role players marked absent",target:unavailable.length?"availability":""});
   if(!NET.room) rows.push({st:"warn",t:"Meeting code",d:"Not hosting yet — tap Host meeting (🏠 Home) and share the code or QR"});
   else {
     var rs=relayStatus(); rows.push({st:rs.open?"ok":"no",t:"Connection",d:rs.open?"Hosting "+fmtCode(NET.code)+" · relays reachable":"Relays not reachable — try another network"});
@@ -66,7 +70,7 @@ function healthRows(){
 function healthHTML(){
   var rows=healthRows(), bad=rows.filter(function(r){return r.st!=="ok";}).length, ic={ok:"✅",warn:"⚠️",no:"❌"};
   return '<details class="card health"'+(bad?' open':'')+'><summary><h2 class="sec" style="margin:0;display:inline">🩺 Ready for the meeting?</h2> <span class="'+(bad?'st-o':'st-q')+'"><b>'+(bad?bad+' to check':'All set')+'</b></span></summary>'+
-    '<table class="sumtable cct" style="margin-top:8px"><tbody>'+rows.map(function(r){ return '<tr><td>'+ic[r.st]+'</td><td><b>'+esc(r.t)+'</b></td><td>'+esc(r.d)+(r.tab&&r.tab!==coTab()?' <button class="linkbtn" data-cotab="'+r.tab+'">Fix</button>':'')+'</td></tr>'; }).join("")+'</tbody></table>'+
+    '<table class="sumtable cct" style="margin-top:8px"><tbody>'+rows.map(function(r){ return '<tr><td>'+ic[r.st]+'</td><td><b>'+esc(r.t)+'</b></td><td>'+esc(r.d)+(r.target?' <a href="#availability" class="linkbtn">Find replacements</a>':"")+(r.tab&&r.tab!==coTab()?' <button class="linkbtn" data-cotab="'+r.tab+'">Fix</button>':'')+'</td></tr>'; }).join("")+'</tbody></table>'+
     '<div class="row" style="margin-top:10px"><button class="btn" id="remCopy">📋 Copy reminders for the group chat</button>'+(S.meta.test?'<button class="btn go" id="dryEnd">✓ Finish dry run & clean up</button>':'<button class="btn" id="dryStart">🧪 Start a dry run</button>')+'</div>'+
     '<div class="saved" style="margin-top:6px">'+(S.meta.test?'Dry run: every device shows a test banner, feedback history isn’t kept, and members you add now are marked as test members.':'A dry run marks this meeting as a test so it can be cleared in one tap afterwards (see the 15-minute checklist in the repo).')+'</div></details>';
 }
@@ -165,8 +169,12 @@ function coordHTML(){
     '<span class="seg" role="group" aria-label="Move the whole agenda"><button data-agshift="-5" title="Move every item 5 minutes earlier">−5 min</button><button data-agshift="5" title="Move every item 5 minutes later">+5 min</button></span>'+
     '<span class="saved" id="agSpan">'+esc(agSpanText())+'</span></div>'+
     '<div class="note" style="margin-top:4px">▲▼ (or drag ▲▼ on a laptop) moves an item and keeps how long it runs. Changing the <b>min</b> of an item moves everything after it. <b>＋</b> inserts a 5-minute item below and <b>✕</b> removes one; the items after it move to suit.</div><div class="agedit">';
+  var preparedMinutes=preparedBlockRequirement();
   AGL.forEach(function(it,i){
     var du=agDur(AGL,i);
+    if(it.x==="speakers"&&du!==null&&preparedMinutes>du){
+      h+='<div class="note">Prepared speeches need '+preparedMinutes+' min including introductions and transitions. <button class="btn sm" data-fit-speeches="'+esc(it.id)+'">Fit prepared speeches</button></div>';
+    }
     h+='<div class="agrow" data-iid="'+it.id+'"><span class="agmv" draggable="true" title="Drag to move (or use ▲▼)"><button data-agmv="-1" title="Move up" aria-label="Move up"'+(i?'':' disabled')+'>▲</button><button data-agmv="1" title="Move down" aria-label="Move down"'+(i<AGL.length-1?'':' disabled')+'>▼</button></span>'+
        '<input class="t agtime" type="time" data-it="time" aria-label="Time" value="'+esc(it.time)+'">'+
        (du==null?'<span class="agdurw agend">end</span>':'<label class="agdurw"><input class="t agdur" type="number" inputmode="numeric" min="0" max="240" data-agdur value="'+du+'" aria-label="Length in minutes"><span>min</span></label>')+

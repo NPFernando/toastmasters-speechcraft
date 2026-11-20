@@ -18,7 +18,7 @@ function autoAssignTT(speaker){
   var a=upsert(["ttassign"],"tta|"+nkey(speaker),{speaker:speaker,evaluator:""}); a.speaker=speaker; a.evaluator=best; tick(a);
 }
 function anyEvaluatorOf(kind,n){ return kind==="ps"?evaluatorOf(n):ttEvaluatorOf(n); }
-function evStatusOf(kind,n,me){ var dd=(L.evDrafts||{})[evId(kind,n,me)]; if((dd&&dd.submitted)||S.evals.some(function(e){return e.id===evId(kind,n,me)&&e.done&&e.state!=="writing";})) return "done"; if(dd&&(dd.c1||dd.r||dd.c2)) return "writing"; return "todo"; }
+function evStatusOf(kind,n,me){ var dd=meetingEvalDrafts()[evId(kind,n,me)]; if((dd&&dd.submitted)||S.evals.some(function(e){return e.id===evId(kind,n,me)&&e.done&&e.state!=="writing";})) return "done"; if(dd&&(dd.c1||dd.r||dd.c2)) return "writing"; return "todo"; }
 function evalProgressHTML(kind,list,me){
   if(!list.length) return "";
   var c={done:0,writing:0,todo:0}; list.forEach(function(n){ c[evStatusOf(kind,n,me)]++; });
@@ -41,9 +41,9 @@ function assignTableHTML(){
 function evalHTML(){
   var kind=evKind(), me=myName(), list=kind==="ps"?preparedSpeakers():ttSpeakers();
   L.evSel=L.evSel||{}; var sel=L.evSel[kind];
-  var h='<section class="card">';
+  var h='<section class="card">'+draftAccessHTML();
   if(!me) h+='<div class="note" style="margin:0 0 10px">Type your name in <b>Your name</b> above, so each speaker knows who evaluated them.</div>';
-  var chip=function(n){ var dd=(L.evDrafts||{})[evId(kind,n,me)], done=!!(dd&&dd.submitted)||S.evals.some(function(e){return e.id===evId(kind,n,me)&&e.done;}), t=kind==="ps"?speechTitle(n):"", ev=anyEvaluatorOf(kind,n);
+  var chip=function(n){ var dd=meetingEvalDrafts()[evId(kind,n,me)], done=!!(dd&&dd.submitted)||S.evals.some(function(e){return e.id===evId(kind,n,me)&&e.done;}), t=kind==="ps"?speechTitle(n):"", ev=anyEvaluatorOf(kind,n);
     return '<button class="chip spchip'+(nkey(sel)===nkey(n)?' active':'')+'" data-evsel="'+esc(n)+'">'+(done?'✓ ':'')+esc(n)+(t?'<span class="c">“'+esc(t)+'”</span>':'')+(ev&&nkey(ev)!==nkey(me)?'<span class="c">evaluator: '+esc(ev)+'</span>':'')+'</button>'; };
   if(kind==="ps"){
     var mine=list.filter(function(n){return me&&nkey(evaluatorOf(n))===nkey(me);}), rest=list.filter(function(n){return mine.indexOf(n)<0;});
@@ -56,8 +56,8 @@ function evalHTML(){
   }
   h+='</div><div class="row" style="margin-top:8px"><input class="t" id="evAddIn" list="roster" autocomplete="off" placeholder="Someone else? Type a name"><button class="btn" id="evAdd">+ Add</button></div>';
   if(sel){
-    var e=(L.evDrafts||{})[evId(kind,sel,me)]||{c1:"",r:"",c2:"",rate:{}};
-    var other=!((L.evDrafts||{})[evId(kind,sel,me)]) && S.evals.some(function(x){return x.id===evId(kind,sel,me)&&x.done;});
+    var e=meetingEvalDrafts()[evId(kind,sel,me)]||{c1:"",r:"",c2:"",rate:{}};
+    var other=!(meetingEvalDrafts()[evId(kind,sel,me)]) && S.evals.some(function(x){return x.id===evId(kind,sel,me)&&x.done;});
     var stl=speechTitle(sel), sob=(speechRec(sel)||{}).obj;
     var tm=timesFor(sel).filter(function(x){ return kind==="ps"?x.s.id==="ps":x.s.id==="tt"; });
     var asg=anyEvaluatorOf(kind,sel);

@@ -48,17 +48,17 @@ function revealWordOfDay(){
   }
   Object.assign(S.gram,word);
   tick(S.gram);
-  var draft=workflowDraft();
+  var draft=wordDraft();
   Object.keys(WORD_FIELDS).forEach(function(id){ delete draft[id]; });
-  saveL();
+  saveL(); syncWordDraft();
   commit();
 }
 function gramHTML(){
   var sel=selRow("gram");
-  var draft=workflowDraft(), labels={wotd:"Word",wotdMeaning:"Meaning",wotdExample:"Example sentence"};
+  var draft=wordDraft(), labels={wotd:"Word",wotdMeaning:"Meaning",wotdExample:"Example sentence"};
   var h='<section class="card"><h2 class="sec" style="margin-top:0">Word of the Day</h2>'+
-    '<div class="saved">'+(S.gram.wotd?'Published: '+esc(S.gram.wotd)+'. Changes stay private until you publish again.':'This draft stays on this device until you reveal it.')+'</div>'+
-    Object.keys(WORD_FIELDS).map(function(id){
+    '<div class="saved">'+(S.gram.wotd?'Published: '+esc(S.gram.wotd)+'. Changes stay private until you publish again.':'Only you can read the draft on devices with your feedback PIN unlocked.')+'</div>'+
+    draftAccessHTML()+Object.keys(WORD_FIELDS).map(function(id){
       var value=draft[id]??S.gram[WORD_FIELDS[id]];
       return '<label class="lbl" for="'+id+'">'+labels[id]+'</label><input class="t" id="'+id+'" value="'+esc(value)+'" required pattern=".*\\S.*" style="width:100%;margin-bottom:8px">';
     }).join("")+
@@ -81,6 +81,7 @@ function gramHTML(){
 }
 function addCounterSpeaker(kind,name){
   name=String(name||"").trim(); if(!name) return;
+  clearDeviceDraft("spkInput");
   var ex=counterRow(kind,name);
   if(kind==="ah") L.ahSel=ex.id; else L.gramSel=ex.id; selectPerson(name,kind); saveL(); remember(name); commit();
 }

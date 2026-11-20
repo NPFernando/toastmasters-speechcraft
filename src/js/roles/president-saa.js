@@ -60,7 +60,7 @@ function saaHTML(){
     var t=e.target;
     if(t.closest("#gAdd")){ var n=document.getElementById("gName"), f=document.getElementById("gFrom"), nm=(n.value||"").trim(); if(!nm){ n.focus(); return; }
       if(S.guests.some(function(g){return nkey(g.name)===nkey(nm);})){ showToastMsg(nm+" is already on the guest list"); return; }
-      S.guests.push({id:uid(),name:nm,from:(f.value||"").trim(),welcomed:false,ord:maxOrd(S.guests)+1,u:now()}); addName(S,nm); commit(); var n2=document.getElementById("gName"); if(n2) n2.focus(); return; }
+      S.guests.push({id:uid(),name:nm,from:(f.value||"").trim(),welcomed:false,ord:maxOrd(S.guests)+1,u:now()}); addName(S,nm); clearDeviceDraft("gName","gFrom"); commit(); var n2=document.getElementById("gName"); if(n2) n2.focus(); return; }
     var w=t.closest("[data-gwel]"); if(w){ var g=S.guests.find(function(x){return x.id===w.dataset.gwel;}); if(g){ g.welcomed=!g.welcomed; tick(g); commit(); } return; }
     var d=t.closest("[data-gdel]"); if(d){ var i=S.guests.findIndex(function(x){return x.id===d.dataset.gdel;}); if(i>=0) removeItem(["guests"],S.guests[i].id,S.guests[i].name||"Guest"); return; }
   });

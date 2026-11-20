@@ -32,6 +32,7 @@ function tmodHTML(){
     h+='<div class="row"><button class="btn" id="runPrev">◀ Back</button><button class="btn go big1" id="runNext"'+(c.next?'':' disabled')+'>Next ▶</button>'+(c.next?'':'<button class="btn" id="runEnd">Finish</button>')+'</div>';
     h+=adjCtlHTML();
   }
+  h+=preparedRunHTML(true);
   h+='<h2 class="sec">Full agenda</h2><ul class="tlist runlist">';
   c.its.forEach(function(it,i){
     var cls=c.i>=0&&i<c.i?"done":i===c.i?"cur":"";
@@ -42,7 +43,7 @@ function tmodHTML(){
   h+='</ul><div class="note">Tap any item to jump to it. Running late or someone missing? <b>⤵ To end</b> moves an item (e.g. a late keynote) to the end, and <b>⏭ Skip</b> leaves it out. Everyone connected sees the new order. The printed agenda keeps the original plan.</div></section>';
   return h;
 }
-function runGo(id){ S.run.by=runBy(); S.run.cur=id; if(id && !S.run.started[id]) S.run.started[id]=now(); tick(S.run); commit(); }
+function runGo(id){ if(S.run.cur===id) return; S.run.by=runBy(); S.run.cur=id; if(id && !S.run.started[id]) S.run.started[id]=now(); tick(S.run); commit(); }
 /* compact "Now" line for every role */
 function renderAgendaLine(){
   var el=document.getElementById("agendaLine"); if(!el) return;

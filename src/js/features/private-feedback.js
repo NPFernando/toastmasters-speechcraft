@@ -58,50 +58,103 @@ function decryptFor(name,enc){
     .then(function(pt){ return JSON.parse(new TextDecoder().decode(pt)); });
 }
 
-/* evaluator drafts live only on the evaluator's device until they can be sent encrypted */
-function evDraft(){ var kind=evKind(), sel=(L.evSel||{})[kind]; if(!sel) return null; var id=evId(kind,sel,myName()); L.evDrafts=L.evDrafts||{}; if(!L.evDrafts[id]) L.evDrafts[id]={kind:kind,speaker:sel,c1:"",r:"",c2:"",rate:{}}; return {id:id,d:L.evDrafts[id]}; }
+/* Evaluation drafts are editable locally and can sync encrypted to the author. */
+function meetingEvalDrafts(){
+  L.evDraftsByMeeting=L.evDraftsByMeeting||{};
+  if(!L.evDraftsByMeeting[S.mid]){
+    var legacy={};
+    S.evals.forEach(function(entry){
+      if(L.evDrafts&&Object.hasOwn(L.evDrafts,entry.id)) legacy[entry.id]=L.evDrafts[entry.id];
+    });
+    L.evDraftsByMeeting[S.mid]=legacy;
+    if(L.evDrafts){
+      L.unscopedEvalDrafts=L.evDrafts;
+      delete L.evDrafts;
+    }
+  }
+  return L.evDraftsByMeeting[S.mid];
+}
+function evDraft(){
+  var kind=evKind(), sel=(L.evSel||{})[kind]; if(!sel) return null;
+  var id=evId(kind,sel,myName()), drafts=meetingEvalDrafts();
+  if(!drafts[id]) drafts[id]={kind:kind,speaker:sel,c1:"",r:"",c2:"",rate:{}};
+  return {id:id,d:drafts[id]};
+}
 var markTimers={};
 /* while an evaluator is writing, only a "writing" marker is shared: never the content */
 function markWriting(id){
+  var mid=S.mid, by=myName();
   clearTimeout(markTimers[id]);
   markTimers[id]=setTimeout(function(){
-    var d=(L.evDrafts||{})[id]; if(!d||d.submitted) return;
+    if(S.mid!==mid) return;
+    var d=meetingEvalDrafts()[id]; if(!d||d.submitted) return;
     var rec=upsert(["evals"],id,{kind:d.kind,speaker:d.speaker});
-    if(rec.state!=="writing"){ rec.by=myName()||"Evaluator"; rec.kind=d.kind; rec.speaker=d.speaker; rec.state="writing"; rec.done=false; rec.enc=null; tick(rec); commitQuiet(); }
+    if(rec.state!=="writing"){ rec.by=by||"Evaluator"; rec.kind=d.kind; rec.speaker=d.speaker; rec.state="writing"; rec.done=false; rec.enc=null; tick(rec); commitQuiet(); }
   },1200);
 }
 /* Submit: encrypt the final version for the speaker and share it */
 function submitDraft(id,resend){
-  var d=(L.evDrafts||{})[id]; if(!d) return Promise.resolve(false);
-  d.by=myName()||d.by||"Evaluator";
+  var d=meetingEvalDrafts()[id]; if(!d) return Promise.resolve(false);
+  var mid=S.mid;
+  d.by=d.by||myName()||"Evaluator";
   if(!resend){ d.submitted=true; d.changed=false; d.submittedAt=now(); }
   saveL(); clearTimeout(markTimers[id]);
   var rec=upsert(["evals"],id,{kind:d.kind,speaker:d.speaker});
   rec.by=d.by; rec.kind=d.kind; rec.speaker=d.speaker; rec.done=true; rec.at=d.submittedAt; delete rec.c1; delete rec.r; delete rec.c2; delete rec.rate;
   if(!keyRec(d.speaker)){ rec.state="queued"; rec.enc=null; rec.pending=true; tick(rec); commit(); return Promise.resolve(false); }
   return encryptFor(d.speaker,{c1:d.c1,r:d.r,c2:d.c2,rate:d.rate||{},kind:d.kind,by:d.by,at:d.submittedAt}).then(function(enc){
+    if(S.mid!==mid) return false;
     var r2=S.evals.find(function(x){return x.id===id;})||rec;
     r2.enc=enc; r2.state="submitted"; r2.pending=false; r2.done=true; r2.at=d.submittedAt; tick(r2); d.sentKx=enc.kx; saveL(); commit(); return true;
   }).catch(function(){ return false; });
 }
+function pendingNotes(){
+  L.notesByMeeting=L.notesByMeeting||{};
+  return L.notesByMeeting[S.mid]||(L.notesByMeeting[S.mid]={});
+}
 function sendNote(to,text){
-  if(!keyRec(to)){ L.noteQueue=L.noteQueue||[]; L.noteQueue.push({to:to,text:text}); saveL(); return Promise.resolve(false); }
-  return encryptFor(to,{text:text}).then(function(enc){ S.notes.push({id:uid(),to:to,enc:enc,ord:maxOrd(S.notes)+1,u:now()}); commit(); return true; });
+  var id="note|"+uid(), note={id:id,to:to,text:text};
+  if(keyRec(to)) return deliverNote(note);
+  pendingNotes()[id]=note;
+  saveL(); queuePrivateDraft(draftOwner(),"pending|"+id,note);
+  return Promise.resolve(false);
+}
+function deliverNote(note){
+  var mid=S.mid;
+  if(S.notes.some(function(n){return n.id===note.id;})) return Promise.resolve(true);
+  return encryptFor(note.to,{text:note.text}).then(function(enc){
+    if(S.mid!==mid) return false;
+    if(!S.notes.some(function(n){return n.id===note.id;})){
+      S.notes.push({id:note.id,to:note.to,enc:enc,ord:maxOrd(S.notes)+1,u:now()}); commit();
+    }
+    return true;
+  });
+}
+function syncPendingNotes(){
+  Object.values(pendingNotes()).forEach(function(note){
+    if(!S.roleFields.some(function(r){return r.key==="pending|"+note.id&&r.person===nkey(draftOwner())&&r.enc;})){
+      queuePrivateDraft(draftOwner(),"pending|"+note.id,note);
+    }
+  });
 }
 var flushing=false;
 function flushPending(){
   if(flushing||!cryptoOK()) return; flushing=true;
   var jobs=[];
-  Object.keys(L.evDrafts||{}).forEach(function(id){ var d=L.evDrafts[id], r=keyRec(d.speaker); if(d.submitted && r && d.sentKx!==r.pub.x) jobs.push(submitDraft(id,true)); });
-  var q=(L.noteQueue||[]).slice(), keep=[];
-  q.forEach(function(n){ if(keyRec(n.to)) jobs.push(sendNote(n.to,n.text)); else keep.push(n); });
-  if(q.length!==keep.length){ L.noteQueue=keep; saveL(); }
+  Object.keys(meetingEvalDrafts()).forEach(function(id){ var d=meetingEvalDrafts()[id], r=keyRec(d.speaker); if(d.submitted && r && d.sentKx!==r.pub.x) jobs.push(submitDraft(id,true)); });
+  var mid=S.mid, pending=pendingNotes();
+  Object.values(pending).forEach(function(note){
+    if(!keyRec(note.to)&&!S.notes.some(function(n){return n.id===note.id;})) return;
+    jobs.push(deliverNote(note).then(function(sent){
+      if(sent&&S.mid===mid){ delete pending[note.id]; saveL(); }
+    }).catch(function(){ /* Leave the note queued for the next retry. */ }));
+  });
   Promise.all(jobs).then(function(){ flushing=false; },function(){ flushing=false; });
 }
 setInterval(flushPending,5000);
 function evStateText(speaker,d){
   d=d||{};
-  if(!d.submitted) return '✍ <b>Draft</b> — saved on this device only. Nobody sees it until you tap <b>Submit</b>; then only <b>'+esc(speaker)+'</b> can read it.';
+  if(!d.submitted) return '✍ <b>Draft</b> — unlock your feedback PIN on each device to sync it privately. Tap <b>Submit</b>; then only <b>'+esc(speaker)+'</b> can read it.';
   if(d.changed) return '✏️ You changed this after submitting. Tap <b>Update submission</b> to send the new version.';
   if(!keyRec(speaker)) return '⏳ <b>Submitted</b> — waiting for '+esc(speaker)+' to set up their feedback PIN. It will be delivered automatically, encrypted.';
   return '✅ <b>Submitted</b> '+(d.submittedAt?'at '+new Date(d.submittedAt).toLocaleTimeString("en-AU",{hour:"numeric",minute:"2-digit"})+' ':'')+'— only '+esc(speaker)+' can read it (encrypted).';
@@ -120,3 +173,137 @@ function refreshEvState(){
 function evalStatusLabel(e){ return e.state==="writing"?"✍ writing":e.state==="queued"?"⏳ submitted, waiting for the speaker's PIN":"✅ submitted"; }
 function submittedEvals(name){ return S.evals.filter(function(e){ return nkey(e.speaker)===nkey(name) && e.enc && e.done && (e.state==="submitted"||!e.state); }); }
 
+
+/* Drafts use the author's feedback key. The meeting only receives ciphertext. */
+var draftReads=new Set(), draftWrites=new Map();
+function draftOwner(){ return L.me||myName(); }
+function draftAccessHTML(){
+  var name=draftOwner();
+  if(!name||!cryptoOK()) return "";
+  if(hasPriv(name)) return '<p class="saved">Private draft sync is unlocked on this device.</p>';
+  return '<details><summary>Sync private drafts across my devices</summary>'+
+    '<p class="saved">Use the same feedback PIN on each device to read and edit your drafts.</p>'+
+    '<input class="t" id="draftPin" type="password" inputmode="numeric" maxlength="8" aria-label="Feedback PIN">'+
+    '<button class="btn sm" id="draftAccess">'+(keyRec(name)?'Unlock draft sync':'Set feedback PIN')+'</button></details>';
+}
+function queuePrivateDraft(name,key,value){
+  if(!name||!hasPriv(name)) return;
+  var mid=S.mid, person=nkey(name), id="field|private|"+JSON.stringify([person,key]);
+  var writeKey=JSON.stringify([mid,id]);
+  var previous=S.roleFields.find(function(r){return r.id===id;});
+  var rev=Math.max(now(),(previous&&previous.u||0)+1,(draftWrites.get(writeKey)||0)+1);
+  draftWrites.set(writeKey,rev);
+  encryptFor(name,clone(value)).then(function(enc){
+    if(S.mid!==mid||draftWrites.get(writeKey)!==rev) return;
+    var current=S.roleFields.find(function(r){return r.id===id;});
+    if(current&&current.u>rev) return;
+    var rec=upsert(["roleFields"],id,{person:person,key:key});
+    rec.enc=enc; rec.u=rev;
+    commitQuiet();
+  }).catch(function(){ showToastMsg("Draft saved here. Private sync failed."); });
+}
+function syncPrivateDrafts(){
+  var name=draftOwner(), person=nkey(name), mid=S.mid, role=L.role;
+  if(!hasPriv(name)) return;
+  S.roleFields.filter(function(r){
+    return r.enc&&r.person===person&&(r.key.startsWith("form|")||r.key.startsWith("setting|")||r.key.startsWith("pending|")||
+      (role==="gram"&&(r.key==="word"||r.key.startsWith("word|")))||
+      (["seval","tteval"].includes(role)&&r.key.startsWith("e|"+evKind()+"|")));
+  }).forEach(function(r){
+    var read=JSON.stringify([mid,r.id,r.u,r.enc.ct,r.enc.kx]), writeKey=JSON.stringify([mid,r.id]);
+    if(draftReads.has(read)||(draftWrites.get(writeKey)||0)>=r.u) return;
+    draftReads.add(read);
+    decryptFor(name,r.enc).then(function(value){
+      if(S.mid!==mid||L.role!==role||nkey(draftOwner())!==person){ draftReads.delete(read); return; }
+      var latest=S.roleFields.find(function(x){return x.id===r.id;});
+      if(!latest||latest.enc.ct!==r.enc.ct||(draftWrites.get(writeKey)||0)>=r.u) return;
+      if(r.key.startsWith("pending|")){
+        if(value&&r.key==="pending|"+value.id&&typeof value.to==="string"&&typeof value.text==="string"&&
+          !S.notes.some(function(n){return n.id===value.id;})) pendingNotes()[value.id]=value;
+      } else if(r.key.startsWith("form|")||r.key.startsWith("setting|")){
+        deviceDraftValues()[r.key]=value;
+        if(r.key.startsWith("setting|rep|")&&typeof value==="boolean"){
+          var report=r.key.slice("setting|rep|".length);
+          if(/^[a-z]+$/.test(report)) L.rep[report]=value;
+          if(document.getElementById("reportWrap")?.classList.contains("on")) buildReport();
+        } else if(r.key.startsWith("setting|")){
+          var setting=r.key.slice("setting|".length);
+          if(DEVICE_SETTINGS.includes(setting)&&setting!=="rep"&&
+            (setting==="theme"?["auto","light","dark"].includes(value):typeof value==="boolean")) L[setting]=value;
+          applyDisplay();
+        }
+      } else if(role==="gram"){
+        if(!value||value.epoch!==(S.gram.u||0)) return;
+        var draft=wordDraft();
+        if(r.key==="word"){
+          Object.keys(WORD_FIELDS).forEach(function(id){
+            if(!hasDraftPatch(person,"word|"+id,r.u)&&Object.hasOwn(value.fields||{},id)) draft[id]=value.fields[id];
+          });
+        } else {
+          var wordField=r.key.slice(5);
+          if(Object.hasOwn(WORD_FIELDS,wordField)){
+            if(value.text===null) delete draft[wordField]; else draft[wordField]=value.text;
+          }
+        }
+      } else {
+        applyEvaluationDraft(person,r,value);
+      }
+      saveL(); softRender();
+    }).catch(function(){ draftReads.delete(read); });
+  });
+}
+function hasDraftPatch(person,key,revision){
+  var id="field|private|"+JSON.stringify([person,key]);
+  return (draftWrites.get(JSON.stringify([S.mid,id]))||0)>=revision||
+    S.roleFields.some(function(r){ return r.id===id&&r.u>=revision; });
+}
+function wordDraft(){
+  var draft=workflowDraft(), epoch=S.gram.u||0;
+  if(draft.wordEpoch!==undefined&&draft.wordEpoch!==epoch){
+    Object.keys(WORD_FIELDS).forEach(function(id){delete draft[id];});
+  }
+  draft.wordEpoch=epoch;
+  return draft;
+}
+function syncWordDraft(field){
+  var draft=wordDraft();
+  (field?[field]:Object.keys(WORD_FIELDS)).forEach(function(id){
+    queuePrivateDraft(draftOwner(),"word|"+id,{epoch:draft.wordEpoch,text:draft[id]??null});
+  });
+}
+var EVAL_DRAFT_FIELDS=["c1","r","c2","rate.content","rate.delivery","rate.confidence"];
+function evaluationField(draft,field){
+  return field.startsWith("rate.")?(draft.rate||{})[field.slice(5)]||0:draft[field]||"";
+}
+function setEvaluationField(draft,field,value){
+  if(field.startsWith("rate.")){ draft.rate=draft.rate||{}; draft.rate[field.slice(5)]=value; }
+  else draft[field]=value;
+}
+function syncEvaluationDraft(id,draft,field){
+  if(!field){
+    queuePrivateDraft(draftOwner(),id,draft);
+    return;
+  }
+  queuePrivateDraft(draftOwner(),id+"|draft|"+field,{
+    value:evaluationField(draft,field),speaker:draft.speaker,kind:draft.kind
+  });
+}
+function applyEvaluationDraft(person,record,value){
+  if(!value||typeof value.speaker!=="string") return;
+  var suffix="|draft|", index=record.key.lastIndexOf(suffix);
+  var id=index<0?record.key:record.key.slice(0,index), field=index<0?"":record.key.slice(index+suffix.length);
+  var drafts=meetingEvalDrafts(), draft=drafts[id]||(drafts[id]={kind:value.kind,speaker:value.speaker,c1:"",r:"",c2:"",rate:{}});
+  if(field){
+    if(!EVAL_DRAFT_FIELDS.includes(field)) return;
+    setEvaluationField(draft,field,value.value);
+    if(draft.submitted) draft.changed=true;
+    return;
+  }
+  ["submitted","submittedAt","sentKx","by","changed"].forEach(function(key){
+    if(Object.hasOwn(value,key)) draft[key]=value[key];
+  });
+  EVAL_DRAFT_FIELDS.forEach(function(key){
+    if(!hasDraftPatch(person,id+suffix+key,record.u)) setEvaluationField(draft,key,evaluationField(value,key));
+    else if(draft.submitted&&evaluationField(draft,key)!==evaluationField(value,key)) draft.changed=true;
+  });
+}

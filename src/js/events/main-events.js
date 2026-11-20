@@ -26,16 +26,17 @@ document.addEventListener("change",function(e){ var d=e.target.dataset&&e.target
 var view=document.getElementById("view");
 function quickStart(){
   var sid=L.tab, q=document.getElementById("qname"), nx=firstQueued(sid);
-  if(!okToStart()) return;
+  if(!allowLiveAction("quick-timer")||!okToStart()) return;
+  clearDeviceDraft("qname");
   if(!q.value.trim()&&nx){ startRow(sid,nx.id); }
-  else { var r=newRow(sid,q.value.trim()); remember(r.name); S.rows[sid].push(r); q.value=""; startRow(sid,r.id); }
+  else { var r=newRow(sid,q.value.trim()); var last=S.rows[sid].reduce(function(peak,row){return Math.max(peak,row.ord||0);},0); r.id="live|"+encodeURIComponent(JSON.stringify([S.mid,sid,last,nkey(r.name)])); remember(r.name); S.rows[sid].push(r); q.value=""; startRow(sid,r.id); }
   var q2=document.getElementById("qname"); if(q2) q2.focus();
 }
 function planSpeakers(){
   var sid=L.tab, q=document.getElementById("qname"), names=q.value.split(/[,;\n]+/).map(function(n){return n.trim();}).filter(Boolean);
   if(!names.length) S.rows[sid].push(newRow(sid,""));
   names.forEach(function(n){ S.rows[sid].push(newRow(sid,n)); addName(S,n); });
-  q.value=""; commit(); var q2=document.getElementById("qname"); if(q2) q2.focus();
+  q.value=""; clearDeviceDraft("qname"); commit(); var q2=document.getElementById("qname"); if(q2) q2.focus();
 }
 view.addEventListener("click",function(e){
   var t=e.target;
@@ -44,7 +45,7 @@ view.addEventListener("click",function(e){
   if(t.closest("#qstart")){ quickStart(); return; }
   if(t.closest("#qplan")){ planSpeakers(); return; }
   if(t.closest("#qadd")){
-    var q=document.getElementById("qname"), nr=newRow(L.tab,q.value.trim()); remember(nr.name); S.rows[L.tab].push(nr); q.value=""; commit();
+    var q=document.getElementById("qname"), nr=newRow(L.tab,q.value.trim()); remember(nr.name); S.rows[L.tab].push(nr); q.value=""; clearDeviceDraft("qname"); commit();
     var ti=document.querySelector('#view tr[data-id="'+nr.id+'"] [data-edit="time"]'); if(ti) ti.focus(); return;
   }
   var b=t.closest("[data-act]");
@@ -62,7 +63,7 @@ view.addEventListener("click",function(e){
   if(t.closest("#addTopics")){
     var ta=document.getElementById("topicInput"), lines=ta.value.split(/\n+/).map(function(x){return x.trim();}).filter(Boolean);
     var o=maxOrd(S.topics); lines.forEach(function(x){ S.topics.push({id:uid(),text:x,speaker:"",used:false,usedAt:null,rowId:null,ord:++o,u:now()}); });
-    ta.value=""; commit(); return;
+    ta.value=""; clearDeviceDraft("topicInput"); commit(); return;
   }
   if(t.closest("#randBtn")){ randomTopic(); return; }
   if(t.closest("#callBtn")){ callSpeaker(); return; }
@@ -85,13 +86,13 @@ view.addEventListener("click",function(e){
   var mn=t.closest("[data-minus]"); if(mn){ var s1=selRow("ah"), w=mn.dataset.minus; if(s1&&s1.c[w]>0){ s1.c[w]--; tick(s1); commit(); } return; }
   var tp2=t.closest("[data-word]"); if(tp2){ var s2=selRow("ah"), w2=tp2.dataset.word; if(s2){ s2.c[w2]=(s2.c[w2]||0)+1; tick(s2); commit(); var nt=document.querySelector('#view [data-word="'+CSS.escape(w2)+'"]'); if(nt) nt.classList.add("bump"); } return; }
   var wd=t.closest("[data-wdel]"); if(wd){ var wsnap=S.fill.words.slice(); offerUndo("“"+wd.dataset.wdel+"” removed",function(){ S.fill.words=wsnap; tick(S.fill); }); S.fill.words=S.fill.words.filter(function(x){return x!==wd.dataset.wdel;}); tick(S.fill); commit(); return; }
-  if(t.closest("#wordAdd")){ var wi=document.getElementById("wordInput"), nw=wi.value.trim(); if(nw&&S.fill.words.indexOf(nw)<0){ S.fill.words.push(nw); tick(S.fill); commit(); } return; }
+  if(t.closest("#wordAdd")){ var wi=document.getElementById("wordInput"), nw=wi.value.trim(); if(nw&&S.fill.words.indexOf(nw)<0){ S.fill.words.push(nw); clearDeviceDraft("wordInput"); tick(S.fill); commit(); } return; }
   if(t.closest("#wotdReveal")){ revealWordOfDay(); return; }
   if(t.closest("#wPlus")){ var g=selRow("gram"); if(g){ g.w=(g.w||0)+1; tick(g); commit(); } return; }
   if(t.closest("#wMinus")){ var g2=selRow("gram"); if(g2&&g2.w>0){ g2.w--; tick(g2); commit(); } return; }
   if(t.closest("#goodAdd")||t.closest("#slipAdd")){
     var isGood=!!t.closest("#goodAdd"), inp=document.getElementById(isGood?"goodInput":"slipInput"), g3=selRow("gram"), v=inp.value.trim();
-    if(g3&&v){ g3[isGood?"good":"slips"].push(v); tick(g3); commit(); var again=document.getElementById(isGood?"goodInput":"slipInput"); if(again) again.focus(); } return;
+    if(g3&&v){ g3[isGood?"good":"slips"].push(v); clearDeviceDraft(inp.id); tick(g3); commit(); var again=document.getElementById(isGood?"goodInput":"slipInput"); if(again) again.focus(); } return;
   }
   var nd=t.closest("[data-ndel]"); if(nd){ var g4=selRow("gram"); if(g4){ var nk=nd.dataset.ndel, nsnap=clone(g4[nk]); g4[nk].splice(+nd.dataset.i,1); tick(g4); commit(); offerUndo("Note removed",function(){ g4[nk]=nsnap; tick(g4); }); } return; }
 });
@@ -110,7 +111,7 @@ view.addEventListener("input",function(e){
   if(t.dataset.edit==="topic"){ var tp=topicById(t.closest("[data-tid]").dataset.tid); tp.text=t.value; tick(tp); commitQuiet(); return; }
   if(t.dataset.ttev!=null){ setTTAssign(t.dataset.ttev,t.value); return; }
   if(t.dataset.edit==="tspeaker"){ var tp2=topicById(t.closest("[data-tid]").dataset.tid); tp2.speaker=t.value; tick(tp2); commitQuiet(); return; }
-  if(L.role==="gram" && Object.hasOwn(WORD_FIELDS,t.id)){ workflowDraft()[t.id]=t.value; saveL(); }
+  if(L.role==="gram" && Object.hasOwn(WORD_FIELDS,t.id)){ wordDraft()[t.id]=t.value; saveL(); syncWordDraft(t.id); }
 });
 view.addEventListener("change",function(e){
   var t=e.target, sid=L.tab;

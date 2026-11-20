@@ -29,6 +29,7 @@ function renderAll(){
   renderMeta(); renderRoles(); renderRoster();
   renderLive(); renderNow();
   var v=document.getElementById("view");
+  var draftPanel=v.querySelector("#draftPin")?.closest("details");
   document.body.classList.toggle("focus",inFocus());
   if(curView()!=="role") v.innerHTML=curView()==="now"?dashHTML():agendaViewHTML();
   else if(inFocus()) v.innerHTML=focusHTML();
@@ -46,7 +47,14 @@ function renderAll(){
   else if(L.role==="ttm") v.innerHTML=ttmHTML();
   else if(L.role==="ah") v.innerHTML=ahHTML();
   else v.innerHTML=gramHTML();
-  if(curView()==="role") v.insertAdjacentHTML("beforeend",handoverHTML());
+  if(curView()==="now" || (curView()==="role" && L.role==="speaker")) v.insertAdjacentHTML("beforeend",preparedRunHTML(false));
+  if(curView()==="role"){
+    v.insertAdjacentHTML("beforeend",handoverHTML());
+    if(!["gram","seval","tteval"].includes(L.role)) v.insertAdjacentHTML("beforeend",draftAccessHTML());
+    var nextDraftPanel=v.querySelector("#draftPin")?.closest("details");
+    if(draftPanel&&nextDraftPanel) nextDraftPanel.open=draftPanel.open;
+    restoreDeviceForms();
+  }
   if(curView()!=="now" && (curView()!=="role" || L.role!=="gram" || inFocus()) && S.gram.wotd){
     v.insertAdjacentHTML("afterbegin",'<section class="card" id="publishedWord"><h2 class="sec" style="margin-top:0">📝 Word of the Day · '+esc(S.gram.wotd)+'</h2>'+wordOfDayDetailsHTML()+'</section>');
   }
@@ -55,7 +63,7 @@ function renderAll(){
   if(curView()==="role" && !inFocus() && L.role!=="coord" && !(S.run&&S.run.cur)){ var up=upcomingHTML(false); if(up) v.insertAdjacentHTML("afterbegin",up); }
   if(L.role==="speaker"||L.role==="member"){ try{ histCapture(L.role==="speaker"?myName():(L.cardName||"")); }catch(e){} }
   if(document.getElementById("stage").classList.contains("on")) renderStage();
-  renderAgendaLine(); renderMemberList(); renderVoteBar(); renderFin(); maybeShowWinners(false); flushPending(); checkNewFeedback(); renderCompanion();
+  renderAgendaLine(); renderMemberList(); renderVoteBar(); renderFin(); maybeShowWinners(false); flushPending(); syncPrivateDrafts(); checkNewFeedback(); renderCompanion();
   if(document.getElementById("voteModal").classList.contains("on")) renderVoteModal();
   renderConnBtn();
   if(document.getElementById("welcome").classList.contains("on")&&W.step==="role"){ var ae=document.activeElement; if(ae&&ae.id==="wName") wRefreshWho(); else renderWelcome(); }
@@ -105,6 +113,7 @@ function meCardHTML(x,sec,sg){
 document.getElementById("nowStrip").addEventListener("click",function(e){ var b=e.target.closest("[data-mefull]"); if(!b) return; var c=b.closest(".mecard"); try{ if(document.fullscreenElement) document.exitFullscreen(); else if(c.requestFullscreen) c.requestFullscreen(); }catch(err){} });
 /* who is speaking now (from the Timer) — shown on the other roles */
 function renderNow(){
+  renderTimerDemo();
   var el=document.getElementById("nowStrip");
   if(myRoles().indexOf("timer")>=0){ el.classList.remove("on"); el.innerHTML=""; return; }
   var run=runningList(), t=now(), h="";

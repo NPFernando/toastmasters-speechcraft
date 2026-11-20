@@ -26,6 +26,7 @@ function timerHTML(){
   var s=sessionOf(L.tab)||SESSIONS[0], rows=S.rows[s.id], t=now();
   var h='<nav class="tabs">'+SESSIONS.map(function(x){ var rs=S.rows[x.id], run=rs.some(function(r){return rowState(r)==="running";});
       return '<button class="tab'+(x.id===s.id?' active':'')+'" data-tab="'+x.id+'">'+x.name+'<span class="cnt">('+rs.length+')</span>'+(run?'<span class="dot"></span>':'')+'</button>'; }).join("")+'</nav>';
+  h+=timerDemoControls(s.id);
   h+='<section class="card panel">'+limitsHTML(s)+
     '<div class="quick"><input class="t" id="qname" list="roster" autocomplete="off" placeholder="Speaker name (optional, you can add it later)">'+
     '<button class="btn go" id="qstart">'+startLabel(s.id)+'</button>'+

@@ -97,7 +97,7 @@ function applyAgenda(){
   });
   var want={ps:[],ev:[],rep:[]};
   asList("speakers").forEach(function(n){ want.ps.push({ak:"ps:"+n.toLowerCase(),name:n}); });
-  var asg=(S.assigns||[]).filter(function(a){return a.evaluator;});
+  var asg=activeEvaluatorPairs("ps");
   asg.forEach(function(a){ want.ev.push({ak:"ev:a:"+nkey(a.speaker),name:a.evaluator+" – evaluating "+a.speaker}); });
   asList("sevals").forEach(function(n){ if(asg.some(function(a){return nkey(a.evaluator)===nkey(n);})) return; want.ev.push({ak:"ev:s:"+n.toLowerCase(),name:n+" – speech evaluation"}); });
   asList("ttevals").forEach(function(n){ want.ev.push({ak:"ev:t:"+n.toLowerCase(),name:n+" – Table Topics evaluation"}); });

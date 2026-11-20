@@ -3,6 +3,12 @@ function projHTML(){
   var t=now(), run=runningList(), ss=scheduleStatus(), tm=document.querySelector(".logo img").src, co=document.querySelector(".logo.co img").src, main="", cls="";
   if(run.length){ var x=run[0], sec=elapsed(x.r,t), sg=signal(x.sid,sec,x.r); cls=sg||"sn";
     main='<div class="pj-lbl">'+esc(x.s.name)+'</div><div class="pj-name">'+esc(displayName(x.r,x.i))+'</div><div class="pj-clock">'+fmt(sec)+'</div><div class="pj-sig">'+(x.r.paused?"⏸ Paused":sg?sigLabel(sg,x.r):"&nbsp;")+'</div><div class="pj-sub">'+esc(limitsLine(x.sid,x.r))+'</div>';
+  } else if(currentTimerDemo()){
+    var demo=currentTimerDemo(), step=demo.step;
+    cls=step.signal||"sn";
+    main='<div class="pj-lbl">Timer demo</div><div class="pj-name">'+esc(demo.session.name)+'</div>'+
+      '<div class="pj-clock">'+fmt(step.sec)+'</div><div class="pj-sig">'+esc(step.name)+'</div>'+
+      '<div class="pj-sub">'+esc(limitsLine(demo.session.id))+'</div>';
   } else if(S.vote.state==="shown"){
     main='<div class="pj-lbl">🏆 Award winners</div>'+VCATS.map(function(c){ var w=tally(c.k).winners; return w.length?'<div class="pj-win"><span>'+esc(c.n)+'</span><b>'+esc(w.map(function(z){return z.name;}).join(" & "))+'</b></div>':''; }).join("");
   } else if(S.cur&&S.cur.id&&topicById(S.cur.id)&&!topicById(S.cur.id).used){ var tp=topicById(S.cur.id);

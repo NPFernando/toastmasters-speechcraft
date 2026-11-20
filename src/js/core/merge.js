@@ -1,8 +1,8 @@
 /* ---------- merge (for live sync and restore) ---------- */
-function mergeColl(a,b,dead){
+function mergeColl(a,b,dead,mergeRecord){
   var m={};
   a.forEach(function(x){ m[x.id]=x; });
-  b.forEach(function(x){ var y=m[x.id]; if(!y||x.u>y.u||(x.u===y.u&&x.id.indexOf("v|")===0&&stable(x)>stable(y))) m[x.id]=clone(x); });
+  b.forEach(function(x){ var y=m[x.id]; if(y&&mergeRecord){ m[x.id]=mergeRecord(y,x); return; } if(!y||x.u>y.u||(x.u===y.u&&/^(v|role|field|note|live)\|/.test(x.id)&&stable(x)>stable(y))) m[x.id]=clone(x); });
   var out=Object.keys(m).map(function(k){return m[k];}).filter(function(x){ return !(dead[x.id]>=x.u); });
   out.sort(function(p,q){ return (p.ord-q.ord)||(p.id<q.id?-1:p.id>q.id?1:0); });
   return out;

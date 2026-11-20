@@ -126,7 +126,7 @@ label.f,.f{display:flex;flex-direction:column;font-size:12px;color:var(--muted);
 .mecard .meclock{font-variant-numeric:tabular-nums;font-size:clamp(64px,18vw,140px);font-weight:900;line-height:1.05;margin-top:6px}
 .mecard .mesig{font-size:24px;font-weight:900;text-transform:uppercase;letter-spacing:.06em}
 .mecard .mestat{font-size:18px;font-weight:700;margin-top:4px} .mecard .melim{font-size:13px;opacity:.75;margin-top:6px}
-#nowStrip .mecard.sg{background:var(--g);border-color:var(--g);color:var(--g-ink)} #nowStrip .mecard.sa{background:var(--a);border-color:var(--a);color:#1d2330} #nowStrip .mecard.sr{background:var(--r);border-color:var(--r);color:#fff} #nowStrip .mecard.sn{background:var(--card);color:var(--ink)} #nowStrip .mecard .btn{background:transparent;color:inherit;border:1px solid currentColor}
+#timerDemoDisplay .mecard.sg,#nowStrip .mecard.sg{background:var(--g);border-color:var(--g);color:var(--g-ink)} #timerDemoDisplay .mecard.sa,#nowStrip .mecard.sa{background:var(--a);border-color:var(--a);color:#1d2330} #timerDemoDisplay .mecard.sr,#nowStrip .mecard.sr{background:var(--r);border-color:var(--r);color:#fff} #nowStrip .mecard.sn{background:var(--card);color:var(--ink)} #nowStrip .mecard .btn{background:transparent;color:inherit;border:1px solid currentColor}
 .mecard:fullscreen{display:flex;flex-direction:column;justify-content:center;border-radius:0} .mecard:fullscreen .meclock{font-size:30vw} .mecard:fullscreen .mesig{font-size:7vw} .mecard:fullscreen .mestat{font-size:4vw}
 .nowitem{display:flex;align-items:center;gap:12px;flex-wrap:wrap;border:2px solid var(--line);background:var(--card);border-radius:12px;padding:8px 12px;margin-bottom:6px}
 .nowitem .clock{font-variant-numeric:tabular-nums;font-size:28px;font-weight:800;min-width:84px}
@@ -687,6 +687,7 @@ div.timebox::before{font-size:.75em;vertical-align:1px}
   <div id="agendaLine" class="agline"></div>
   <div id="live"></div>
   <div id="nowStrip"></div>
+  <div id="timerDemoDisplay" role="status"></div>
   <div id="nudge" role="status" aria-live="polite"></div>
   <div id="companion" class="companion"></div>
   <main id="view"></main>
@@ -784,8 +785,8 @@ var KEY="speechcraftMeeting.v2"+NS, LKEY="speechcraftMeeting.local"+NS, OLDKEY="
 var SESSIONS=[{id:"tt",name:"Table Topics",type:"std"},{id:"ps",name:"Prepared Speech",type:"std"},{id:"rr",name:"Round Robin",type:"rr"},{id:"ev",name:"Evaluations",type:"std"},{id:"rep",name:"Role reports",type:"rep"}];
 var ROLES=[{id:"keynote",name:"Educational Presenter / Keynote",icon:"🌟"},{id:"coord",name:"Speechcraft Coordinator",icon:"🗂"},{id:"president",name:"President",icon:"🔔"},{id:"tmod",name:"Toastmaster of the Day",icon:"🎩"},{id:"ge",name:"General Evaluator",icon:"🧭"},{id:"timer",name:"Timer",icon:"⏱"},{id:"ttm",name:"Table Topics Master",icon:"🎤"},{id:"rrm",name:"Round Robin Master",icon:"🔁"},{id:"ah",name:"Ah-Counter",icon:"🔢"},{id:"gram",name:"Grammarian",icon:"📝"},{id:"saa",name:"Sergeant at Arms",icon:"🛎"},{id:"speaker",name:"Speaker",icon:"🎙"},{id:"seval",name:"Speech Evaluator",icon:"🗣"},{id:"tteval",name:"Table Topics Evaluator",icon:"💬"},{id:"member",name:"Participant",icon:"🙋"}];
 var FILLERS=["Um","Ah","Er","So","Like","And","You know","Repeat"];
-var COLLS=[["presentations"],["geobs"],["handovers"],["rows","tt"],["rows","ps"],["rows","rr"],["rows","ev"],["rows","rep"],["topics"],["ahRows"],["gramRows"],["evals"],["notes"],["votes"],["rrq"],["speeches"],["assigns"],["rsvp"],["fin"],["guests"],["ttassign"]];
-var MEETING_LWW=["meta","cur","gram","agenda","run","vote","genotes","rrcur","wrap","pres","saa"], KEEP_LWW=["limits","fill","members","pin"];
+var COLLS=[["roleChoices"],["roleFields"],["presentations"],["geobs"],["handovers"],["rows","tt"],["rows","ps"],["rows","rr"],["rows","ev"],["rows","rep"],["topics"],["ahRows"],["gramRows"],["evals"],["notes"],["votes"],["rrq"],["speeches"],["assigns"],["rsvp"],["fin"],["guests"],["ttassign"]];
+var MEETING_LWW=["timerDemo","meta","cur","gram","agenda","run","vote","genotes","rrcur","wrap","pres","saa"], KEEP_LWW=["limits","fill","members","pin"];
 
 /* ---------- helpers ---------- */
 function now(){ return Date.now(); }
@@ -818,11 +819,12 @@ function lsSet(k,v){ try{ localStorage.setItem(k,v); return true; }catch(e){ ret
 /* ---------- state ---------- */
 function blank(){
   return { v:2, mid:uid(), midU:now(),
+    timerDemo:{sid:"",step:0,until:0,u:0},
     meta:{week:"",date:todayISO(),u:0},
     people:{coord:"",president:"",saa:"",tmod:"",ge:"",rrm:"",timer:"",ttm:"",ah:"",gram:"",keynote:""}, peopleU:{coord:0,president:0,saa:0,tmod:0,ge:0,rrm:0,timer:0,ttm:0,ah:0,gram:0,keynote:0},
     limits:{tt:{g:60,a:90,r:120},ps:{g:240,a:300,r:360},rr:{b:20},ev:{g:90,a:105,r:120},rep:{g:30,a:45,r:60},u:0},
     members:{list:[],u:0,fu:{}}, coorg:[], ideas:[], tpls:[], pin:{hash:"",rhash:"",salt:"",u:0}, agenda:defaultAgenda(), run:{cur:null,started:{},u:0},
-    voterPeople:[], presentations:[], actions:[], geobs:[], handovers:[], evals:[], notes:[], votes:[], rrq:[], speeches:[], assigns:[], rsvp:[], attend:[], keys:[], fin:[], guests:[], ttassign:[], wrap:{on:false,at:0,u:0}, pres:{chk:{},notes:"",u:0}, saa:{chk:{},u:0}, vote:{state:"closed",u:0}, genotes:{good:"",improve:"",u:0}, rrcur:{id:null,u:0},
+    roleChoices:[], roleFields:[], voterPeople:[], presentations:[], actions:[], geobs:[], handovers:[], evals:[], notes:[], votes:[], rrq:[], speeches:[], assigns:[], rsvp:[], attend:[], keys:[], fin:[], guests:[], ttassign:[], wrap:{on:false,at:0,u:0}, pres:{chk:{},notes:"",u:0}, saa:{chk:{},u:0}, vote:{state:"closed",u:0}, genotes:{good:"",improve:"",u:0}, rrcur:{id:null,u:0},
     rows:{tt:[],ps:[],rr:[],ev:[],rep:[]}, topics:[], cur:{id:null,u:0},
     fill:{words:FILLERS.slice(),u:0}, ahRows:[],
     gram:{wotd:"",meaning:"",example:"",u:0}, gramRows:[],
@@ -831,6 +833,7 @@ function blank(){
 function normalize(st){
   var b=blank(); st=st&&typeof st==="object"?st:{};
   var o={ v:2, mid:String(st.mid||b.mid), midU:+st.midU||0,
+    timerDemo:Object.assign(b.timerDemo,st.timerDemo||{}),
     meta:Object.assign(b.meta, st.meta||{}), people:Object.assign(b.people, st.people||{}), peopleU:Object.assign(b.peopleU, st.peopleU||{}),
     limits:Object.assign(b.limits, st.limits||{}), rows:{}, topics:[], cur:Object.assign(b.cur, st.cur||{}),
     fill:Object.assign(b.fill, st.fill||{}), ahRows:[], gram:Object.assign(b.gram, st.gram||{}), gramRows:[],
@@ -838,7 +841,7 @@ function normalize(st){
   if(!Array.isArray(o.fill.words)) o.fill.words=FILLERS.slice();
   SESSIONS.forEach(function(s){ var k=s.id; o.rows[k]=Array.isArray(st.rows&&st.rows[k])?st.rows[k]:[]; });
   ["ev","rep"].forEach(function(k){ if(!o.limits[k]) o.limits[k]=blank().limits[k]; });
-  ["voterPeople","presentations","actions","geobs","handovers","evals","notes","votes","rrq","speeches","assigns","rsvp","fin","guests","ttassign"].forEach(function(k){ o[k]=Array.isArray(st[k])?st[k]:[]; });
+  ["roleChoices","roleFields","voterPeople","presentations","actions","geobs","handovers","evals","notes","votes","rrq","speeches","assigns","rsvp","fin","guests","ttassign"].forEach(function(k){ o[k]=Array.isArray(st[k])?st[k]:[]; });
   ["actions","voterPeople"].forEach(function(k){o[k]=o[k].filter(function(x){return x&&typeof x==="object"&&x.id;}).map(function(x){x.u=+x.u||1;x.ord=+x.ord||1;return x;});});
   o.keys=Array.isArray(st.keys)?st.keys.filter(function(k){return k&&k.id;}).map(function(k){ k.u=+k.u||1; k.ord=+k.ord||1; return k; }):[];
   o.evals.forEach(function(e){ if(e&&(e.c1!=null||e.r!=null||e.c2!=null||e.rate)){ if(e.done==null) e.done=!!(e.c1||e.r||e.c2); delete e.c1; delete e.r; delete e.c2; delete e.rate; } });
@@ -901,10 +904,10 @@ function renderRoster(){
 function renderMemberList(){ var el=document.getElementById("memberlist"); if(el) el.innerHTML=meetingNames().map(function(n){return '<option value="'+esc(n)+'">';}).join(""); }
 
 /* ---------- merge (for live sync and restore) ---------- */
-function mergeColl(a,b,dead){
+function mergeColl(a,b,dead,mergeRecord){
   var m={};
   a.forEach(function(x){ m[x.id]=x; });
-  b.forEach(function(x){ var y=m[x.id]; if(!y||x.u>y.u||(x.u===y.u&&x.id.indexOf("v|")===0&&stable(x)>stable(y))) m[x.id]=clone(x); });
+  b.forEach(function(x){ var y=m[x.id]; if(y&&mergeRecord){ m[x.id]=mergeRecord(y,x); return; } if(!y||x.u>y.u||(x.u===y.u&&/^(v|role|field|note|live)\|/.test(x.id)&&stable(x)>stable(y))) m[x.id]=clone(x); });
   var out=Object.keys(m).map(function(k){return m[k];}).filter(function(x){ return !(dead[x.id]>=x.u); });
   out.sort(function(p,q){ return (p.ord-q.ord)||(p.id<q.id?-1:p.id>q.id?1:0); });
   return out;
@@ -934,8 +937,50 @@ function stampObj(obj,parts,shadow){
   if(ch) obj.u=Math.max(t,(obj.u||0)+1);
   return ch;
 }
-function stampFields(){ stampObj(S.agenda,agParts(S.agenda),shadowAg); stampObj(S.members,memParts(S.members),shadowMem); stampObj(S.genotes,geParts(S.genotes),shadowGE); shadowSync(); }
-function shadowSync(){ shadowAg=agParts(S.agenda); shadowMem=memParts(S.members); shadowGE=geParts(S.genotes); }
+/* Keep independent edits made on different devices, including cleared values. */
+var roleEditShadow={};
+function roleEditObjects(state){
+  var result={pres:state.pres,saa:state.saa};
+  ["speeches","presentations"].forEach(function(key){
+    state[key].forEach(function(record){ result[key+"|"+record.id]=record; });
+  });
+  return result;
+}
+function roleEditParts(record){
+  var fields=geParts(record);
+  delete fields.id; delete fields.ord;
+  if(record.chk){
+    delete fields.chk;
+    Object.keys(record.chk).forEach(function(key){fields["chk|"+key]=js(record.chk[key]);});
+  }
+  return fields;
+}
+function mergeRoleEdit(a,b){
+  if(!hasFu(a)&&!hasFu(b)) return b.u>a.u?clone(b):a;
+  var result=clone(a), ap=roleEditParts(a), bp=roleEditParts(b), af=a.fu||{}, bf=b.fu||{};
+  result.fu={};
+  new Set(Object.keys(ap).concat(Object.keys(bp),Object.keys(af),Object.keys(bf))).forEach(function(key){
+    var at=af[key]??(hasFu(a)?0:a.u), bt=bf[key]??(hasFu(b)?0:b.u);
+    result.fu[key]=Math.max(at||0,bt||0);
+    if((bt||0)<(at||0)||((bt||0)===(at||0)&&String(bp[key]??"")<=String(ap[key]??""))) return;
+    var target=result, source=b, field=key;
+    if(key.startsWith("chk|")){
+      field=key.slice(4); target=result.chk||(result.chk={}); source=b.chk||{};
+    }
+    if(Object.hasOwn(source,field)) target[field]=clone(source[field]); else delete target[field];
+  });
+  result.u=Math.max(a.u||0,b.u||0);
+  return result;
+}
+function stampFields(){
+  var edits=roleEditObjects(S);
+  Object.keys(edits).forEach(function(key){ stampObj(edits[key],roleEditParts(edits[key]),roleEditShadow[key]||{}); });
+ stampObj(S.agenda,agParts(S.agenda),shadowAg); stampObj(S.members,memParts(S.members),shadowMem); stampObj(S.genotes,geParts(S.genotes),shadowGE); shadowSync(); }
+function shadowSync(){
+  var edits=roleEditObjects(S);
+  roleEditShadow={};
+  Object.keys(edits).forEach(function(key){roleEditShadow[key]=roleEditParts(edits[key]);});
+ shadowAg=agParts(S.agenda); shadowMem=memParts(S.members); shadowGE=geParts(S.genotes); }
 function hasFu(o){ return !!(o&&o.fu&&Object.keys(o.fu).length); }
 function mergeAgenda(A,B){
   if(!hasFu(A.agenda)&&!hasFu(B.agenda)){ if((B.agenda.u||0)>(A.agenda.u||0)) A.agenda=clone(B.agenda); return; }
@@ -982,8 +1027,8 @@ function mergeInto(A,B,mode){
     COLLS.forEach(function(p){ setColl(A,p,clone(getColl(B,p))); });
   } else if(B.mid===A.mid){
     Object.keys(B.dead).forEach(function(id){ if(!(A.dead[id]>=B.dead[id])) A.dead[id]=B.dead[id]; });
-    MEETING_LWW.forEach(function(k){ if(k==="agenda") mergeAgenda(A,B); else if(k==="genotes") mergeGENotes(A,B); else if((B[k].u||0)>(A[k].u||0)) A[k]=clone(B[k]); });
-    COLLS.forEach(function(p){ setColl(A,p,mergeColl(getColl(A,p),getColl(B,p),A.dead)); });
+    MEETING_LWW.forEach(function(k){ if(k==="agenda") mergeAgenda(A,B); else if(k==="genotes") mergeGENotes(A,B); else if(k==="pres"||k==="saa") A[k]=mergeRoleEdit(A[k],B[k]); else if((B[k].u||0)>(A[k].u||0)) A[k]=clone(B[k]); });
+    COLLS.forEach(function(p){ setColl(A,p,mergeColl(getColl(A,p),getColl(B,p),A.dead,["speeches","presentations"].includes(p[0])?mergeRoleEdit:null)); });
   }
   if(A===S) shadowSync();
   return stable(A)!==before;
@@ -1019,7 +1064,7 @@ function newRow(sid,name){ var r={id:uid(),name:name||"",start:null,end:null,man
 function runningList(){ var out=[]; SESSIONS.forEach(function(s){ S.rows[s.id].forEach(function(r,i){ if(rowState(r)==="running") out.push({sid:s.id,s:s,r:r,i:i}); }); }); return out; }
 function anyRunning(){ return runningList().length>0; }
 function firstQueued(sid){ return S.rows[sid].find(function(r){return rowState(r)==="idle";}); }
-function startRow(sid,id){ var r=findRow(sid,id); if(!r) return; r.start=now(); r.end=null; r.manual=null; r.pz=0; r.paused=null; tick(r); commit(); wake(); }
+function startRow(sid,id){ var r=findRow(sid,id); if(!r||rowState(r)!=="idle") return; if(S.timerDemo.until){ S.timerDemo.until=0; tick(S.timerDemo); } r.start=now(); r.end=null; r.manual=null; r.pz=0; r.paused=null; tick(r); commit(); wake(); }
 function stopRow(sid,id){ var r=findRow(sid,id); if(!r||r.start==null||r.end!=null) return; r.end=now(); if(r.paused){ r.pz=(r.pz||0)+Math.max(0,r.end-r.paused); r.paused=null; } tick(r); commit(); wake(); }
 function okToStart(){
   var run=runningList(); if(!run.length) return true;
@@ -1100,6 +1145,16 @@ function wake(){ try{
 }catch(e){} }
 document.addEventListener("visibilitychange",function(){ if(document.visibilityState==="visible") wake(); });
 
+
+
+/* The next rendered button can sit under a second click from the same gesture. */
+var lastLiveAction={};
+function allowLiveAction(action){
+  var at=now(), key=S.mid+"|"+action;
+  if(at-(lastLiveAction[key]||0)<500) return false;
+  lastLiveAction[key]=at;
+  return true;
+}
 /* ---------- rendering: shell ---------- */
 var pendingRender=false;
 function editingInApp(){ var a=document.activeElement; return a && a.matches && a.matches("input,textarea,select") && a.type!=="file" && (document.getElementById("app").contains(a)); }
@@ -1131,6 +1186,7 @@ function renderAll(){
   renderMeta(); renderRoles(); renderRoster();
   renderLive(); renderNow();
   var v=document.getElementById("view");
+  var draftPanel=v.querySelector("#draftPin")?.closest("details");
   document.body.classList.toggle("focus",inFocus());
   if(curView()!=="role") v.innerHTML=curView()==="now"?dashHTML():agendaViewHTML();
   else if(inFocus()) v.innerHTML=focusHTML();
@@ -1148,7 +1204,14 @@ function renderAll(){
   else if(L.role==="ttm") v.innerHTML=ttmHTML();
   else if(L.role==="ah") v.innerHTML=ahHTML();
   else v.innerHTML=gramHTML();
-  if(curView()==="role") v.insertAdjacentHTML("beforeend",handoverHTML());
+  if(curView()==="now" || (curView()==="role" && L.role==="speaker")) v.insertAdjacentHTML("beforeend",preparedRunHTML(false));
+  if(curView()==="role"){
+    v.insertAdjacentHTML("beforeend",handoverHTML());
+    if(!["gram","seval","tteval"].includes(L.role)) v.insertAdjacentHTML("beforeend",draftAccessHTML());
+    var nextDraftPanel=v.querySelector("#draftPin")?.closest("details");
+    if(draftPanel&&nextDraftPanel) nextDraftPanel.open=draftPanel.open;
+    restoreDeviceForms();
+  }
   if(curView()!=="now" && (curView()!=="role" || L.role!=="gram" || inFocus()) && S.gram.wotd){
     v.insertAdjacentHTML("afterbegin",'<section class="card" id="publishedWord"><h2 class="sec" style="margin-top:0">📝 Word of the Day · '+esc(S.gram.wotd)+'</h2>'+wordOfDayDetailsHTML()+'</section>');
   }
@@ -1157,7 +1220,7 @@ function renderAll(){
   if(curView()==="role" && !inFocus() && L.role!=="coord" && !(S.run&&S.run.cur)){ var up=upcomingHTML(false); if(up) v.insertAdjacentHTML("afterbegin",up); }
   if(L.role==="speaker"||L.role==="member"){ try{ histCapture(L.role==="speaker"?myName():(L.cardName||"")); }catch(e){} }
   if(document.getElementById("stage").classList.contains("on")) renderStage();
-  renderAgendaLine(); renderMemberList(); renderVoteBar(); renderFin(); maybeShowWinners(false); flushPending(); checkNewFeedback(); renderCompanion();
+  renderAgendaLine(); renderMemberList(); renderVoteBar(); renderFin(); maybeShowWinners(false); flushPending(); syncPrivateDrafts(); checkNewFeedback(); renderCompanion();
   if(document.getElementById("voteModal").classList.contains("on")) renderVoteModal();
   renderConnBtn();
   if(document.getElementById("welcome").classList.contains("on")&&W.step==="role"){ var ae=document.activeElement; if(ae&&ae.id==="wName") wRefreshWho(); else renderWelcome(); }
@@ -1207,6 +1270,7 @@ function meCardHTML(x,sec,sg){
 document.getElementById("nowStrip").addEventListener("click",function(e){ var b=e.target.closest("[data-mefull]"); if(!b) return; var c=b.closest(".mecard"); try{ if(document.fullscreenElement) document.exitFullscreen(); else if(c.requestFullscreen) c.requestFullscreen(); }catch(err){} });
 /* who is speaking now (from the Timer) — shown on the other roles */
 function renderNow(){
+  renderTimerDemo();
   var el=document.getElementById("nowStrip");
   if(myRoles().indexOf("timer")>=0){ el.classList.remove("on"); el.innerHTML=""; return; }
   var run=runningList(), t=now(), h="";
@@ -1250,6 +1314,7 @@ function timerHTML(){
   var s=sessionOf(L.tab)||SESSIONS[0], rows=S.rows[s.id], t=now();
   var h='<nav class="tabs">'+SESSIONS.map(function(x){ var rs=S.rows[x.id], run=rs.some(function(r){return rowState(r)==="running";});
       return '<button class="tab'+(x.id===s.id?' active':'')+'" data-tab="'+x.id+'">'+x.name+'<span class="cnt">('+rs.length+')</span>'+(run?'<span class="dot"></span>':'')+'</button>'; }).join("")+'</nav>';
+  h+=timerDemoControls(s.id);
   h+='<section class="card panel">'+limitsHTML(s)+
     '<div class="quick"><input class="t" id="qname" list="roster" autocomplete="off" placeholder="Speaker name (optional, you can add it later)">'+
     '<button class="btn go" id="qstart">'+startLabel(s.id)+'</button>'+
@@ -1295,6 +1360,60 @@ function renderLive(){
 }
 function flashItem(it){ it.classList.remove("flash"); void it.offsetWidth; it.classList.add("flash"); clearTimeout(it._ft); it._ft=setTimeout(function(){ it.classList.remove("flash"); },3200); }
 
+/* Demo signals use the meeting's limits and never create a Timer entry. */
+var TIMER_DEMO_MS=90000;
+function timerDemoSteps(sid){
+  var limits=limOf(sid);
+  if(sid==="rr") return [{name:"Within time",sec:Math.max(0,limits.b-1),signal:"sg"},{name:"Time’s up · Bell",sec:limits.b,signal:"sr"}];
+  return [{name:"Before green",sec:Math.max(0,limits.g-1),signal:""},{name:"Green",sec:limits.g,signal:"sg"},
+    {name:"Amber",sec:limits.a,signal:"sa"},{name:"Red",sec:limits.r,signal:"sr"}];
+}
+function currentTimerDemo(){
+  var demo=S.timerDemo, session=sessionOf(demo.sid);
+  if(!session||!demo.until||now()>=demo.until||anyRunning()) return null;
+  var step=timerDemoSteps(session.id)[demo.step];
+  return step?{session:session,step:step,index:demo.step}:null;
+}
+function timerDemoControls(sid){
+  var demo=currentTimerDemo(), active=demo&&demo.session.id===sid;
+  return '<section class="card"><div class="row">'+
+    '<button class="btn" id="timerDemoStart"'+(anyRunning()?' disabled':'')+'>'+(active?'Restart live demo':'Start live demo')+'</button>'+
+    (demo?'<button class="btn" id="timerDemoEnd">End demo</button>':'')+'</div>'+
+    (active?'<div class="row" role="group" aria-label="Demo signals">'+timerDemoSteps(sid).map(function(step,index){
+      return '<button class="btn sm" data-demo-step="'+index+'" aria-pressed="'+(demo.index===index)+'">'+esc(step.name)+'</button>';
+    }).join("")+'</div>':'')+
+    '<p class="saved">Demo for '+esc(sessionOf(sid).name)+'. Everyone connected sees the selected signal.</p></section>';
+}
+function setTimerDemo(sid,step){
+  if(L.role!=="timer"||anyRunning()||!sessionOf(sid)||!timerDemoSteps(sid)[step]) return;
+  S.timerDemo.sid=sid;
+  S.timerDemo.step=step;
+  S.timerDemo.until=now()+TIMER_DEMO_MS;
+  tick(S.timerDemo);
+  commit();
+}
+function renderTimerDemo(){
+  var el=document.getElementById("timerDemoDisplay"), demo=currentTimerDemo();
+  var html="";
+  if(demo){
+    var step=demo.step, session=demo.session;
+    html='<div class="card mecard '+(step.signal||"sn")+'"><div class="mehead">Timer demo · '+esc(session.name)+'</div>'+
+      '<div class="meclock">'+fmt(step.sec)+'</div><div class="mesig">'+esc(step.name)+'</div>'+
+      '<div class="melim">'+esc(limitsLine(session.id))+'</div>'+
+      (session.id==="rr"&&step.signal==="sr"?'<button class="btn sm" id="timerDemoBell">Hear demo bell</button>':'')+'</div>';
+  }
+  if(el.demoMarkup!==html){ el.demoMarkup=html; el.innerHTML=html; renderProj(); }
+}
+document.getElementById("timerDemoDisplay").addEventListener("click",function(e){
+  if(e.target.closest("#timerDemoBell")) ringBell();
+});
+document.getElementById("view").addEventListener("click",function(e){
+  if(L.role!=="timer") return;
+  if(e.target.closest("#timerDemoStart")) setTimerDemo(L.tab,0);
+  var step=e.target.closest("[data-demo-step]");
+  if(step) setTimerDemo(L.tab,Number(step.dataset.demoStep));
+  if(e.target.closest("#timerDemoEnd")){ S.timerDemo.until=0; tick(S.timerDemo); commit(); }
+});
 /* ---------- Table Topics Master view ---------- */
 function topicById(id){ return S.topics.find(function(x){return x.id===id;}); }
 function remaining(){ return S.topics.filter(function(x){return !x.used;}); }
@@ -1329,19 +1448,25 @@ function ttmHTML(){
 }
 function pickTopic(id){ S.cur.id=id; tick(S.cur); commit(); }
 function randomTopic(){
+  if(!allowLiveAction("random-topic")) return;
   var rem=remaining().filter(function(x){return x.id!==S.cur.id;}); if(!rem.length) rem=remaining();
   if(!rem.length){ alert("No remaining topics."); return; }
-  pickTopic(rem[Math.floor(Math.random()*rem.length)].id);
+  rem.sort(function(a,b){return a.id.localeCompare(b.id);});
+  var seed=JSON.stringify([S.mid,S.cur.id,S.cur.u,rem.map(function(topic){return topic.id;})]);
+  var hash=2166136261;
+  for(var index=0;index<seed.length;index++) hash=Math.imul(hash^seed.charCodeAt(index),16777619);
+  pickTopic(rem[(hash>>>0)%rem.length].id);
 }
 function callSpeaker(){
-  var cur=topicById(S.cur.id); if(!cur) return;
+  var cur=topicById(S.cur.id); if(!cur||cur.used) return;
   var nm=(document.getElementById("callName").value||"").trim();
   if(!nm){ alert("Type who is taking this topic first."); document.getElementById("callName").focus(); return; }
+  clearDeviceDraft("callName");
   cur.speaker=nm; cur.used=true; cur.usedAt=now(); tick(cur); remember(nm); autoAssignTT(nm); if(linkRoles().length) selectPerson(nm,"ttm");
   /* queue them on the Timer's Table Topics list */
   var r=cur.rowId && findRow("tt",cur.rowId);
   if(r){ if(rowState(r)==="idle"){ r.name=nm; tick(r); } }
-  else { r=newRow("tt",nm); r.topicId=cur.id; S.rows.tt.push(r); cur.rowId=r.id; }
+  else { r=newRow("tt",nm); r.id="live|"+encodeURIComponent(JSON.stringify([S.mid,"topic",cur.id])); r.u=Math.max(r.u,(S.dead[r.id]||0)+1); r.topicId=cur.id; S.rows.tt.push(r); cur.rowId=r.id; }
   commit();
   if(document.getElementById("stage").classList.contains("on")) renderStage();
 }
@@ -1405,17 +1530,17 @@ function revealWordOfDay(){
   }
   Object.assign(S.gram,word);
   tick(S.gram);
-  var draft=workflowDraft();
+  var draft=wordDraft();
   Object.keys(WORD_FIELDS).forEach(function(id){ delete draft[id]; });
-  saveL();
+  saveL(); syncWordDraft();
   commit();
 }
 function gramHTML(){
   var sel=selRow("gram");
-  var draft=workflowDraft(), labels={wotd:"Word",wotdMeaning:"Meaning",wotdExample:"Example sentence"};
+  var draft=wordDraft(), labels={wotd:"Word",wotdMeaning:"Meaning",wotdExample:"Example sentence"};
   var h='<section class="card"><h2 class="sec" style="margin-top:0">Word of the Day</h2>'+
-    '<div class="saved">'+(S.gram.wotd?'Published: '+esc(S.gram.wotd)+'. Changes stay private until you publish again.':'This draft stays on this device until you reveal it.')+'</div>'+
-    Object.keys(WORD_FIELDS).map(function(id){
+    '<div class="saved">'+(S.gram.wotd?'Published: '+esc(S.gram.wotd)+'. Changes stay private until you publish again.':'Only you can read the draft on devices with your feedback PIN unlocked.')+'</div>'+
+    draftAccessHTML()+Object.keys(WORD_FIELDS).map(function(id){
       var value=draft[id]??S.gram[WORD_FIELDS[id]];
       return '<label class="lbl" for="'+id+'">'+labels[id]+'</label><input class="t" id="'+id+'" value="'+esc(value)+'" required pattern=".*\\S.*" style="width:100%;margin-bottom:8px">';
     }).join("")+
@@ -1438,6 +1563,7 @@ function gramHTML(){
 }
 function addCounterSpeaker(kind,name){
   name=String(name||"").trim(); if(!name) return;
+  clearDeviceDraft("spkInput");
   var ex=counterRow(kind,name);
   if(kind==="ah") L.ahSel=ex.id; else L.gramSel=ex.id; selectPerson(name,kind); saveL(); remember(name); commit();
 }
@@ -1532,6 +1658,18 @@ function runAdjust(delta){
   tick(S.run); commit();
 }
 function runRetimeNow(){ var c=curItem(), n=c.cur?c.next:nextLive(c.its,0); if(!n) return; var target=Math.ceil(minutesNow()), m=hm2min(rt(n)); if(m==null) return; runAdjust(target-m); }
+
+
+function preparedBlockRequirement(){
+  var names=preparedSpeakers();
+  return Math.ceil(names.reduce(function(seconds,name){
+    var row=S.rows.ps.find(function(entry){
+      return !String(entry.ak||"").startsWith("keynote:")&&nkey(baseName(entry.name))===nkey(name);
+    });
+    var limits=presetLim((speechRec(name)||{}).lim)||limOf("ps",row);
+    return seconds+limits.r+60;
+  },0)/60);
+}
 /* ---------- how the agenda ran: planned vs actual length of each item ---------- */
 function runSummary(){
   var st=(S.run&&S.run.started)||{}, plan=itemsSorted(), done=plan.filter(function(it){return st[it.id]!=null;}).sort(function(a,b){return st[a.id]-st[b.id];});
@@ -1631,7 +1769,7 @@ function applyAgenda(){
   });
   var want={ps:[],ev:[],rep:[]};
   asList("speakers").forEach(function(n){ want.ps.push({ak:"ps:"+n.toLowerCase(),name:n}); });
-  var asg=(S.assigns||[]).filter(function(a){return a.evaluator;});
+  var asg=activeEvaluatorPairs("ps");
   asg.forEach(function(a){ want.ev.push({ak:"ev:a:"+nkey(a.speaker),name:a.evaluator+" – evaluating "+a.speaker}); });
   asList("sevals").forEach(function(n){ if(asg.some(function(a){return nkey(a.evaluator)===nkey(n);})) return; want.ev.push({ak:"ev:s:"+n.toLowerCase(),name:n+" – speech evaluation"}); });
   asList("ttevals").forEach(function(n){ want.ev.push({ak:"ev:t:"+n.toLowerCase(),name:n+" – Table Topics evaluation"}); });
@@ -1730,7 +1868,7 @@ function coorgHTML(){
     if(L.role!=="coord") return;
     if(t.closest("#coUnlock")){ var v=document.getElementById("coCode").value; tryCoCode(v).then(function(ok){ if(!ok){ if(!coActive().length){ L.pendingCo=cleanCode(v); saveL(); showToastMsg("Waiting for the meeting data… join the meeting so the invite can be checked"); } else alert("That invite code doesn’t match. Ask the Coordinator for a new one."); } }); return; }
     if(!coordUnlocked()) return;
-    if(t.closest("#coInvite")){ var n=(document.getElementById("coName").value||"").trim(); if(!n){ document.getElementById("coName").focus(); return; } if(coActive().some(function(c){return nkey(c.name)===nkey(n);})&&!confirm(n+" already has access. Create a new invite for them?")) return; createInvite(n); return; }
+    if(t.closest("#coInvite")){ var n=(document.getElementById("coName").value||"").trim(); if(!n){ document.getElementById("coName").focus(); return; } if(coActive().some(function(c){return nkey(c.name)===nkey(n);})&&!confirm(n+" already has access. Create a new invite for them?")) return; clearDeviceDraft("coName"); createInvite(n); return; }
     if((b=t.closest("[data-corevoke]"))){ var c=coRec(b.dataset.corevoke); if(c&&confirm("Remove "+c.name+"’s access to the meeting set-up?")){ c.revoked=true; tick(c); if(lastInvite&&lastInvite.id===c.id) lastInvite=null; commit(); } return; }
     if((b=t.closest("[data-cocopy]"))){ if(lastInvite) copyText(coLink(lastInvite.code)); return; }
     if(t.closest("[data-codone]")){ lastInvite=null; renderAll(); return; }
@@ -1749,7 +1887,8 @@ function populateAgendaMembers(){
     var id=agendaMemberId(name);
     if(memberRec(name) || S.members.fu["m."+id] || guests.has(nkey(name))) return;
     var roles=agendaRolesFor(name);
-    S.members.list.push({id:id,name:name,kind:roles.length===1&&roles[0]==="keynote"?"guest":guessKind(name)});
+    if(roles.length===1&&roles[0]==="keynote") return;
+    S.members.list.push({id:id,name:name,kind:guessKind(name)});
     added=true;
   });
   if(added) commitQuiet();
@@ -1767,7 +1906,7 @@ function removeMember(id){
   tick(S.members);
   commit();
 }
-function memberKind(name){ var m=memberRec(name); if(m) return m.kind||guessKind(m.name); if(/^tm[\s.-]/i.test(String(name||""))) return "tm"; return S.guests.some(function(g){return nkey(g.name)===nkey(name);})?"guest":"sc"; }
+function memberKind(name){ var m=memberRec(name); if(m) return m.kind||guessKind(m.name); if(/^tm[\s.-]/i.test(String(name||""))) return "tm"; var roles=agendaRolesFor(name); return (roles.length===1&&roles[0]==="keynote")||S.guests.some(function(g){return nkey(g.name)===nkey(name);})?"guest":"sc"; }
 function kindBadge(name,long){ var k=memberKind(name); if(k==="sc") return ""; var m=memberRec(name); return ' <span class="kbadge k-'+k+'" title="'+KINDS[k].n+(m&&m.club?' · '+esc(m.club):'')+'">'+(k==="tm"?"⭐ TM":"👋 Guest")+(long&&m&&m.club?' · '+esc(m.club):'')+'</span>'; }
 function awardEligible(name){ return memberKind(name)!=="tm" || !!S.members.tmAwards; }
 function membersEditorHTML(){
@@ -1809,9 +1948,9 @@ function memberNames(){ return S.members.list.map(function(m){return m.name;}); 
 var RKEY="speechcraftRecords"+NS, autoLastSig="";
 function recLoad(){ try{ return JSON.parse(localStorage.getItem(RKEY)||"[]")||[]; }catch(e){ return []; } }
 function meetingHasContent(st){ st=st||S; var n=0; SESSIONS.forEach(function(x){ n+=(st.rows[x.id]||[]).filter(function(r){return rowState(r)!=="idle";}).length; }); return n>0||st.topics.length>0||st.evals.length>0||Object.keys((st.run&&st.run.started)||{}).length>0; }
-function autoSaveRecord(why){
+function autoSaveRecord(why,preserve){
   try{
-    if(!myRoles().some(function(r){return r==="coord";})||!meetingHasContent()) return false;
+    if(!preserve&&(!myRoles().includes("coord")||!meetingHasContent())) return false;
     var sig=stable(S); if(sig===autoLastSig) return false; autoLastSig=sig;
     var list=recLoad().filter(function(r){ return r.sig!==sig.length+":"+S.mid+":"+(S.u||0); });
     var data=JSON.stringify({app:"speechcraft-meeting",version:2,savedAt:new Date().toISOString(),state:S});
@@ -1858,6 +1997,10 @@ function healthRows(){
   else rows.push({st:"warn",t:"Prepared speakers",d:"None on the agenda yet",tab:"setup"});
   var empty=its.filter(function(it){return !String(it.text||"").trim();}).length, zero=its.filter(function(it,i){return agDur(its,i)===0;}).length;
   rows.push({st:(empty||zero)?"warn":"ok",t:"Agenda",d:its.length+" items · "+(agSpanText()||"no times")+(empty?" · "+empty+" without an activity":"")+(zero?" · "+zero+" with 0 min":""),tab:(empty||zero)?"agenda":""});
+  var required=preparedBlockRequirement(), short=its.some(function(it,i){return it.x==="speakers"&&agDur(its,i)!=null&&agDur(its,i)<required;});
+  if(required) rows.push({st:short?"warn":"ok",t:"Prepared speech timing",d:short?"Allow "+required+" minutes including transitions":"Prepared speeches have time for "+required+" minutes including transitions",tab:short?"agenda":""});
+  var unavailable=uniq(roleClashes().filter(function(x){return x.status==="no";}).map(function(x){return x.name;}));
+  rows.push({st:unavailable.length?"warn":"ok",t:"Role availability",d:unavailable.length?"Needs a replacement: "+unavailable.join(", "):"No assigned role players marked absent",target:unavailable.length?"availability":""});
   if(!NET.room) rows.push({st:"warn",t:"Meeting code",d:"Not hosting yet — tap Host meeting (🏠 Home) and share the code or QR"});
   else {
     var rs=relayStatus(); rows.push({st:rs.open?"ok":"no",t:"Connection",d:rs.open?"Hosting "+fmtCode(NET.code)+" · relays reachable":"Relays not reachable — try another network"});
@@ -1871,7 +2014,7 @@ function healthRows(){
 function healthHTML(){
   var rows=healthRows(), bad=rows.filter(function(r){return r.st!=="ok";}).length, ic={ok:"✅",warn:"⚠️",no:"❌"};
   return '<details class="card health"'+(bad?' open':'')+'><summary><h2 class="sec" style="margin:0;display:inline">🩺 Ready for the meeting?</h2> <span class="'+(bad?'st-o':'st-q')+'"><b>'+(bad?bad+' to check':'All set')+'</b></span></summary>'+
-    '<table class="sumtable cct" style="margin-top:8px"><tbody>'+rows.map(function(r){ return '<tr><td>'+ic[r.st]+'</td><td><b>'+esc(r.t)+'</b></td><td>'+esc(r.d)+(r.tab&&r.tab!==coTab()?' <button class="linkbtn" data-cotab="'+r.tab+'">Fix</button>':'')+'</td></tr>'; }).join("")+'</tbody></table>'+
+    '<table class="sumtable cct" style="margin-top:8px"><tbody>'+rows.map(function(r){ return '<tr><td>'+ic[r.st]+'</td><td><b>'+esc(r.t)+'</b></td><td>'+esc(r.d)+(r.target?' <a href="#availability" class="linkbtn">Find replacements</a>':"")+(r.tab&&r.tab!==coTab()?' <button class="linkbtn" data-cotab="'+r.tab+'">Fix</button>':'')+'</td></tr>'; }).join("")+'</tbody></table>'+
     '<div class="row" style="margin-top:10px"><button class="btn" id="remCopy">📋 Copy reminders for the group chat</button>'+(S.meta.test?'<button class="btn go" id="dryEnd">✓ Finish dry run & clean up</button>':'<button class="btn" id="dryStart">🧪 Start a dry run</button>')+'</div>'+
     '<div class="saved" style="margin-top:6px">'+(S.meta.test?'Dry run: every device shows a test banner, feedback history isn’t kept, and members you add now are marked as test members.':'A dry run marks this meeting as a test so it can be cleared in one tap afterwards (see the 15-minute checklist in the repo).')+'</div></details>';
 }
@@ -1970,8 +2113,12 @@ function coordHTML(){
     '<span class="seg" role="group" aria-label="Move the whole agenda"><button data-agshift="-5" title="Move every item 5 minutes earlier">−5 min</button><button data-agshift="5" title="Move every item 5 minutes later">+5 min</button></span>'+
     '<span class="saved" id="agSpan">'+esc(agSpanText())+'</span></div>'+
     '<div class="note" style="margin-top:4px">▲▼ (or drag ▲▼ on a laptop) moves an item and keeps how long it runs. Changing the <b>min</b> of an item moves everything after it. <b>＋</b> inserts a 5-minute item below and <b>✕</b> removes one; the items after it move to suit.</div><div class="agedit">';
+  var preparedMinutes=preparedBlockRequirement();
   AGL.forEach(function(it,i){
     var du=agDur(AGL,i);
+    if(it.x==="speakers"&&du!==null&&preparedMinutes>du){
+      h+='<div class="note">Prepared speeches need '+preparedMinutes+' min including introductions and transitions. <button class="btn sm" data-fit-speeches="'+esc(it.id)+'">Fit prepared speeches</button></div>';
+    }
     h+='<div class="agrow" data-iid="'+it.id+'"><span class="agmv" draggable="true" title="Drag to move (or use ▲▼)"><button data-agmv="-1" title="Move up" aria-label="Move up"'+(i?'':' disabled')+'>▲</button><button data-agmv="1" title="Move down" aria-label="Move down"'+(i<AGL.length-1?'':' disabled')+'>▼</button></span>'+
        '<input class="t agtime" type="time" data-it="time" aria-label="Time" value="'+esc(it.time)+'">'+
        (du==null?'<span class="agdurw agend">end</span>':'<label class="agdurw"><input class="t agdur" type="number" inputmode="numeric" min="0" max="240" data-agdur value="'+du+'" aria-label="Length in minutes"><span>min</span></label>')+
@@ -2084,6 +2231,7 @@ function tmodHTML(){
     h+='<div class="row"><button class="btn" id="runPrev">◀ Back</button><button class="btn go big1" id="runNext"'+(c.next?'':' disabled')+'>Next ▶</button>'+(c.next?'':'<button class="btn" id="runEnd">Finish</button>')+'</div>';
     h+=adjCtlHTML();
   }
+  h+=preparedRunHTML(true);
   h+='<h2 class="sec">Full agenda</h2><ul class="tlist runlist">';
   c.its.forEach(function(it,i){
     var cls=c.i>=0&&i<c.i?"done":i===c.i?"cur":"";
@@ -2094,7 +2242,7 @@ function tmodHTML(){
   h+='</ul><div class="note">Tap any item to jump to it. Running late or someone missing? <b>⤵ To end</b> moves an item (e.g. a late keynote) to the end, and <b>⏭ Skip</b> leaves it out. Everyone connected sees the new order. The printed agenda keeps the original plan.</div></section>';
   return h;
 }
-function runGo(id){ S.run.by=runBy(); S.run.cur=id; if(id && !S.run.started[id]) S.run.started[id]=now(); tick(S.run); commit(); }
+function runGo(id){ if(S.run.cur===id) return; S.run.by=runBy(); S.run.cur=id; if(id && !S.run.started[id]) S.run.started[id]=now(); tick(S.run); commit(); }
 /* compact "Now" line for every role */
 function renderAgendaLine(){
   var el=document.getElementById("agendaLine"); if(!el) return;
@@ -2187,7 +2335,7 @@ function autoAssignTT(speaker){
   var a=upsert(["ttassign"],"tta|"+nkey(speaker),{speaker:speaker,evaluator:""}); a.speaker=speaker; a.evaluator=best; tick(a);
 }
 function anyEvaluatorOf(kind,n){ return kind==="ps"?evaluatorOf(n):ttEvaluatorOf(n); }
-function evStatusOf(kind,n,me){ var dd=(L.evDrafts||{})[evId(kind,n,me)]; if((dd&&dd.submitted)||S.evals.some(function(e){return e.id===evId(kind,n,me)&&e.done&&e.state!=="writing";})) return "done"; if(dd&&(dd.c1||dd.r||dd.c2)) return "writing"; return "todo"; }
+function evStatusOf(kind,n,me){ var dd=meetingEvalDrafts()[evId(kind,n,me)]; if((dd&&dd.submitted)||S.evals.some(function(e){return e.id===evId(kind,n,me)&&e.done&&e.state!=="writing";})) return "done"; if(dd&&(dd.c1||dd.r||dd.c2)) return "writing"; return "todo"; }
 function evalProgressHTML(kind,list,me){
   if(!list.length) return "";
   var c={done:0,writing:0,todo:0}; list.forEach(function(n){ c[evStatusOf(kind,n,me)]++; });
@@ -2210,9 +2358,9 @@ function assignTableHTML(){
 function evalHTML(){
   var kind=evKind(), me=myName(), list=kind==="ps"?preparedSpeakers():ttSpeakers();
   L.evSel=L.evSel||{}; var sel=L.evSel[kind];
-  var h='<section class="card">';
+  var h='<section class="card">'+draftAccessHTML();
   if(!me) h+='<div class="note" style="margin:0 0 10px">Type your name in <b>Your name</b> above, so each speaker knows who evaluated them.</div>';
-  var chip=function(n){ var dd=(L.evDrafts||{})[evId(kind,n,me)], done=!!(dd&&dd.submitted)||S.evals.some(function(e){return e.id===evId(kind,n,me)&&e.done;}), t=kind==="ps"?speechTitle(n):"", ev=anyEvaluatorOf(kind,n);
+  var chip=function(n){ var dd=meetingEvalDrafts()[evId(kind,n,me)], done=!!(dd&&dd.submitted)||S.evals.some(function(e){return e.id===evId(kind,n,me)&&e.done;}), t=kind==="ps"?speechTitle(n):"", ev=anyEvaluatorOf(kind,n);
     return '<button class="chip spchip'+(nkey(sel)===nkey(n)?' active':'')+'" data-evsel="'+esc(n)+'">'+(done?'✓ ':'')+esc(n)+(t?'<span class="c">“'+esc(t)+'”</span>':'')+(ev&&nkey(ev)!==nkey(me)?'<span class="c">evaluator: '+esc(ev)+'</span>':'')+'</button>'; };
   if(kind==="ps"){
     var mine=list.filter(function(n){return me&&nkey(evaluatorOf(n))===nkey(me);}), rest=list.filter(function(n){return mine.indexOf(n)<0;});
@@ -2225,8 +2373,8 @@ function evalHTML(){
   }
   h+='</div><div class="row" style="margin-top:8px"><input class="t" id="evAddIn" list="roster" autocomplete="off" placeholder="Someone else? Type a name"><button class="btn" id="evAdd">+ Add</button></div>';
   if(sel){
-    var e=(L.evDrafts||{})[evId(kind,sel,me)]||{c1:"",r:"",c2:"",rate:{}};
-    var other=!((L.evDrafts||{})[evId(kind,sel,me)]) && S.evals.some(function(x){return x.id===evId(kind,sel,me)&&x.done;});
+    var e=meetingEvalDrafts()[evId(kind,sel,me)]||{c1:"",r:"",c2:"",rate:{}};
+    var other=!(meetingEvalDrafts()[evId(kind,sel,me)]) && S.evals.some(function(x){return x.id===evId(kind,sel,me)&&x.done;});
     var stl=speechTitle(sel), sob=(speechRec(sel)||{}).obj;
     var tm=timesFor(sel).filter(function(x){ return kind==="ps"?x.s.id==="ps":x.s.id==="tt"; });
     var asg=anyEvaluatorOf(kind,sel);
@@ -2407,7 +2555,7 @@ function rrCall(name,quiet){
 }
 
 (function(){ document.getElementById("view").addEventListener("change",function(e){ if(e.target.id==="rrHere"&&L.role==="rrm"){ L.rrHere=e.target.checked; saveL(); renderAll(); } }); })();
-function rrStart(text){ text=String(text||"").trim(); if(!text){ var el=document.getElementById("rrQ"); if(el) el.focus(); return; } var q={id:uid(),text:text,used:true,ord:maxOrd(S.rrq)+1,u:now()}; S.rrq.push(q); S.rrcur.id=q.id; S.rrcur.last=""; tick(S.rrcur); commit(); }
+function rrStart(text){ text=String(text||"").trim(); if(!text){ var el=document.getElementById("rrQ"); if(el) el.focus(); return; } var q={id:uid(),text:text,used:true,ord:maxOrd(S.rrq)+1,u:now()}; clearDeviceDraft("rrQ"); S.rrq.push(q); S.rrcur.id=q.id; S.rrcur.last=""; tick(S.rrcur); commit(); }
 function rrForget(name){ var hid=(S.rrcur.hide||[]).slice(); if(hid.indexOf(nkey(name))<0) hid.push(nkey(name)); S.rrcur.hide=hid; tick(S.rrcur); commit(); offerUndo("“"+name+"” removed from the list",function(){ S.rrcur.hide=(S.rrcur.hide||[]).filter(function(k){return k!==nkey(name);}); tick(S.rrcur); }); }
 /* ---------- Member: check-in, notes, feedback card ---------- */
 function attendLive(){ return S.attend.filter(function(a){return !a.void;}); }
@@ -2542,50 +2690,103 @@ function decryptFor(name,enc){
     .then(function(pt){ return JSON.parse(new TextDecoder().decode(pt)); });
 }
 
-/* evaluator drafts live only on the evaluator's device until they can be sent encrypted */
-function evDraft(){ var kind=evKind(), sel=(L.evSel||{})[kind]; if(!sel) return null; var id=evId(kind,sel,myName()); L.evDrafts=L.evDrafts||{}; if(!L.evDrafts[id]) L.evDrafts[id]={kind:kind,speaker:sel,c1:"",r:"",c2:"",rate:{}}; return {id:id,d:L.evDrafts[id]}; }
+/* Evaluation drafts are editable locally and can sync encrypted to the author. */
+function meetingEvalDrafts(){
+  L.evDraftsByMeeting=L.evDraftsByMeeting||{};
+  if(!L.evDraftsByMeeting[S.mid]){
+    var legacy={};
+    S.evals.forEach(function(entry){
+      if(L.evDrafts&&Object.hasOwn(L.evDrafts,entry.id)) legacy[entry.id]=L.evDrafts[entry.id];
+    });
+    L.evDraftsByMeeting[S.mid]=legacy;
+    if(L.evDrafts){
+      L.unscopedEvalDrafts=L.evDrafts;
+      delete L.evDrafts;
+    }
+  }
+  return L.evDraftsByMeeting[S.mid];
+}
+function evDraft(){
+  var kind=evKind(), sel=(L.evSel||{})[kind]; if(!sel) return null;
+  var id=evId(kind,sel,myName()), drafts=meetingEvalDrafts();
+  if(!drafts[id]) drafts[id]={kind:kind,speaker:sel,c1:"",r:"",c2:"",rate:{}};
+  return {id:id,d:drafts[id]};
+}
 var markTimers={};
 /* while an evaluator is writing, only a "writing" marker is shared: never the content */
 function markWriting(id){
+  var mid=S.mid, by=myName();
   clearTimeout(markTimers[id]);
   markTimers[id]=setTimeout(function(){
-    var d=(L.evDrafts||{})[id]; if(!d||d.submitted) return;
+    if(S.mid!==mid) return;
+    var d=meetingEvalDrafts()[id]; if(!d||d.submitted) return;
     var rec=upsert(["evals"],id,{kind:d.kind,speaker:d.speaker});
-    if(rec.state!=="writing"){ rec.by=myName()||"Evaluator"; rec.kind=d.kind; rec.speaker=d.speaker; rec.state="writing"; rec.done=false; rec.enc=null; tick(rec); commitQuiet(); }
+    if(rec.state!=="writing"){ rec.by=by||"Evaluator"; rec.kind=d.kind; rec.speaker=d.speaker; rec.state="writing"; rec.done=false; rec.enc=null; tick(rec); commitQuiet(); }
   },1200);
 }
 /* Submit: encrypt the final version for the speaker and share it */
 function submitDraft(id,resend){
-  var d=(L.evDrafts||{})[id]; if(!d) return Promise.resolve(false);
-  d.by=myName()||d.by||"Evaluator";
+  var d=meetingEvalDrafts()[id]; if(!d) return Promise.resolve(false);
+  var mid=S.mid;
+  d.by=d.by||myName()||"Evaluator";
   if(!resend){ d.submitted=true; d.changed=false; d.submittedAt=now(); }
   saveL(); clearTimeout(markTimers[id]);
   var rec=upsert(["evals"],id,{kind:d.kind,speaker:d.speaker});
   rec.by=d.by; rec.kind=d.kind; rec.speaker=d.speaker; rec.done=true; rec.at=d.submittedAt; delete rec.c1; delete rec.r; delete rec.c2; delete rec.rate;
   if(!keyRec(d.speaker)){ rec.state="queued"; rec.enc=null; rec.pending=true; tick(rec); commit(); return Promise.resolve(false); }
   return encryptFor(d.speaker,{c1:d.c1,r:d.r,c2:d.c2,rate:d.rate||{},kind:d.kind,by:d.by,at:d.submittedAt}).then(function(enc){
+    if(S.mid!==mid) return false;
     var r2=S.evals.find(function(x){return x.id===id;})||rec;
     r2.enc=enc; r2.state="submitted"; r2.pending=false; r2.done=true; r2.at=d.submittedAt; tick(r2); d.sentKx=enc.kx; saveL(); commit(); return true;
   }).catch(function(){ return false; });
 }
+function pendingNotes(){
+  L.notesByMeeting=L.notesByMeeting||{};
+  return L.notesByMeeting[S.mid]||(L.notesByMeeting[S.mid]={});
+}
 function sendNote(to,text){
-  if(!keyRec(to)){ L.noteQueue=L.noteQueue||[]; L.noteQueue.push({to:to,text:text}); saveL(); return Promise.resolve(false); }
-  return encryptFor(to,{text:text}).then(function(enc){ S.notes.push({id:uid(),to:to,enc:enc,ord:maxOrd(S.notes)+1,u:now()}); commit(); return true; });
+  var id="note|"+uid(), note={id:id,to:to,text:text};
+  if(keyRec(to)) return deliverNote(note);
+  pendingNotes()[id]=note;
+  saveL(); queuePrivateDraft(draftOwner(),"pending|"+id,note);
+  return Promise.resolve(false);
+}
+function deliverNote(note){
+  var mid=S.mid;
+  if(S.notes.some(function(n){return n.id===note.id;})) return Promise.resolve(true);
+  return encryptFor(note.to,{text:note.text}).then(function(enc){
+    if(S.mid!==mid) return false;
+    if(!S.notes.some(function(n){return n.id===note.id;})){
+      S.notes.push({id:note.id,to:note.to,enc:enc,ord:maxOrd(S.notes)+1,u:now()}); commit();
+    }
+    return true;
+  });
+}
+function syncPendingNotes(){
+  Object.values(pendingNotes()).forEach(function(note){
+    if(!S.roleFields.some(function(r){return r.key==="pending|"+note.id&&r.person===nkey(draftOwner())&&r.enc;})){
+      queuePrivateDraft(draftOwner(),"pending|"+note.id,note);
+    }
+  });
 }
 var flushing=false;
 function flushPending(){
   if(flushing||!cryptoOK()) return; flushing=true;
   var jobs=[];
-  Object.keys(L.evDrafts||{}).forEach(function(id){ var d=L.evDrafts[id], r=keyRec(d.speaker); if(d.submitted && r && d.sentKx!==r.pub.x) jobs.push(submitDraft(id,true)); });
-  var q=(L.noteQueue||[]).slice(), keep=[];
-  q.forEach(function(n){ if(keyRec(n.to)) jobs.push(sendNote(n.to,n.text)); else keep.push(n); });
-  if(q.length!==keep.length){ L.noteQueue=keep; saveL(); }
+  Object.keys(meetingEvalDrafts()).forEach(function(id){ var d=meetingEvalDrafts()[id], r=keyRec(d.speaker); if(d.submitted && r && d.sentKx!==r.pub.x) jobs.push(submitDraft(id,true)); });
+  var mid=S.mid, pending=pendingNotes();
+  Object.values(pending).forEach(function(note){
+    if(!keyRec(note.to)&&!S.notes.some(function(n){return n.id===note.id;})) return;
+    jobs.push(deliverNote(note).then(function(sent){
+      if(sent&&S.mid===mid){ delete pending[note.id]; saveL(); }
+    }).catch(function(){ /* Leave the note queued for the next retry. */ }));
+  });
   Promise.all(jobs).then(function(){ flushing=false; },function(){ flushing=false; });
 }
 setInterval(flushPending,5000);
 function evStateText(speaker,d){
   d=d||{};
-  if(!d.submitted) return '✍ <b>Draft</b> — saved on this device only. Nobody sees it until you tap <b>Submit</b>; then only <b>'+esc(speaker)+'</b> can read it.';
+  if(!d.submitted) return '✍ <b>Draft</b> — unlock your feedback PIN on each device to sync it privately. Tap <b>Submit</b>; then only <b>'+esc(speaker)+'</b> can read it.';
   if(d.changed) return '✏️ You changed this after submitting. Tap <b>Update submission</b> to send the new version.';
   if(!keyRec(speaker)) return '⏳ <b>Submitted</b> — waiting for '+esc(speaker)+' to set up their feedback PIN. It will be delivered automatically, encrypted.';
   return '✅ <b>Submitted</b> '+(d.submittedAt?'at '+new Date(d.submittedAt).toLocaleTimeString("en-AU",{hour:"numeric",minute:"2-digit"})+' ':'')+'— only '+esc(speaker)+' can read it (encrypted).';
@@ -2604,6 +2805,140 @@ function refreshEvState(){
 function evalStatusLabel(e){ return e.state==="writing"?"✍ writing":e.state==="queued"?"⏳ submitted, waiting for the speaker's PIN":"✅ submitted"; }
 function submittedEvals(name){ return S.evals.filter(function(e){ return nkey(e.speaker)===nkey(name) && e.enc && e.done && (e.state==="submitted"||!e.state); }); }
 
+
+/* Drafts use the author's feedback key. The meeting only receives ciphertext. */
+var draftReads=new Set(), draftWrites=new Map();
+function draftOwner(){ return L.me||myName(); }
+function draftAccessHTML(){
+  var name=draftOwner();
+  if(!name||!cryptoOK()) return "";
+  if(hasPriv(name)) return '<p class="saved">Private draft sync is unlocked on this device.</p>';
+  return '<details><summary>Sync private drafts across my devices</summary>'+
+    '<p class="saved">Use the same feedback PIN on each device to read and edit your drafts.</p>'+
+    '<input class="t" id="draftPin" type="password" inputmode="numeric" maxlength="8" aria-label="Feedback PIN">'+
+    '<button class="btn sm" id="draftAccess">'+(keyRec(name)?'Unlock draft sync':'Set feedback PIN')+'</button></details>';
+}
+function queuePrivateDraft(name,key,value){
+  if(!name||!hasPriv(name)) return;
+  var mid=S.mid, person=nkey(name), id="field|private|"+JSON.stringify([person,key]);
+  var writeKey=JSON.stringify([mid,id]);
+  var previous=S.roleFields.find(function(r){return r.id===id;});
+  var rev=Math.max(now(),(previous&&previous.u||0)+1,(draftWrites.get(writeKey)||0)+1);
+  draftWrites.set(writeKey,rev);
+  encryptFor(name,clone(value)).then(function(enc){
+    if(S.mid!==mid||draftWrites.get(writeKey)!==rev) return;
+    var current=S.roleFields.find(function(r){return r.id===id;});
+    if(current&&current.u>rev) return;
+    var rec=upsert(["roleFields"],id,{person:person,key:key});
+    rec.enc=enc; rec.u=rev;
+    commitQuiet();
+  }).catch(function(){ showToastMsg("Draft saved here. Private sync failed."); });
+}
+function syncPrivateDrafts(){
+  var name=draftOwner(), person=nkey(name), mid=S.mid, role=L.role;
+  if(!hasPriv(name)) return;
+  S.roleFields.filter(function(r){
+    return r.enc&&r.person===person&&(r.key.startsWith("form|")||r.key.startsWith("setting|")||r.key.startsWith("pending|")||
+      (role==="gram"&&(r.key==="word"||r.key.startsWith("word|")))||
+      (["seval","tteval"].includes(role)&&r.key.startsWith("e|"+evKind()+"|")));
+  }).forEach(function(r){
+    var read=JSON.stringify([mid,r.id,r.u,r.enc.ct,r.enc.kx]), writeKey=JSON.stringify([mid,r.id]);
+    if(draftReads.has(read)||(draftWrites.get(writeKey)||0)>=r.u) return;
+    draftReads.add(read);
+    decryptFor(name,r.enc).then(function(value){
+      if(S.mid!==mid||L.role!==role||nkey(draftOwner())!==person){ draftReads.delete(read); return; }
+      var latest=S.roleFields.find(function(x){return x.id===r.id;});
+      if(!latest||latest.enc.ct!==r.enc.ct||(draftWrites.get(writeKey)||0)>=r.u) return;
+      if(r.key.startsWith("pending|")){
+        if(value&&r.key==="pending|"+value.id&&typeof value.to==="string"&&typeof value.text==="string"&&
+          !S.notes.some(function(n){return n.id===value.id;})) pendingNotes()[value.id]=value;
+      } else if(r.key.startsWith("form|")||r.key.startsWith("setting|")){
+        deviceDraftValues()[r.key]=value;
+        if(r.key.startsWith("setting|rep|")&&typeof value==="boolean"){
+          var report=r.key.slice("setting|rep|".length);
+          if(/^[a-z]+$/.test(report)) L.rep[report]=value;
+          if(document.getElementById("reportWrap")?.classList.contains("on")) buildReport();
+        } else if(r.key.startsWith("setting|")){
+          var setting=r.key.slice("setting|".length);
+          if(DEVICE_SETTINGS.includes(setting)&&setting!=="rep"&&
+            (setting==="theme"?["auto","light","dark"].includes(value):typeof value==="boolean")) L[setting]=value;
+          applyDisplay();
+        }
+      } else if(role==="gram"){
+        if(!value||value.epoch!==(S.gram.u||0)) return;
+        var draft=wordDraft();
+        if(r.key==="word"){
+          Object.keys(WORD_FIELDS).forEach(function(id){
+            if(!hasDraftPatch(person,"word|"+id,r.u)&&Object.hasOwn(value.fields||{},id)) draft[id]=value.fields[id];
+          });
+        } else {
+          var wordField=r.key.slice(5);
+          if(Object.hasOwn(WORD_FIELDS,wordField)){
+            if(value.text===null) delete draft[wordField]; else draft[wordField]=value.text;
+          }
+        }
+      } else {
+        applyEvaluationDraft(person,r,value);
+      }
+      saveL(); softRender();
+    }).catch(function(){ draftReads.delete(read); });
+  });
+}
+function hasDraftPatch(person,key,revision){
+  var id="field|private|"+JSON.stringify([person,key]);
+  return (draftWrites.get(JSON.stringify([S.mid,id]))||0)>=revision||
+    S.roleFields.some(function(r){ return r.id===id&&r.u>=revision; });
+}
+function wordDraft(){
+  var draft=workflowDraft(), epoch=S.gram.u||0;
+  if(draft.wordEpoch!==undefined&&draft.wordEpoch!==epoch){
+    Object.keys(WORD_FIELDS).forEach(function(id){delete draft[id];});
+  }
+  draft.wordEpoch=epoch;
+  return draft;
+}
+function syncWordDraft(field){
+  var draft=wordDraft();
+  (field?[field]:Object.keys(WORD_FIELDS)).forEach(function(id){
+    queuePrivateDraft(draftOwner(),"word|"+id,{epoch:draft.wordEpoch,text:draft[id]??null});
+  });
+}
+var EVAL_DRAFT_FIELDS=["c1","r","c2","rate.content","rate.delivery","rate.confidence"];
+function evaluationField(draft,field){
+  return field.startsWith("rate.")?(draft.rate||{})[field.slice(5)]||0:draft[field]||"";
+}
+function setEvaluationField(draft,field,value){
+  if(field.startsWith("rate.")){ draft.rate=draft.rate||{}; draft.rate[field.slice(5)]=value; }
+  else draft[field]=value;
+}
+function syncEvaluationDraft(id,draft,field){
+  if(!field){
+    queuePrivateDraft(draftOwner(),id,draft);
+    return;
+  }
+  queuePrivateDraft(draftOwner(),id+"|draft|"+field,{
+    value:evaluationField(draft,field),speaker:draft.speaker,kind:draft.kind
+  });
+}
+function applyEvaluationDraft(person,record,value){
+  if(!value||typeof value.speaker!=="string") return;
+  var suffix="|draft|", index=record.key.lastIndexOf(suffix);
+  var id=index<0?record.key:record.key.slice(0,index), field=index<0?"":record.key.slice(index+suffix.length);
+  var drafts=meetingEvalDrafts(), draft=drafts[id]||(drafts[id]={kind:value.kind,speaker:value.speaker,c1:"",r:"",c2:"",rate:{}});
+  if(field){
+    if(!EVAL_DRAFT_FIELDS.includes(field)) return;
+    setEvaluationField(draft,field,value.value);
+    if(draft.submitted) draft.changed=true;
+    return;
+  }
+  ["submitted","submittedAt","sentKx","by","changed"].forEach(function(key){
+    if(Object.hasOwn(value,key)) draft[key]=value[key];
+  });
+  EVAL_DRAFT_FIELDS.forEach(function(key){
+    if(!hasDraftPatch(person,id+suffix+key,record.u)) setEvaluationField(draft,key,evaluationField(value,key));
+    else if(draft.submitted&&evaluationField(draft,key)!==evaluationField(value,key)) draft.changed=true;
+  });
+}
 /* ---------- Speaker role: my speech, my timing, my result, my private feedback ---------- */
 var LIMIT_PRESETS=[["","Standard for the session"],["2-3","2–3 min"],["3-5","3–5 min"],["4-6","4–6 min"],["5-7","5–7 min"],["6-8","6–8 min"]];
 function presetLim(p){ var m=String(p||"").match(/^(\d+)-(\d+)$/); if(!m) return null; var g=+m[1]*60, r=+m[2]*60; return {g:g,a:Math.round((g+r)/2),r:r}; }
@@ -2671,6 +3006,24 @@ function feedbackPinsHTML(){
   var V=document.getElementById("view");
   V.addEventListener("click",function(e){
     var t=e.target;
+    var access=t.closest("#draftAccess");
+    if(access){
+      var name=draftOwner(), pin=document.getElementById("draftPin").value.trim(), exists=keyRec(name);
+      if(!/^\d{4,8}$/.test(pin)){ alert("Use 4 to 8 digits."); return; }
+      access.disabled=true;
+      (exists?unlockSpeaker(name,pin):createSpeakerKey(name,pin)).then(function(){
+        syncDeviceSettings();
+        syncPendingNotes();
+        if(L.role==="gram"){
+          if(!exists||!S.roleFields.some(function(r){return r.person===nkey(name)&&r.enc&&(r.key==="word"||r.key.startsWith("word|"));})) syncWordDraft();
+        } else if(["seval","tteval"].includes(L.role)){
+          var draft=evDraft();
+          if(draft&&!S.roleFields.some(function(r){return r.person===nkey(name)&&r.enc&&(r.key===draft.id||r.key.startsWith(draft.id+"|draft|"));})) syncEvaluationDraft(draft.id,draft.d);
+        }
+        renderAll();
+      }).catch(function(err){ alert(err.message||err); renderAll(); });
+      return;
+    }
     if(t.closest("#openVote")){ openVote(); return; }
     if(t.closest("#showWinners")){ maybeShowWinners(true); return; }
     if(t.closest("[data-new-voting-round]")&&L.role==="ge"){startVotingRound();return;}
@@ -2679,11 +3032,11 @@ function feedbackPinsHTML(){
     var ck=t.closest("[data-checkin]"); if(ck){ var n=ck.dataset.checkin; setPresent(n,!present(n)); if(L.role==="member"&&!myName()) setMyName(n); return; }
     if(L.role==="seval"||L.role==="tteval"){
       var es=t.closest("[data-evsel]"); if(es){ L.evSel=L.evSel||{}; L.evSel[evKind()]=es.dataset.evsel; if(selectPerson(es.dataset.evsel,L.role)) commit(); else { saveL(); renderAll(); } return; }
-      if(t.closest("#evAdd")){ var v=(document.getElementById("evAddIn").value||"").trim(); if(v){ L.evSel=L.evSel||{}; L.evSel[evKind()]=v; if(selectPerson(v,L.role)) commit(); else { saveL(); renderAll(); } } return; }
-      var rb=t.closest("[data-rate]"); if(rb){ var dr=evDraft(); if(!dr) return; dr.d.rate=dr.d.rate||{}; dr.d.rate[rb.dataset.rate]=(dr.d.rate[rb.dataset.rate]===+rb.dataset.v)?0:+rb.dataset.v; if(dr.d.submitted) dr.d.changed=true; else markWriting(dr.id); saveL(); renderAll(); return; }
+      if(t.closest("#evAdd")){ var v=(document.getElementById("evAddIn").value||"").trim(); if(v){ clearDeviceDraft("evAddIn"); L.evSel=L.evSel||{}; L.evSel[evKind()]=v; if(selectPerson(v,L.role)) commit(); else { saveL(); renderAll(); } } return; }
+      var rb=t.closest("[data-rate]"); if(rb){ var dr=evDraft(); if(!dr) return; dr.d.rate=dr.d.rate||{}; dr.d.rate[rb.dataset.rate]=(dr.d.rate[rb.dataset.rate]===+rb.dataset.v)?0:+rb.dataset.v; if(dr.d.submitted) dr.d.changed=true; else markWriting(dr.id); saveL(); syncEvaluationDraft(dr.id,dr.d,"rate."+rb.dataset.rate); renderAll(); return; }
       if(t.closest("#assignMe")){ var sa=(L.evSel||{})[evKind()]; if(!myName()){ alert("Type your name in Your name at the top first."); return; } var cur=anyEvaluatorOf(evKind(),sa); if(cur&&nkey(cur)!==nkey(myName())&&!confirm(sa+" is assigned to "+cur+". Assign to you instead?")) return; if(evKind()==="tt") setTTAssign(sa,myName()); else setAssign(sa,myName()); return; }
       if(t.closest("#unassignMe")){ var us=(L.evSel||{})[evKind()]; if(evKind()==="tt") setTTAssign(us,""); else setAssign(us,""); return; }
-      if(t.closest("#evSubmit")){ var ds=evDraft(); if(!ds) return; var dd2=ds.d; if(!(dd2.c1||dd2.r||dd2.c2)){ alert("Write at least one Commend or Recommend before submitting."); return; } if(!myName()){ alert("Type your name in Your name at the top first, so the speaker knows who evaluated them."); return; } t.disabled=true; submitDraft(ds.id).then(function(){ renderAll(); }); return; }
+      if(t.closest("#evSubmit")){ var ds=evDraft(); if(!ds) return; var dd2=ds.d; if(!(dd2.c1||dd2.r||dd2.c2)){ alert("Write at least one Commend or Recommend before submitting."); return; } if(!myName()){ alert("Type your name in Your name at the top first, so the speaker knows who evaluated them."); return; } t.disabled=true; submitDraft(ds.id).then(function(){ syncEvaluationDraft(ds.id,ds.d); renderAll(); }); return; }
     }
     if(L.role==="rrm"){
       if(t.closest("#rrStart")){ rrStart((document.getElementById("rrQ")||{}).value); return; }
@@ -2693,18 +3046,18 @@ function feedbackPinsHTML(){
       var rf=t.closest("[data-rrforget]"); if(rf){ rrForget(rf.dataset.rrforget); return; }
       if(t.closest("#rrShow")){ L.stageMode="rr"; openStage(); return; }
       var rc=t.closest("[data-rrcall]"); if(rc){ rrCall(rc.dataset.rrcall); return; }
-      if(t.closest("#rrGuestAdd")){ var gi=document.getElementById("rrGuest"); rrCall((gi.value||"").trim()); return; }
+      if(t.closest("#rrGuestAdd")){ var gi=document.getElementById("rrGuest"); var guest=gi.value.trim(); if(guest){ clearDeviceDraft("rrGuest"); rrCall(guest); } return; }
     }
     if(L.role==="speaker"){
       var me2=t.closest("[data-spme]"); if(me2){ setMyName(me2.dataset.spme); var s0=mySpeech(); applySpeech(s0); commit(); return; }
     }
     if(L.role==="member"||L.role==="speaker"){
       if(L.role==="speaker") L.cardName=myName();
-      if(t.closest("#guestAdd")){ var gn=(document.getElementById("guestIn").value||"").trim(); if(gn){ setPresent(gn,true); if(!myName()) setMyName(gn); } return; }
+      if(t.closest("#guestAdd")){ var gn=(document.getElementById("guestIn").value||"").trim(); if(gn){ clearDeviceDraft("guestIn"); setPresent(gn,true); if(!myName()) setMyName(gn); } return; }
       if(t.closest("#noteSend")){
         var to=document.getElementById("noteTo").value, tx=(document.getElementById("noteText").value||"").trim();
         if(!to||!tx){ alert("Choose a speaker and write a note."); return; }
-        sendNote(to,tx.slice(0,500)).then(function(sent){ var m=document.getElementById("noteMsg"), ta=document.getElementById("noteText"); if(ta) ta.value=""; if(m) m.textContent=sent?"Sent ✓ (anonymous, encrypted)":"Saved ✓ — it will be delivered, encrypted, when "+to+" sets up their feedback PIN"; });
+        sendNote(to,tx.slice(0,500)).then(function(sent){ clearDeviceDraft("noteText"); var m=document.getElementById("noteMsg"), ta=document.getElementById("noteText"); if(ta) ta.value=""; if(m) m.textContent=sent?"Sent ✓ (anonymous, encrypted)":"Saved ✓ — it will be delivered, encrypted, when "+to+" sets up their feedback PIN"; }).catch(function(){ showToastMsg("Could not send the note. Your draft is still here."); });
         return;
       }
       if(t.closest("#cardOpen")){ if(L.cardName) buildCard(L.cardName); return; }
@@ -2715,7 +3068,7 @@ function feedbackPinsHTML(){
   });
   V.addEventListener("input",function(e){
     var t=e.target;
-    if(t.dataset.evf){ var dr=evDraft(); if(!dr) return; dr.d[t.dataset.evf]=t.value; if(dr.d.submitted) dr.d.changed=true; else markWriting(dr.id); saveL(); refreshEvState(); refreshEvProg(); return; }
+    if(t.dataset.evf){ var dr=evDraft(); if(!dr) return; dr.d[t.dataset.evf]=t.value; if(dr.d.submitted) dr.d.changed=true; else markWriting(dr.id); saveL(); syncEvaluationDraft(dr.id,dr.d,t.dataset.evf); refreshEvState(); refreshEvProg(); return; }
     if(t.dataset.ge){ S.genotes[t.dataset.ge]=t.value; tick(S.genotes); commitQuiet(); return; }
     if(L.role==="speaker"&&(t.dataset.sp==="title"||t.dataset.sp==="obj")){ var s=mySpeech(); if(!s) return; s[t.dataset.sp]=t.value; tick(s); commitQuiet(); return; }
   });
@@ -2770,6 +3123,7 @@ setInterval(function(){
       if(st) st.textContent=status(sid,r,t).text;
     });
   }
+  renderTimerDemo();
 },250);
 
 /* ---------- events ---------- */
@@ -2800,16 +3154,17 @@ document.addEventListener("change",function(e){ var d=e.target.dataset&&e.target
 var view=document.getElementById("view");
 function quickStart(){
   var sid=L.tab, q=document.getElementById("qname"), nx=firstQueued(sid);
-  if(!okToStart()) return;
+  if(!allowLiveAction("quick-timer")||!okToStart()) return;
+  clearDeviceDraft("qname");
   if(!q.value.trim()&&nx){ startRow(sid,nx.id); }
-  else { var r=newRow(sid,q.value.trim()); remember(r.name); S.rows[sid].push(r); q.value=""; startRow(sid,r.id); }
+  else { var r=newRow(sid,q.value.trim()); var last=S.rows[sid].reduce(function(peak,row){return Math.max(peak,row.ord||0);},0); r.id="live|"+encodeURIComponent(JSON.stringify([S.mid,sid,last,nkey(r.name)])); remember(r.name); S.rows[sid].push(r); q.value=""; startRow(sid,r.id); }
   var q2=document.getElementById("qname"); if(q2) q2.focus();
 }
 function planSpeakers(){
   var sid=L.tab, q=document.getElementById("qname"), names=q.value.split(/[,;\n]+/).map(function(n){return n.trim();}).filter(Boolean);
   if(!names.length) S.rows[sid].push(newRow(sid,""));
   names.forEach(function(n){ S.rows[sid].push(newRow(sid,n)); addName(S,n); });
-  q.value=""; commit(); var q2=document.getElementById("qname"); if(q2) q2.focus();
+  q.value=""; clearDeviceDraft("qname"); commit(); var q2=document.getElementById("qname"); if(q2) q2.focus();
 }
 view.addEventListener("click",function(e){
   var t=e.target;
@@ -2818,7 +3173,7 @@ view.addEventListener("click",function(e){
   if(t.closest("#qstart")){ quickStart(); return; }
   if(t.closest("#qplan")){ planSpeakers(); return; }
   if(t.closest("#qadd")){
-    var q=document.getElementById("qname"), nr=newRow(L.tab,q.value.trim()); remember(nr.name); S.rows[L.tab].push(nr); q.value=""; commit();
+    var q=document.getElementById("qname"), nr=newRow(L.tab,q.value.trim()); remember(nr.name); S.rows[L.tab].push(nr); q.value=""; clearDeviceDraft("qname"); commit();
     var ti=document.querySelector('#view tr[data-id="'+nr.id+'"] [data-edit="time"]'); if(ti) ti.focus(); return;
   }
   var b=t.closest("[data-act]");
@@ -2836,7 +3191,7 @@ view.addEventListener("click",function(e){
   if(t.closest("#addTopics")){
     var ta=document.getElementById("topicInput"), lines=ta.value.split(/\n+/).map(function(x){return x.trim();}).filter(Boolean);
     var o=maxOrd(S.topics); lines.forEach(function(x){ S.topics.push({id:uid(),text:x,speaker:"",used:false,usedAt:null,rowId:null,ord:++o,u:now()}); });
-    ta.value=""; commit(); return;
+    ta.value=""; clearDeviceDraft("topicInput"); commit(); return;
   }
   if(t.closest("#randBtn")){ randomTopic(); return; }
   if(t.closest("#callBtn")){ callSpeaker(); return; }
@@ -2859,13 +3214,13 @@ view.addEventListener("click",function(e){
   var mn=t.closest("[data-minus]"); if(mn){ var s1=selRow("ah"), w=mn.dataset.minus; if(s1&&s1.c[w]>0){ s1.c[w]--; tick(s1); commit(); } return; }
   var tp2=t.closest("[data-word]"); if(tp2){ var s2=selRow("ah"), w2=tp2.dataset.word; if(s2){ s2.c[w2]=(s2.c[w2]||0)+1; tick(s2); commit(); var nt=document.querySelector('#view [data-word="'+CSS.escape(w2)+'"]'); if(nt) nt.classList.add("bump"); } return; }
   var wd=t.closest("[data-wdel]"); if(wd){ var wsnap=S.fill.words.slice(); offerUndo("“"+wd.dataset.wdel+"” removed",function(){ S.fill.words=wsnap; tick(S.fill); }); S.fill.words=S.fill.words.filter(function(x){return x!==wd.dataset.wdel;}); tick(S.fill); commit(); return; }
-  if(t.closest("#wordAdd")){ var wi=document.getElementById("wordInput"), nw=wi.value.trim(); if(nw&&S.fill.words.indexOf(nw)<0){ S.fill.words.push(nw); tick(S.fill); commit(); } return; }
+  if(t.closest("#wordAdd")){ var wi=document.getElementById("wordInput"), nw=wi.value.trim(); if(nw&&S.fill.words.indexOf(nw)<0){ S.fill.words.push(nw); clearDeviceDraft("wordInput"); tick(S.fill); commit(); } return; }
   if(t.closest("#wotdReveal")){ revealWordOfDay(); return; }
   if(t.closest("#wPlus")){ var g=selRow("gram"); if(g){ g.w=(g.w||0)+1; tick(g); commit(); } return; }
   if(t.closest("#wMinus")){ var g2=selRow("gram"); if(g2&&g2.w>0){ g2.w--; tick(g2); commit(); } return; }
   if(t.closest("#goodAdd")||t.closest("#slipAdd")){
     var isGood=!!t.closest("#goodAdd"), inp=document.getElementById(isGood?"goodInput":"slipInput"), g3=selRow("gram"), v=inp.value.trim();
-    if(g3&&v){ g3[isGood?"good":"slips"].push(v); tick(g3); commit(); var again=document.getElementById(isGood?"goodInput":"slipInput"); if(again) again.focus(); } return;
+    if(g3&&v){ g3[isGood?"good":"slips"].push(v); clearDeviceDraft(inp.id); tick(g3); commit(); var again=document.getElementById(isGood?"goodInput":"slipInput"); if(again) again.focus(); } return;
   }
   var nd=t.closest("[data-ndel]"); if(nd){ var g4=selRow("gram"); if(g4){ var nk=nd.dataset.ndel, nsnap=clone(g4[nk]); g4[nk].splice(+nd.dataset.i,1); tick(g4); commit(); offerUndo("Note removed",function(){ g4[nk]=nsnap; tick(g4); }); } return; }
 });
@@ -2884,7 +3239,7 @@ view.addEventListener("input",function(e){
   if(t.dataset.edit==="topic"){ var tp=topicById(t.closest("[data-tid]").dataset.tid); tp.text=t.value; tick(tp); commitQuiet(); return; }
   if(t.dataset.ttev!=null){ setTTAssign(t.dataset.ttev,t.value); return; }
   if(t.dataset.edit==="tspeaker"){ var tp2=topicById(t.closest("[data-tid]").dataset.tid); tp2.speaker=t.value; tick(tp2); commitQuiet(); return; }
-  if(L.role==="gram" && Object.hasOwn(WORD_FIELDS,t.id)){ workflowDraft()[t.id]=t.value; saveL(); }
+  if(L.role==="gram" && Object.hasOwn(WORD_FIELDS,t.id)){ wordDraft()[t.id]=t.value; saveL(); syncWordDraft(t.id); }
 });
 view.addEventListener("change",function(e){
   var t=e.target, sid=L.tab;
@@ -2922,7 +3277,7 @@ document.addEventListener("fullscreenchange",function(){ if(!document.fullscreen
     if(L.role==="tmod"){
       var c=curItem();
       if(t.closest("#runStart")){ if(c.its[0]) runGo(c.its[0].id); return; }
-      if(t.closest("#runNext")){ if(c.next) runGo(c.next.id); return; }
+      if(t.closest("#runNext")){ if(c.next&&now()-(S.run.advanceAt||0)>=500&&allowLiveAction("agenda-next")){ S.run.advanceAt=now(); runGo(c.next.id); } return; }
       if(t.closest("#runPrev")){ if(c.i>0) runGo(c.its[c.i-1].id); return; }
       if(t.closest("#runEnd")){ runFinish(); return; }
       var li=t.closest("[data-run]"); if(li){ runGo(li.dataset.run); return; }
@@ -2941,11 +3296,28 @@ document.addEventListener("fullscreenchange",function(){ if(!document.fullscreen
     if(t.closest("#coordLock")){ L.coordOK=null; saveL(); renderAll(); return; }
     if(t.closest("#pinChange")){ if(!isMainCoord()) return; L.coordForcePin=true; saveL(); renderAll(); var p=document.getElementById("pin1"); if(p) p.focus(); return; }
     if(!coordUnlocked()) return;
+    if(t.closest("#markAbsent")){
+      var absent=document.getElementById("absentName").value;
+      if(absent){ setRsvp(absent,"no",null); commit(); }
+      return;
+    }
+    var replace=t.closest("[data-replace-role]");
+    if(replace){
+      var name=replace.parentElement.querySelector("[data-replacement]").value.trim();
+      if(!replaceRolePlayer(replace.dataset.replaceRole,replace.dataset.oldName,name)) showToastMsg("Choose an available replacement for this assignment.");
+      return;
+    }
+    var fit=t.closest("[data-fit-speeches]");
+    if(fit){
+      var needed=preparedBlockRequirement(), items=itemsSorted(), index=items.findIndex(function(it){return it.id===fit.dataset.fitSpeeches;});
+      if(index>=0&&items[index].x==="speakers"&&needed>agDur(items,index)&&agSetDur(items[index].id,needed)){ agChanged(); commit(); }
+      return;
+    }
     if(t.closest("#memAdd")){
       var inp=document.getElementById("memIn"), names=inp.value.split(/[,;\n]+/).map(function(x){return x.trim();}).filter(Boolean), added=0;
       var mk=(document.getElementById("memKind")||{}).value||"auto";
       names.forEach(function(n){ if(!S.members.list.some(function(m){return m.name.toLowerCase()===n.toLowerCase();})){ S.members.list.push(Object.assign({id:uid(),name:n,kind:mk==="auto"?guessKind(n):mk},S.meta.test?{test:true}:{})); added++; } });
-      if(added){ tick(S.members); commit(); } var again=document.getElementById("memIn"); if(again){ again.value=""; again.focus(); } return;
+      if(names.length) clearDeviceDraft("memIn"); if(added){ tick(S.members); commit(); } var again=document.getElementById("memIn"); if(again){ again.value=""; again.focus(); } return;
     }
     var kr=t.closest("[data-keyreset]"); if(kr){ var nm=kr.dataset.keyreset; if(!confirm("Reset "+nm+"'s feedback PIN?\n\nThey can set a new one, but feedback encrypted for the old PIN can't be read any more.")) return; var rec=S.keys.find(function(k){return k.id==="k|"+nkey(nm);}); if(rec){ rec.pub=null; rec.wrapped=""; tick(rec); commit(); } return; }
     var md=t.closest("[data-mdel]"); if(md){ removeMember(md.dataset.mdel); return; }
@@ -2954,7 +3326,16 @@ document.addEventListener("fullscreenchange",function(){ if(!document.fullscreen
       var arr=asList(k); v.split(/[,;]+/).map(function(x){return x.trim();}).filter(Boolean).forEach(function(n){ if(arr.indexOf(n)<0) arr.push(n); });
       S.agenda.assign[k]=arr; agChanged(); applyAgenda(); commit(); var b2=document.querySelector('[data-rpadd-in="'+k+'"]'); if(b2) b2.focus(); return;
     }
-    var rd=t.closest("[data-rpdel]"); if(rd){ var k2=rd.dataset.rpdel, arr2=asList(k2); arr2.splice(+rd.dataset.i,1); S.agenda.assign[k2]=arr2; agChanged(); applyAgenda(); commit(); return; }
+    var rd=t.closest("[data-rpdel]");
+    if(rd){
+      var role=rd.dataset.rpdel, names=asList(role), removed=names.splice(+rd.dataset.i,1)[0];
+      S.agenda.assign[role]=names;
+      if(role==="speakers"&&removed&&!names.some(function(name){return nkey(name)===nkey(removed);})){
+        var pair=S.assigns.find(function(entry){return nkey(entry.speaker)===nkey(removed);});
+        if(pair&&pair.evaluator){ pair.evaluator=""; tick(pair); }
+      }
+      agChanged(); applyAgenda(); commit(); return;
+    }
     if(t.closest("[data-itdel]")){ var id=t.closest("[data-iid]").dataset.iid; agRemove(id); agChanged(); commit(); return; }
     var mv=t.closest("[data-agmv]"); if(mv){ var r0=mv.closest("[data-iid]").dataset.iid; if(agMove(r0,+mv.dataset.agmv)){ agChanged(); commit(); var nb=document.querySelector('[data-iid="'+r0+'"] [data-agmv="'+mv.dataset.agmv+'"]'); if(nb&&!nb.disabled) nb.focus(); } return; }
     if(t.closest("[data-agins]")){ var ni=agInsertAfter(t.closest("[data-iid]").dataset.iid); if(ni){ agChanged(); commit(); var ta=document.querySelector('[data-iid="'+ni.id+'"] .agtext'); if(ta) ta.focus(); } return; }
@@ -3163,7 +3544,7 @@ document.addEventListener("keydown",function(e){ if(e.key==="Escape"){ document.
    as the room password, so even the connection set-up messages on the relays are encrypted with it. */
 var APP_ID="dijitalteam-speechcraft-v2";
 var NET={room:null,act:null,mode:null,code:"",status:"off",msg:"",info:{},peers:[],synced:false,decided:false,pushT:null,relayT:null,
-  push:function(){ if(!NET.room) return; clearTimeout(NET.pushT); NET.pushT=setTimeout(function(){ sendAll({t:"state",state:S}); },120); },
+  push:function(){ if(!NET.room||!NET.synced) return; clearTimeout(NET.pushT); NET.pushT=setTimeout(function(){ sendAll({t:"state",state:S}); },120); },
   hello:function(){ if(!NET.room) return; sendAll({t:"who",role:L.role,roles:myRoles(),name:myName(),v:APP_VERSION}); refreshPeers(); }
 };
 function flags(m){ m.host=NET.mode==="host"; m.synced=NET.synced||NET.mode==="host"; if(PRACTICE) m.pr=1; return m; }
@@ -3195,7 +3576,9 @@ function refreshPeers(){
   var osig=list.map(function(p){return nkey(p.name||"");}).sort().join("|");
   if(osig!==NET.onSig){ NET.onSig=osig; if(L.role==="coord"&&curView()==="role"&&coTab()==="setup") laterRender(); }
   if(NET.room){
-    if(list.length>1 || NET.mode==="host") setStatus("on");
+    if(NET.mode==="join"&&NET.synced&&list.length===1) NET.awaitingSnapshot=true;
+    if(NET.mode==="host" || (list.length>1 && NET.synced&&!NET.awaitingSnapshot)) setStatus("on");
+    else if(list.length>1) setStatus("wait","Connected to a device. Waiting for the shared meeting data…");
     else if(NET.status!=="wait") setStatus("wait", NET.synced?"Waiting for the others to reconnect…":"Looking for meeting "+fmtCode(NET.code)+"…");
     else { renderConnBtn(); renderRoles(); refreshWelcome(); }
   }
@@ -3204,16 +3587,21 @@ function relayCount(){ try{ var m=Trystero.getRelaySockets(); return Object.keys
 function startMeeting(code,asHost){
   stopNet(true);
   if(typeof Trystero==="undefined"){ setStatus("err","The connection library didn't load."); return; }
-  NET.mode=asHost?"host":"join"; NET.code=code; NET.info={}; NET.peers=[]; L.lastCode=code; L.lastHost=!!asHost; NET.synced=!!asHost; NET.decided=!!asHost;
+  NET.mode=asHost?"host":"join"; NET.code=code; NET.info={}; NET.peers=[]; L.lastCode=code; L.lastHost=!!asHost; NET.synced=!!asHost; NET.awaitingSnapshot=!asHost; NET.lastSync=0; NET.decided=!!asHost;
   L.conn={mode:NET.mode,code:code}; saveL();
   var cfg={appId:APP_ID,password:"dtc-speechcraft|"+code};
   try{ var q=new URLSearchParams(location.search).get("relay"); if(q) cfg.relayConfig={urls:[q],redundancy:1}; }catch(e){}
   try{ NET.room=Trystero.joinRoom(cfg,"meeting-"+code.toLowerCase()); }
   catch(e){ setStatus("err","Couldn't start the connection: "+(e&&e.message||e)); return; }
-  NET.act=NET.room.makeAction("m");
-  NET.act.onMessage=function(data,ctx){ onMsg(ctx&&ctx.peerId,data); };
-  NET.room.onPeerJoin=function(pid){ sendTo(pid,{t:"hello",role:L.role,roles:myRoles(),name:myName(),v:APP_VERSION,state:S}); };
-  NET.room.onPeerLeave=function(pid){ delete NET.info[pid]; refreshPeers(); };
+  var room=NET.room;
+  NET.act=room.makeAction("m");
+  NET.act.onMessage=function(data,ctx){ if(NET.room===room) onMsg(ctx&&ctx.peerId,data); };
+  room.onPeerJoin=function(pid){
+    if(NET.room!==room) return;
+    sendHello(pid);
+    if(NET.awaitingSnapshot) sendTo(pid,{t:"state-request"});
+  };
+  room.onPeerLeave=function(pid){ if(NET.room===room){ delete NET.info[pid]; refreshPeers(); } };
   setStatus(asHost?"on":"wait", asHost?"":"Looking for meeting "+fmtCode(code)+"…");
   refreshPeers();
   clearTimeout(NET.relayT);
@@ -3228,10 +3616,16 @@ function startMeeting(code,asHost){
 function startHost(code){ startMeeting(code,true); }
 function startJoin(code){ startMeeting(code,false); }
 function stopNet(keep){
+  if(!keep) NET.reconnecting=false;
   clearTimeout(NET.relayT); clearTimeout(NET.pushT);
   if(NET.room){ try{ sendAll({t:"bye"}); }catch(e){} var r=NET.room; NET.room=null; NET.act=null; try{ r.leave(); }catch(e){} }
-  NET.info={}; NET.peers=[];
+  NET.info={}; NET.peers=[]; NET.synced=false;
   if(!keep){ NET.mode=null; NET.code=""; L.conn=null; saveL(); setStatus("off"); renderAll(); }
+}
+function sendHello(pid){
+  var message={t:"hello",role:L.role,roles:myRoles(),name:myName(),v:APP_VERSION};
+  if(NET.synced) message.state=S;
+  sendTo(pid,message);
 }
 var prSwitching=false;
 function onMsg(pid,m){
@@ -3248,33 +3642,48 @@ function onMsg(pid,m){
   if(m.t==="bye"){ delete NET.info[pid]; refreshPeers(); return; }
   if(m.t==="hello"||m.t==="who"||m.t==="ping"||!known){
     NET.info[pid]={roles:Array.isArray(m.roles)?m.roles.slice(0,12).map(String):(known&&known.roles)||null,role:String(m.role||(known&&known.role)||"").slice(0,10),name:String(m.name!=null?m.name:(known&&known.name)||"").slice(0,60),host:!!m.host,v:String(m.v||(known&&known.v)||"").slice(0,40),last:now()};
-    if(!known && m.t!=="hello") sendTo(pid,{t:"hello",role:L.role,roles:myRoles(),name:myName(),v:APP_VERSION,state:S});
+    if(!known && m.t!=="hello") sendHello(pid);
     refreshPeers();
   } else { known.last=now(); known.host=!!m.host; if(Array.isArray(m.roles)) known.roles=m.roles.slice(0,12).map(String); }
   if(m.t==="pingrt"){ sendTo(pid,{t:"pongrt",ts:m.ts}); return; }
   if(m.t==="pongrt"){ CC.rtt[pid]=Math.max(0,now()-(+m.ts||now())); renderCC(); return; }
-  if(m.t==="ping") return;
-  if(m.state&&typeof m.state==="object"){
-    var remote; try{ remote=normalize(clone(m.state)); }catch(e){ return; }
-    var meSynced=NET.synced||NET.mode==="host", themSynced=!!(m.synced||m.host), mode;
-    if(remote.mid!==S.mid){
-      if(meSynced && !themSynced) mode="keep";                 /* they'll take our meeting */
-      else if(!meSynced && !themSynced) mode="keep";           /* two newcomers: wait for the meeting */
-      else if(!meSynced && themSynced){                         /* first contact with the meeting */
-        /* practice: this device's own sample copy is disposable, so always use the host's practice meeting (no question, no duplicates) */
-        if(PRACTICE || NET.decided || meetingEmpty(S) || (L.syncedMid===S.mid && remote.midU>S.midU)) mode="adopt";
-        else mode = confirm(describeMeeting(S)+" is on this device.\n\nOK = bring it into this meeting\nCancel = discard it and use the meeting's data") ? "absorb" : "adopt";
-        NET.decided=true;
-      }
-    }
-    var changed=mergeInto(S,remote,mode);
-    if(S.mid===remote.mid && (themSynced||meSynced)){ if(!NET.synced){ NET.synced=true; refreshPeers(); } if(L.syncedMid!==S.mid){ L.syncedMid=S.mid; saveL(); } }
-    if(changed){ save(); softRender(); wake(); }
-    if(stable(S)!==stable(remote)) sendTo(pid,{t:"state",state:S});
+  if(m.t==="state-request"){ if(NET.synced) sendTo(pid,{t:"state",state:S}); return; }
+  if(!m.state||typeof m.state.mid!=="string"||!m.state.mid||!(m.host||m.synced)) return;
+  var remote; try{ remote=normalize(clone(m.state)); }catch(e){ return; }
+  var changed=false;
+  if(remote.mid!==S.mid){
+    /* Only an already synced peer can provide the first copy. After that, the host can switch meetings. */
+    if(NET.synced&&(NET.mode==="host"||!m.host)) return;
+    if(!PRACTICE) autoSaveRecord("Before joining "+fmtCode(NET.code),true);
+    S=remote;
+    shadowSync();
+    changed=true;
+  } else {
+    changed=mergeInto(S,remote);
   }
+  var first=!NET.synced||NET.awaitingSnapshot;
+  NET.synced=true; NET.awaitingSnapshot=false; NET.reconnecting=false; NET.lastSync=now();
+  if(L.syncedMid!==S.mid){ L.syncedMid=S.mid; saveL(); }
+  if(changed){ save(); softRender(); wake(); }
+  if(first){ refreshPeers(); NET.hello(); }
+  if(stable(S)!==stable(remote)) sendTo(pid,{t:"state",state:S});
 }
-/* heartbeat: keep the online list honest when a phone locks or loses signal */
-setInterval(function(){ if(!NET.room) return; sendAll({t:"ping",role:L.role,roles:myRoles(),name:myName()}); refreshPeers(); },5000);
+/* Retry the initial snapshot separately from transport liveness. */
+setInterval(function(){
+  if(!NET.room) return;
+  sendAll({t:"ping",role:L.role,roles:myRoles(),name:myName()});
+  if(NET.awaitingSnapshot) sendAll({t:"state-request"});
+  refreshPeers();
+},5000);
+window.addEventListener("offline",function(){
+  if(NET.mode!=="join"||!NET.room) return;
+  NET.reconnecting=NET.synced;
+  stopNet(true);
+  setStatus("wait","Network disconnected. Reconnecting when you’re back online…");
+});
+window.addEventListener("online",function(){
+  if(NET.mode==="join"&&!NET.room&&NET.code) startJoin(NET.code);
+});
 function sayBye(){ if(NET.room) sendAll({t:"bye"}); }
 function describeMeeting(st){
   var parts=[], sp=0; SESSIONS.forEach(function(s){ sp+=st.rows[s.id].length; });
@@ -3283,12 +3692,18 @@ function describeMeeting(st){
   return "Data from "+(st.meta.week||"another meeting")+" ("+parts.join(", ")+")";
 }
 function roleName(id){ var r=ROLES.find(function(x){return x.id===id;}); return r?r.icon+" "+r.name:"Device"; }
+function syncStatusLabel(){
+  if(!NET.mode) return "Not connected";
+  if(NET.status==="err") return "Connection problem";
+  if(NET.status==="on") return NET.mode==="host"&&NET.peers.length<2?"Hosting":"Synced";
+  if(NET.synced||NET.reconnecting) return "Reconnecting";
+  return NET.peers.length>1?"Waiting for meeting data":"Connecting";
+}
 function renderConnBtn(){
   var b=document.getElementById("connBtn"), tx=document.getElementById("connTxt");
   b.className="conn"+(NET.status==="on"?" on":NET.status==="wait"?" wait":NET.status==="err"?" err":"");
-  if(!NET.mode) tx.textContent="Not connected";
-  else if(NET.status==="on") tx.textContent=fmtCode(NET.code)+" · "+Math.max(onlinePeople().length,1)+" online";
-  else tx.textContent=NET.status==="err"?"Connection problem":"Connecting "+fmtCode(NET.code)+"…";
+  tx.textContent=syncStatusLabel()+(NET.mode?" · "+fmtCode(NET.code):"")+(NET.status==="on"&&NET.peers.length>1?" · "+onlinePeople().length+" online":"");
+  b.title=NET.lastSync?"Last meeting data received at "+new Date(NET.lastSync).toLocaleTimeString():syncStatusLabel();
 }
 function renderConnBox(){
   var h="";
@@ -3297,14 +3712,15 @@ function renderConnBox(){
        '<div class="card" style="margin-bottom:10px"><b>Host this meeting</b><div class="saved" style="margin:4px 0 8px">Usually the Coordinator or Timer. You get a code and QR for the others.</div><button class="btn primary" id="hostBtn">Host meeting &amp; get code</button></div>'+
        '<div class="card"><b>Join a meeting</b><div class="saved" style="margin:4px 0 8px">Type the code the host gives you.</div><div class="row"><input class="t" id="joinCode" placeholder="e.g. K7Q-M4P" maxlength="9" style="text-transform:uppercase;letter-spacing:2px;font-weight:700"><button class="btn primary" id="joinBtn">Join</button></div></div>';
   } else {
-    h+='<h3>'+(NET.mode==="host"?"You're hosting this meeting":"Connected to meeting")+'</h3>';
+    h+='<h3>'+(NET.mode==="host"?"You're hosting this meeting":(NET.synced?"Connected to meeting":"Joining meeting"))+'</h3>';
     h+='<div class="saved">Share the code, or let people scan a QR code below with their phone camera.</div>';
-    h+='<div class="code">'+fmtCode(NET.code)+'</div>';
+    h+='<div class="code">'+fmtCode(NET.code)+'</div><div role="status"><b>'+syncStatusLabel()+'</b>'+
+      (NET.lastSync?' · Last meeting data received at '+esc(new Date(NET.lastSync).toLocaleTimeString()):'')+'</div>';
     if(NET.status!=="on") h+='<div class="'+(NET.status==="err"?"connerr":"saved")+'">'+esc(NET.msg||"Connecting…")+'</div>';
     if(NET.peers.length){ var ppl=onlinePeople(); h+='<b>Online: '+ppl.length+' '+(ppl.length===1?'person':'people')+' on '+NET.peers.length+' device'+(NET.peers.length===1?'':'s')+'</b><ul class="devlist">'+ppl.map(function(p){ return '<li>'+peopleRoleNames(p)+(p.name?' — '+esc(p.name):'')+devTag(p)+(p.me?' <span class="saved">(you)</span>':'')+(p.host?' <span class="saved">(started the meeting)</span>':'')+'</li>'; }).join("")+'</ul>'; }
     var rr=ROLES.find(function(x){return x.id===L.role;});
     h+='<div class="qrpair"><div><b>Others join</b>'+qrSvg(inviteLink(NET.code))+'<div class="saved">They scan, then pick their role</div></div>'+
-       '<div><b>📱 My role on my phone</b>'+qrSvg(roleLink(NET.code,L.role))+'<div class="saved">Opens as '+rr.icon+' '+rr.name+' with the same data</div></div></div>';
+       '<div><b>📱 My role on my phone</b>'+qrSvg(myDeviceLink())+'<div class="saved">Opens as '+rr.icon+' '+rr.name+' with the same data</div></div></div>';
     h+='<div class="row" style="justify-content:space-between;margin-top:10px"><span class="row"><button class="btn" id="copyCode">Copy code</button><button class="btn" id="copyLink">Copy invite link</button></span><button class="btn" id="leaveBtn">Leave meeting</button></div>';
   }
   h+='<div class="note">🔒 Devices connect directly to each other and the link is encrypted (WebRTC). Public Nostr relays only help devices find each other, and even those messages are encrypted with your meeting code. Your meeting data never passes through them. Needs internet on every device. If a strict office network blocks it, use the same Wi-Fi or a phone hotspot. Anyone can close the page; the others stay connected.</div>'+
@@ -3315,7 +3731,7 @@ document.getElementById("connBtn").addEventListener("click",function(){ renderCo
 document.getElementById("connBox").addEventListener("click",function(e){
   var t=e.target;
   if(t.closest("#hostBtn")){ startHost(makeCode()); renderConnBox(); }
-  else if(t.closest("#joinBtn")){ var c=cleanCode(document.getElementById("joinCode").value); if(c.length!==6){ alert("The code has 6 letters/numbers, e.g. K7Q-M4P."); return; } startJoin(c); renderConnBox(); }
+  else if(t.closest("#joinBtn")){ var c=cleanCode(document.getElementById("joinCode").value); if(c.length!==6){ alert("The code has 6 letters/numbers, e.g. K7Q-M4P."); return; } document.getElementById("connModal").classList.remove("on"); W.code=c; W.advance=!L.setup; W.auto=!!L.setup; startJoin(c); openWelcome("connect"); }
   else if(t.closest("#leaveBtn")){ if(confirm("Leave this meeting on this device? The others stay connected, and you keep your data.")){ stopNet(false); renderConnBox(); } }
   else if(t.closest("#copyCode")){ try{ navigator.clipboard.writeText(fmtCode(NET.code)); t.textContent="Copied"; }catch(err){} }
   else if(t.closest("#copyLink")){ try{ navigator.clipboard.writeText(inviteLink(NET.code)); t.textContent="Link copied"; }catch(err){} }
@@ -3337,7 +3753,7 @@ function renderPhoneQR(){
   if(!NET.room){
     h+='<p class="muted">Your phone gets this role\'s data through a meeting connection. Start one now (it also lets the other roles join), then scan the code.</p><button class="btn primary big1" id="qrStart">Start meeting &amp; show QR</button>';
   } else {
-    var link=roleLink(NET.code,L.role);
+    var link=myDeviceLink();
     h+='<p class="muted" style="margin-top:0">Scan with your phone camera. It opens as <b>'+r.icon+' '+r.name+'</b> in meeting <b>'+fmtCode(NET.code)+'</b>, and all the data comes across. Keep this page open until the phone shows ✓ Connected.</p>'+
        '<div class="qrwrap">'+qrSvg(link)+'</div><div class="row" style="justify-content:center"><button class="btn" id="qrCopy">Copy link</button></div>'+
        '<div class="saved" style="margin-top:6px;word-break:break-all">'+esc(link)+'</div>'+
@@ -3346,11 +3762,14 @@ function renderPhoneQR(){
   h+='<div style="text-align:right;margin-top:12px"><button class="btn" id="qrClose">Close</button></div>';
   document.getElementById("qrBox").innerHTML=h;
 }
+function myDeviceLink(){
+  return roleLink(NET.code,L.role)+(L.me?'&person='+encodeURIComponent(L.me):'');
+}
 function openPhoneQR(){ renderPhoneQR(); document.getElementById("qrModal").classList.add("on"); }
 document.getElementById("qrBox").addEventListener("click",function(e){
   var t=e.target;
   if(t.closest("#qrStart")){ startHost(makeCode()); renderPhoneQR(); }
-  else if(t.closest("#qrCopy")){ try{ navigator.clipboard.writeText(roleLink(NET.code,L.role)); t.textContent="Copied ✓"; }catch(err){} }
+  else if(t.closest("#qrCopy")){ try{ navigator.clipboard.writeText(myDeviceLink()); t.textContent="Copied ✓"; }catch(err){} }
   else if(t.closest("#qrClose")) document.getElementById("qrModal").classList.remove("on");
 });
 document.getElementById("qrModal").addEventListener("click",function(e){ if(e.target.id==="qrModal") e.target.classList.remove("on"); });
@@ -3360,8 +3779,8 @@ function refreshWelcome(){
   if(document.getElementById("welcome").classList.contains("on") && W.step==="guest" && !W.guestDone){ var gc=document.getElementById("gCheck"); if(gc){ var ok=NET.status==="on"&&NET.synced; gc.disabled=!ok; if(gc.nextElementSibling) gc.nextElementSibling.textContent=ok?"":(NET.msg||"Connecting to the meeting…"); } }
   if(document.getElementById("welcome").classList.contains("on") && W.step==="connect"){
     renderWelcome();
-    if(W.auto && NET.status==="on" && (NET.peers.length>1||NET.mode==="host")){ W.auto=false; setTimeout(closeWelcome,900); }
-    else if(W.advance && NET.status==="on" && NET.synced && NET.peers.length>1){ W.advance=false; setTimeout(function(){ if(W.step==="connect"){ W.step="role"; renderWelcome(); } },700); }
+    if(W.auto && NET.synced && NET.status==="on" && (NET.peers.length>1||NET.mode==="host")){ W.auto=false; closeWelcome(); }
+    else if(W.advance && NET.status==="on" && NET.synced && NET.peers.length>1){ W.advance=false; W.step="role"; renderWelcome(); }
   }
   if(document.getElementById("qrModal").classList.contains("on")) renderPhoneQR();
 }
@@ -3405,7 +3824,7 @@ function connStatusHTML(){
 }
 function welcomeBackHTML(){ var w=welcomeBack0(); return w?w+upcomingHTML(true):""; }
 function welcomeBack0(){
-  if(!L.setup) return "";
+  if(!L.setup||(NET.mode==="join"&&!NET.synced)) return "";
   var nm=L.me||myName(), rs=myRoles().map(roleObj).filter(Boolean); if(!nm&&!rs.length) return "";
   var last=L.lastCode&&!NET.mode?L.lastCode:"";
   return '<div class="wcard wback"><div class="wbh">👋 Welcome back'+(nm?', <b>'+esc(nm)+'</b>':'')+'</div><div class="saved">'+rs.map(function(r){return r.icon+' '+r.name;}).join(" + ")+'</div>'+
@@ -3429,7 +3848,7 @@ function renderWelcome(){
          '<div class="wfoot"><span class="row"><button class="linkbtn" id="wSolo">Continue without connecting</button>'+(PRACTICE?'':'<button class="linkbtn" id="wPractice">🎓 Practice meeting</button>')+'</span><span class="saved">🔒 Encrypted direct connection · needs internet</span></div>';
     }
   } else {
-    var today=agendaRolesFor(wName().trim());
+    var today=uniq(agendaRolesFor(wName().trim()).concat(selectedRoles(wName())));
     if(W.add) h+='<div class="wcard" style="margin-bottom:8px"><b>＋ Add a role</b><div class="saved">Pick the extra role you’re doing today. Your other roles stay open.</div></div>';
     else h+=wNamesHTML();
     h+='<div class="saved" id="wToday" style="margin:10px 0 2px">'+wTodayText(today)+'</div><div id="wGrid">'+roleGridHTML(today)+'</div>';
@@ -3438,14 +3857,15 @@ function renderWelcome(){
   if(!who) h+='<div class="wlinks"><button class="linkbtn" id="wReport">💬 Report a problem or idea</button><a class="linkbtn" href="'+REPO_URL+'" target="_blank" rel="noopener">Open on GitHub ↗</a><a class="linkbtn" href="'+REPO_URL+'/issues" target="_blank" rel="noopener">Known issues &amp; ideas ↗</a></div>';
   document.getElementById("wbox").innerHTML=h;
 }
-function wRefreshWho(){ var t=agendaRolesFor(wName().trim()), g=document.getElementById("wGrid"); if(g) g.innerHTML=roleGridHTML(t); var tt=document.getElementById("wToday"); if(tt) tt.innerHTML=wTodayText(t); var nb=document.getElementById("wNext"); if(nb){ nb.textContent=wStartLabel(); nb.disabled=!(W.sel||[]).length; } document.querySelectorAll("[data-wname]").forEach(function(c){ c.classList.toggle("active",nkey(c.dataset.wname)===nkey(wName())); }); }
+function wRefreshWho(){ var t=uniq(agendaRolesFor(wName().trim()).concat(selectedRoles(wName()))), g=document.getElementById("wGrid"); if(g) g.innerHTML=roleGridHTML(t); var tt=document.getElementById("wToday"); if(tt) tt.innerHTML=wTodayText(t); var nb=document.getElementById("wNext"); if(nb){ nb.textContent=wStartLabel(); nb.disabled=!(W.sel||[]).length; } document.querySelectorAll("[data-wname]").forEach(function(c){ c.classList.toggle("active",nkey(c.dataset.wname)===nkey(wName())); }); }
 function wFinish(){
   var sel=(W.sel||[]).slice(); if(!sel.length) return;
   var nmEl=document.getElementById("wName"), nm=W.name!=null?String(W.name).trim():(nmEl?nmEl.value.trim():"");
-  if(W.add){ myRoles(); sel.forEach(function(r){ if(L.roles.indexOf(r)<0) L.roles.push(r); }); L.role=sel[0]; W.add=false; }
+  sel=uniq(sel.concat(selectedRoles(nm)));
+  if(W.add){ L.roles=myRoles(); sel.forEach(function(r){ if(L.roles.indexOf(r)<0) L.roles.push(r); }); L.role=sel[0]; W.add=false; }
   else { L.roles=sel; L.role=sel[0]; }
   if(nm){ var keep=L.role; sel.forEach(function(r){ L.role=r; if(nm!==myName()) setMyName(nm); }); L.role=keep; L.me=nm; }
-  saveL(); NET.hello(); closeWelcome();
+  L.rolesMid=S.mid; saveRoleChoices(sel,true); saveL(); NET.hello(); closeWelcome();
 }
 var wbox=document.getElementById("wbox");
 wbox.addEventListener("input",function(e){ if(e.target.id!=="wName") return; W.name=e.target.value; wRefreshWho(); });
@@ -3454,18 +3874,18 @@ wbox.addEventListener("click",function(e){
   if(t.closest("#wPractice")){ location.href=practiceUrl(true); return; }
   if(t.closest("#wReport")){ openFb(); return; }
   if((b=t.closest("[data-wrole]"))){ var r=b.dataset.wrole; W.sel=W.sel||[]; var i=W.sel.indexOf(r); if(i>=0) W.sel.splice(i,1); else W.sel.push(r); wRefreshWho(); return; }
-  if((b=t.closest("[data-wname]"))){ W.name=b.dataset.wname; var ni=document.getElementById("wName"); if(ni) ni.value=""; var td=agendaRolesFor(W.name); if(!W.add) W.sel=td.slice(); wRefreshWho(); return; }
-  if(t.closest("#wSelToday")){ W.sel=uniq((W.sel||[]).concat(agendaRolesFor(wName().trim()))); wRefreshWho(); return; }
+  if((b=t.closest("[data-wname]"))){ W.name=b.dataset.wname; var ni=document.getElementById("wName"); if(ni) ni.value=""; var td=uniq(agendaRolesFor(W.name).concat(selectedRoles(W.name))); if(!W.add) W.sel=td.slice(); wRefreshWho(); return; }
+  if(t.closest("#wSelToday")){ W.sel=uniq((W.sel||[]).concat(agendaRolesFor(wName().trim()),selectedRoles(wName()))); wRefreshWho(); return; }
   if(t.closest("#wNext")){ wFinish(); return; }
-  if(t.closest("#wNextWho")||t.closest("#wChange")){ W.step="role"; renderWelcome(); return; }
+  if(t.closest("#wNextWho")||t.closest("#wChange")){ if(NET.mode==="join"&&(!NET.synced||NET.status!=="on")) return; W.step="role"; renderWelcome(); return; }
   if(t.closest("#wToJoin")||t.closest("#wToJoin2")){ if(W.add) return; W.step="connect"; renderWelcome(); return; }
   if(t.closest("#wCancel")){ W.add=false; closeWelcome(); return; }
   if(t.closest("#wJoin")){ var code=cleanCode(document.getElementById("wCode").value); if(code.length!==6){ alert("The meeting code has 6 letters/numbers, e.g. K7Q-M4P."); return; } W.code=code; W.advance=true; startJoin(code); renderWelcome(); return; }
   if(t.closest("#wHost")){ startHost(makeCode()); renderWelcome(); return; }
   if(t.closest("#wRejoin")){ var lc=L.lastCode; W.code=lc; if(L.lastHost) startHost(lc); else startJoin(lc); W.auto=true; renderWelcome(); return; }
-  if(t.closest("#wSolo2")){ closeWelcome(); return; }
+  if(t.closest("#wSolo2")){ if(NET.mode==="join"&&!NET.synced) return; closeWelcome(); return; }
   if(t.closest("#wSolo")){ if(L.setup&&!W.fresh){ closeWelcome(); return; } W.step="role"; renderWelcome(); return; }
-  if(t.closest("#wDone")){ closeWelcome(); return; }
+  if(t.closest("#wDone")){ if(NET.mode==="join"&&(!NET.synced||NET.status!=="on")) return; closeWelcome(); return; }
   if(t.closest("#wLeave")){ stopNet(false); W.code=""; W.step="connect"; document.getElementById("welcome").classList.add("on"); renderWelcome(); return; }
   if(t.closest("#wCopyCode")){ try{ navigator.clipboard.writeText(fmtCode(NET.code)); t.textContent="Copied ✓"; }catch(err){} return; }
   if(t.closest("#wCopyLink")){ try{ navigator.clipboard.writeText(inviteLink(NET.code)); t.textContent="Link copied ✓"; }catch(err){} return; }
@@ -3478,16 +3898,47 @@ wbox.addEventListener("keydown",function(e){
 
 /* ---------- one person, several roles on the same device ---------- */
 function roleObj(id){ return ROLES.find(function(x){return x.id===id;}); }
-function myRoles(){ if(!Array.isArray(L.roles)||!L.roles.length) L.roles=[L.role]; if(L.roles.indexOf(L.role)<0) L.roles.push(L.role); return L.roles; }
-function switchRole(id){ L.view="role"; myRoles(); if(L.roles.indexOf(id)<0) L.roles.push(id); L.role=id; saveL(); NET.hello(); renderAll(); window.scrollTo(0,0); }
-function dropRole(id){ myRoles(); if(L.roles.length<2) return; L.roles=L.roles.filter(function(r){return r!==id;}); if(L.role===id) L.role=L.roles[0]; saveL(); NET.hello(); renderAll(); }
+function selectedRoles(name){
+  var key=nkey(name);
+  return key?S.roleChoices.filter(function(c){return c.person===key&&c.on&&roleObj(c.role);}).map(function(c){return c.role;}):[];
+}
+function saveRoleChoices(roles,on){
+  var person=nkey(L.me);
+  if(!person) return;
+  roles.forEach(function(role){
+    var c=upsert(["roleChoices"],"role|"+JSON.stringify([person,role]),{person:person,role:role});
+    c.on=on; tick(c);
+  });
+  commitQuiet();
+}
+function myRoles(){
+  var person=nkey(L.me), roles=Array.isArray(L.roles)?L.roles:[L.role];
+  if(L.rolesMid && L.rolesMid!==S.mid) roles=[L.role];
+  var removed=S.roleChoices.filter(function(c){return person&&c.person===person&&!c.on;}).map(function(c){return c.role;});
+  var result=uniq(roles.concat(selectedRoles(L.me))).filter(function(r){return roleObj(r)&&!removed.includes(r);});
+  if(!result.length) return [L.role];
+  if(removed.includes(L.role)){ L.role=result[0]; saveL(); }
+  return result.includes(L.role)?result:result.concat(L.role);
+}
+function switchRole(id){ L.view="role"; L.roles=myRoles(); if(!L.roles.includes(id)) L.roles.push(id); L.rolesMid=S.mid; L.role=id; saveL(); NET.hello(); renderAll(); window.scrollTo(0,0); }
+function dropRole(id){ L.roles=myRoles(); if(L.roles.length<2) return; saveRoleChoices([id],false); L.roles=L.roles.filter(function(r){return r!==id;}); if(L.role===id) L.role=L.roles[0]; saveL(); NET.hello(); renderAll(); }
+/* Stored evaluator pairs can outlive the speaker's place on the agenda. */
+function agendaPreparedSpeakers(){
+  return Object.hasOwn(S.agenda.assign,"speakers")?asList("speakers"):preparedSpeakers();
+}
+function activeEvaluatorPairs(kind){
+  var names=(kind==="ps"?agendaPreparedSpeakers():ttSpeakers()).map(nkey);
+  return (kind==="ps"?S.assigns:S.ttassign).filter(function(pair){
+    return pair.evaluator&&names.includes(nkey(pair.speaker));
+  });
+}
 /* roles the agenda gives this person today */
 function agendaRoleNames(role){
   switch(role){
     case "keynote": return asList("keynote").concat(S.presentations.map(function(p){ return p.name; }));
-    case "speaker": return asList("speakers").concat(S.assigns.map(function(a){ return a.speaker; }));
-    case "seval": return asList("sevals").concat(S.assigns.map(function(a){ return a.evaluator; }));
-    case "tteval": return asList("ttevals").concat(S.ttassign.map(function(a){ return a.evaluator; }));
+    case "speaker": return agendaPreparedSpeakers();
+    case "seval": return asList("sevals").concat(activeEvaluatorPairs("ps").map(function(a){ return a.evaluator; }));
+    case "tteval": return asList("ttevals").concat(activeEvaluatorPairs("tt").map(function(a){ return a.evaluator; }));
     case "member": return [];
     default: return asList(role);
   }
@@ -3505,8 +3956,8 @@ function agendaRolesFor(name){
 }
 function roleTabsHTML(){
   var rs=myRoles(), h='<div class="rtabs">';
-  rs.forEach(function(id){ var r=roleObj(id); h+='<button class="rtab'+(id===L.role?' on':'')+'" data-rtab="'+id+'">'+r.icon+' '+esc(r.name)+(rs.length>1&&id!==L.role?'<span class="rx" data-rdrop="'+id+'" title="Remove this role from this device">✕</span>':'')+'</button>'; });
-  h+='<button class="rtab add" data-radd title="Add another role on this device">＋ Role</button></div>';
+  rs.forEach(function(id){ var r=roleObj(id); h+='<button class="rtab'+(id===L.role?' on':'')+'" data-rtab="'+id+'">'+r.icon+' '+esc(r.name)+(rs.length>1&&id!==L.role?'<span class="rx" data-rdrop="'+id+'" title="Remove this role from your devices">✕</span>':'')+'</button>'; });
+  h+='<button class="rtab add" data-radd title="Add another role">＋ Role</button></div>';
   var miss=agendaRolesFor(L.me||myName()).filter(function(r){ return rs.indexOf(r)<0; });
   if(miss.length) h+='<div class="rsuggest">📋 The agenda also has you as '+miss.map(function(r){var o=roleObj(r);return o.icon+' '+esc(o.name);}).join(", ")+' <button class="btn sm" data-raddall="'+miss.join(",")+'">Add '+(miss.length>1?'them':'it')+'</button></div>';
   return h;
@@ -3544,6 +3995,36 @@ function nextLive(its,from){ for(var j=from;j<its.length;j++) if(!isSkipped(its[
 function runMoveEnd(id){ var ids=runItems().map(function(x){return x.id;}).filter(function(x){return x!==id;}); ids.push(id); S.run.order=ids; tick(S.run); commit(); }
 function runToggleSkip(id){ S.run.skip=S.run.skip||{}; if(S.run.skip[id]) delete S.run.skip[id]; else S.run.skip[id]=true; tick(S.run); commit(); }
 
+
+/* Prepared speeches share the Timer's queue. Only upcoming prepared rows move. */
+function queuedPreparedRows(){
+  return S.rows.ps.filter(function(row){
+    return rowState(row)==="idle" && row.name.trim() && !String(row.ak||"").startsWith("keynote:");
+  });
+}
+function movePreparedSpeaker(id,destination){
+  var queue=queuedPreparedRows(), from=queue.findIndex(function(row){return row.id===id;});
+  if(from<=0) return;
+  var slots=queue.map(function(row){return S.rows.ps.indexOf(row);});
+  var row=queue.splice(from,1)[0];
+  queue.splice(destination==="next"?0:from-1,0,row);
+  slots.forEach(function(slot,i){ S.rows.ps[slot]=queue[i]; });
+  S.rows.ps.forEach(function(entry,i){
+    if(entry.ord!==i+1){ entry.ord=i+1; tick(entry); }
+  });
+  commit();
+}
+function preparedRunHTML(edit){
+  var queue=queuedPreparedRows();
+  if(!queue.length) return "";
+  return '<section class="card"><h2 class="sec">Upcoming prepared speakers</h2><ol>'+queue.map(function(row,i){
+    var name=baseName(row.name), evaluator=evaluatorOf(name), title=speechTitle(name);
+    return '<li><b>'+esc(name)+'</b>'+(title?' · '+esc(title):'')+
+      (evaluator?' · Evaluator: '+esc(evaluator):'')+
+      (edit&&i>0?' <button class="btn sm" data-speech-order="'+esc(row.id)+'" data-destination="up" aria-label="Move up '+esc(name)+'">Move up</button>'+
+        ' <button class="btn sm" data-speech-order="'+esc(row.id)+'" data-destination="next" aria-label="Speak next: '+esc(name)+'">Speak next</button>':'')+'</li>';
+  }).join("")+'</ol></section>';
+}
 /* ---------- who's coming (RSVP) and role clashes ---------- */
 var RSVP_OPTS=[["in","In person"],["online","Online"],["no","Can't make it"]];
 function rsvpOf(name){ return S.rsvp.find(function(r){ return r.id==="rv|"+nkey(name); }); }
@@ -3563,15 +4044,71 @@ function rsvpHTML(name){
 function setRsvp(name,status,note){ var r=upsert(["rsvp"],"rv|"+nkey(name),{name:name,status:"",note:""}); r.name=name; if(status!=null) r.status=status; if(note!=null) r.note=note; tick(r); }
 function roleClashes(){
   var out=[];
-  AROLES.forEach(function(a){ asList(a.k).forEach(function(n){ var r=rsvpOf(n); if(r&&(r.status==="no"||r.note)) out.push({role:a.n,name:n,status:r.status,note:r.note}); }); });
-  S.assigns.forEach(function(a){ var r=a.evaluator&&rsvpOf(a.evaluator); if(r&&r.status==="no") out.push({role:"Evaluator for "+a.speaker,name:a.evaluator,status:"no",note:r.note}); });
+  function add(key,role,name){
+    var r=rsvpOf(name);
+    if(r&&(r.status==="no"||r.note)) out.push({key:key,role:role,name:name,status:r.status,note:r.note});
+  }
+  AROLES.forEach(function(a){
+    asList(a.k).forEach(function(name){ add(a.k,a.n,name); });
+  });
+  S.assigns.forEach(function(a){ if(a.evaluator) add("evaluation|"+a.id,"Evaluator for "+a.speaker,a.evaluator); });
+  S.ttassign.forEach(function(a){ if(a.evaluator) add("topics|"+a.id,"Table Topics evaluator for "+a.speaker,a.evaluator); });
   return out;
+}
+function replaceRolePlayer(key,oldName,replacement){
+  if(!replacement||nkey(oldName)===nkey(replacement)||rsvpOf(replacement)?.status==="no") return false;
+  var pairKey=key.startsWith("evaluation|")?"assigns":key.startsWith("topics|")?"ttassign":null;
+  if(pairKey){
+    var pair=S[pairKey].find(function(a){return a.id===key.slice(key.indexOf("|")+1);});
+    if(!pair||nkey(pair.evaluator)!==nkey(oldName)||nkey(pair.speaker)===nkey(replacement)) return false;
+    pair.evaluator=replacement; tick(pair);
+  } else {
+    var role=AROLES.find(function(a){return a.k===key;}), assignedNames=asList(key);
+    if(!role||!assignedNames.some(function(n){return nkey(n)===nkey(oldName);})) return false;
+    if(key==="speakers"){
+      if(assignedNames.some(function(n){return nkey(n)===nkey(replacement);})||
+        S.rows.ps.some(function(row){return nkey(baseName(row.name))===nkey(oldName)&&rowState(row)!=="idle";})) return false;
+      var evaluation=S.assigns.find(function(a){return nkey(a.speaker)===nkey(oldName)&&a.evaluator;});
+      if(evaluation&&!S.assigns.some(function(a){return nkey(a.speaker)===nkey(replacement)&&a.evaluator;})){
+        var newPair=upsert(["assigns"],"as|"+nkey(replacement),{speaker:replacement});
+        newPair.evaluator=nkey(evaluation.evaluator)===nkey(replacement)?"":evaluation.evaluator;
+        tick(newPair);
+      }
+      if(evaluation){ evaluation.evaluator=""; tick(evaluation); }
+      var queued=S.rows.ps.find(function(row){return row.ak==="ps:"+oldName.toLowerCase()&&rowState(row)==="idle";});
+      if(queued&&!S.rows.ps.some(function(row){return nkey(baseName(row.name))===nkey(replacement);})){
+        queued.ak="ps:"+replacement.toLowerCase(); queued.name=replacement;
+        var limits=presetLim((speechRec(replacement)||{}).lim);
+        if(limits) queued.lim=limits; else delete queued.lim;
+        tick(queued);
+      }
+    }
+    if(key==="sevals"||key==="ttevals"){
+      S[key==="sevals"?"assigns":"ttassign"].forEach(function(a){
+        if(nkey(a.evaluator)===nkey(oldName)){ a.evaluator=nkey(a.speaker)===nkey(replacement)?"":replacement; tick(a); }
+      });
+    }
+    var names=uniq(assignedNames.map(function(n){return nkey(n)===nkey(oldName)?replacement:n;}));
+    S.agenda.assign[key]=role.multi?names:names[0];
+    tick(S.agenda);
+  }
+  applyAgenda(); commit();
+  return true;
 }
 function availabilityHTML(){
   var cl=roleClashes(), all=S.rsvp.filter(function(r){return r.status;});
-  if(!all.length && !cl.length) return "";
-  var h='<section class="card" style="margin-bottom:12px"><h2 class="sec" style="margin-top:0">📅 Availability & role changes</h2>';
-  if(cl.length) h+='<div class="clash">'+cl.map(function(x){ return '<div>'+(x.status==="no"?'⚠ <b>'+esc(x.name)+'</b> ('+esc(x.role)+') can\'t make it — reassign below':'ℹ️ <b>'+esc(x.name)+'</b> ('+esc(x.role)+')')+(x.note?' · “'+esc(x.note)+'”':'')+'</div>'; }).join("")+'</div>';
+  var assignedPeople=uniq(AROLES.flatMap(function(role){return asList(role.k);})
+    .concat(S.assigns.map(function(a){return a.evaluator;}),S.ttassign.map(function(a){return a.evaluator;})));
+  var h='<section id="availability" class="card" style="margin-bottom:12px"><h2 class="sec" style="margin-top:0">📅 Availability & role changes</h2>';
+  if(assignedPeople.length){
+    h+='<div class="row"><label>Role player <select class="t" id="absentName">'+assignedPeople.filter(function(n){return rsvpOf(n)?.status!=="no";}).map(function(n){return '<option>'+esc(n)+'</option>';}).join("")+'</select></label>'+
+      '<button class="btn sm" id="markAbsent">Mark absent</button></div>';
+  }
+  if(cl.length) h+='<div class="clash">'+cl.map(function(x){
+    return '<div>'+(x.status==="no"?'⚠ ':'ℹ️ ')+'<b>'+esc(x.name)+'</b> ('+esc(x.role)+')'+(x.note?' · “'+esc(x.note)+'”':'')+
+      (x.status!=="no"?'':' · Can’t make it <span class="row"><input class="t" list="memberlist" data-replacement aria-label="Replacement for '+esc(x.role)+'" placeholder="Replacement name">'+
+      '<button class="btn sm" data-replace-role="'+esc(x.key)+'" data-old-name="'+esc(x.name)+'">Reassign</button></span>')+'</div>';
+  }).join("")+'</div>';
   h+='<div class="chips" style="margin-top:8px">'+all.map(function(r){ var o=RSVP_OPTS.find(function(x){return x[0]===r.status;}); return '<span class="chip word">'+(r.status==="no"?'✕ ':r.status==="online"?'💻 ':'✓ ')+esc(r.name)+'<span class="c">'+(o?o[1]:'')+(r.note?' · '+esc(r.note):'')+'</span></span>'; }).join("")+'</div>';
   return h+'</section>';
 }
@@ -3640,7 +4177,7 @@ function copyBtn(role){ return '<button class="btn sm" data-copyrep="'+role+'">�
     var dr=t.closest("[data-rdrop]"); if(dr){ e.stopPropagation(); dropRole(dr.dataset.rdrop); return; }
     var rt=t.closest("[data-rtab]"); if(rt){ switchRole(rt.dataset.rtab); return; }
     if(t.closest("[data-radd]")){ W.add=true; openWelcome("role"); return; }
-    var ra=t.closest("[data-raddall]"); if(ra){ ra.dataset.raddall.split(",").forEach(function(r){ if(L.roles.indexOf(r)<0) L.roles.push(r); }); saveL(); NET.hello(); renderAll(); return; }
+    var ra=t.closest("[data-raddall]"); if(ra){ var added=ra.dataset.raddall.split(","); L.roles=uniq(myRoles().concat(added)); L.rolesMid=S.mid; saveRoleChoices(added,true); saveL(); NET.hello(); renderAll(); return; }
   });
   document.getElementById("companion").addEventListener("click",function(e){
     var a=e.target.closest("[data-cmpah]");
@@ -3658,6 +4195,7 @@ function copyBtn(role){ return '<button class="btn sm" data-copyrep="'+role+'">�
     var cp=t.closest("[data-copyrep]"); if(cp){ copyText(reportText(cp.dataset.copyrep)); return; }
     var rv=t.closest("[data-rsvp]"); if(rv){ var nm=rv.dataset.rname, cur=rsvpOf(nm); setRsvp(nm,(cur&&cur.status===rv.dataset.rsvp)?"":rv.dataset.rsvp,null); commit(); return; }
     if(L.role==="tmod"){
+      var speaker=t.closest("[data-speech-order]"); if(speaker){ movePreparedSpeaker(speaker.dataset.speechOrder,speaker.dataset.destination); return; }
       var me=t.closest("[data-runend]"); if(me){ e.stopPropagation(); runMoveEnd(me.dataset.runend); return; }
       var sk=t.closest("[data-runskip]"); if(sk){ e.stopPropagation(); runToggleSkip(sk.dataset.runskip); return; }
     }
@@ -3727,7 +4265,7 @@ function saaHTML(){
     var t=e.target;
     if(t.closest("#gAdd")){ var n=document.getElementById("gName"), f=document.getElementById("gFrom"), nm=(n.value||"").trim(); if(!nm){ n.focus(); return; }
       if(S.guests.some(function(g){return nkey(g.name)===nkey(nm);})){ showToastMsg(nm+" is already on the guest list"); return; }
-      S.guests.push({id:uid(),name:nm,from:(f.value||"").trim(),welcomed:false,ord:maxOrd(S.guests)+1,u:now()}); addName(S,nm); commit(); var n2=document.getElementById("gName"); if(n2) n2.focus(); return; }
+      S.guests.push({id:uid(),name:nm,from:(f.value||"").trim(),welcomed:false,ord:maxOrd(S.guests)+1,u:now()}); addName(S,nm); clearDeviceDraft("gName","gFrom"); commit(); var n2=document.getElementById("gName"); if(n2) n2.focus(); return; }
     var w=t.closest("[data-gwel]"); if(w){ var g=S.guests.find(function(x){return x.id===w.dataset.gwel;}); if(g){ g.welcomed=!g.welcomed; tick(g); commit(); } return; }
     var d=t.closest("[data-gdel]"); if(d){ var i=S.guests.findIndex(function(x){return x.id===d.dataset.gdel;}); if(i>=0) removeItem(["guests"],S.guests[i].id,S.guests[i].name||"Guest"); return; }
   });
@@ -3766,7 +4304,7 @@ function finChecks(r){
     if(S.vote.state!=="shown") w.push("Voting results haven't been revealed yet.");
   } else if(r==="seval"||r==="tteval"){
     var kind=r==="tteval"?"tt":"ps", open=[];
-    Object.keys(L.evDrafts||{}).forEach(function(id){ var d=L.evDrafts[id]; if(d.kind===kind && !d.submitted && (d.c1||d.r||d.c2)) open.push(d.speaker); });
+    Object.keys(meetingEvalDrafts()).forEach(function(id){ var d=meetingEvalDrafts()[id]; if(d.kind===kind && !d.submitted && (d.c1||d.r||d.c2)) open.push(d.speaker); });
     if(r==="tteval") S.ttassign.forEach(function(a){ if(nkey(a.evaluator)===me && me && evStatusOf("tt",a.speaker,finNameFor(r))!=="done" && open.indexOf(a.speaker)<0) open.push(a.speaker); });
     if(r==="seval") S.assigns.forEach(function(a){ if(nkey(a.evaluator)===me && me){ var sub=S.evals.some(function(e){ return e.kind==="ps" && nkey(e.speaker)===nkey(a.speaker) && e.done && nkey(e.by)===me; }); if(!sub && open.indexOf(a.speaker)<0) open.push(a.speaker); } });
     open.forEach(function(sp){ w.push("Evaluation for "+sp+" not submitted."); });
@@ -4681,6 +5219,12 @@ function projHTML(){
   var t=now(), run=runningList(), ss=scheduleStatus(), tm=document.querySelector(".logo img").src, co=document.querySelector(".logo.co img").src, main="", cls="";
   if(run.length){ var x=run[0], sec=elapsed(x.r,t), sg=signal(x.sid,sec,x.r); cls=sg||"sn";
     main='<div class="pj-lbl">'+esc(x.s.name)+'</div><div class="pj-name">'+esc(displayName(x.r,x.i))+'</div><div class="pj-clock">'+fmt(sec)+'</div><div class="pj-sig">'+(x.r.paused?"⏸ Paused":sg?sigLabel(sg,x.r):"&nbsp;")+'</div><div class="pj-sub">'+esc(limitsLine(x.sid,x.r))+'</div>';
+  } else if(currentTimerDemo()){
+    var demo=currentTimerDemo(), step=demo.step;
+    cls=step.signal||"sn";
+    main='<div class="pj-lbl">Timer demo</div><div class="pj-name">'+esc(demo.session.name)+'</div>'+
+      '<div class="pj-clock">'+fmt(step.sec)+'</div><div class="pj-sig">'+esc(step.name)+'</div>'+
+      '<div class="pj-sub">'+esc(limitsLine(demo.session.id))+'</div>';
   } else if(S.vote.state==="shown"){
     main='<div class="pj-lbl">🏆 Award winners</div>'+VCATS.map(function(c){ var w=tally(c.k).winners; return w.length?'<div class="pj-win"><span>'+esc(c.n)+'</span><b>'+esc(w.map(function(z){return z.name;}).join(" & "))+'</b></div>':''; }).join("");
   } else if(S.cur&&S.cur.id&&topicById(S.cur.id)&&!topicById(S.cur.id).used){ var tp=topicById(S.cur.id);
@@ -4775,7 +5319,26 @@ document.addEventListener("keydown",function(e){ if(e.key==="Escape"&&document.g
 
 /* Meeting drafts are scoped to a meeting; selections travel with their text. */
 function workflowDraft(){if(!L.workflowDraft||L.workflowDraft.mid!==S.mid||!L.workflowDraft.fields)L.workflowDraft={mid:S.mid,fields:{}};return L.workflowDraft.fields;}
-function wfDraft(id){return esc(workflowDraft()[id]||'');}
+/* Room-visible working fields are scoped to the selected participant and role. */
+function sharedWorkflowDraft(){
+ var draft=Object.assign({},workflowDraft()), person=nkey(L.me||myName());
+ if(person) S.roleFields.forEach(function(field){
+  if(field.person===person&&field.role===L.role) draft[field.key]=field.value;
+ });
+ return draft;
+}
+function saveWorkflowFields(fields){
+ var person=nkey(L.me||myName()), draft=workflowDraft();
+ Object.keys(fields).forEach(function(key){
+  var value=fields[key];
+  if(value===null) delete draft[key]; else draft[key]=value;
+  if(!person) return;
+  var field=upsert(["roleFields"],"field|"+JSON.stringify([person,L.role,key]),{person:person,role:L.role,key:key});
+  field.value=value; tick(field);
+ });
+ saveL(); commitQuiet();
+}
+function wfDraft(id){return esc(sharedWorkflowDraft()[id]||'');}
 function workflowField(key,label,value,type){return '<label class="f evbox"><b>'+esc(label)+'</b><input class="t" type="'+(type||'text')+'" data-keynote="'+key+'" value="'+esc(value==null?'':value)+'"'+(type==='number'?' step="0.1" min="0.1" max="180"':'')+'></label>';}
 function keynoteItems(){return itemsSorted().filter(function(it){return it.role==='keynote';});}
 function selectedPresentationItem(){var items=keynoteItems(),draft=workflowDraft();return items.find(function(it){return it.id===draft.keynoteItem;})||items.find(function(it){return it.id===S.run.cur;})||items[0];}
@@ -4806,20 +5369,24 @@ function queueKeynote(){
  if(!r){r=newRow('ps',name+' – Educational presentation');r.id='keynote|'+S.mid+'|'+it.id;delete S.dead[r.id];S.rows.ps.push(r);}r.ak='keynote:'+S.mid+':'+it.id;r.presentationItemId=it.id;r.name=name+' – Educational presentation';r.lim=clone(lim);tick(r);tick(p);commit();
 }
 function geAgendaHTML(){
- var d=workflowDraft(),items=itemsSorted(),selected=d.geAgendaItem||S.run.cur||(items[0]&&items[0].id)||'',missing=selected&&!items.some(function(it){return it.id===selected;});
+ var d=sharedWorkflowDraft(),items=itemsSorted(),selected=d.geAgendaItem||S.run.cur||(items[0]&&items[0].id)||'',missing=selected&&!items.some(function(it){return it.id===selected;});
  var h='<section class="card"><h2>Agenda observations</h2><label class="f"><b>Agenda item</b><select class="t" id="geAgendaItem">'+(missing?'<option value="'+esc(selected)+'" selected>Removed agenda item — select another</option>':'')+items.map(function(it){return '<option value="'+esc(it.id)+'"'+(selected===it.id?' selected':'')+'>'+esc(fmtHM(it.time)+' · '+arole(it.role).n+' · '+it.text)+'</option>';}).join('')+'</select></label><label class="f"><b>Type</b><select class="t" id="geObservationKind"><option value="commend"'+(d.geObservationKind!=='improve'?' selected':'')+'>Commendation</option><option value="improve"'+(d.geObservationKind==='improve'?' selected':'')+'>Improvement</option></select></label><label class="f"><b>Evidence / suggestion</b><textarea class="t" id="geObservationText">'+wfDraft('geObservationText')+'</textarea></label><button class="btn" id="geObservationAdd">Save observation</button>';
  h+=S.geobs.map(function(o){var a=actionForObservation(o.id);return '<div class="wcard"><b>'+esc(o.itemLabel)+'</b><div>'+esc(o.kind+' · '+o.role+' · '+(o.who||'Unassigned')+' · '+clock(o.at))+'</div><p>'+esc(o.note)+'</p><button class="btn sm" data-observation-action="'+esc(o.id)+'">'+(a?'Open action':'Create follow-up action')+'</button><button class="linkbtn" data-observation-remove="'+esc(o.id)+'">Remove</button></div>';}).join('');return h+'</section>';
 }
 function actionForObservation(id){return S.actions.find(function(a){return a.source===id;});}
 function actionOverdue(a){return !a.archived&&a.state!=='done'&&/^\d{4}-\d{2}-\d{2}$/.test(a.due||'')&&a.due<todayISO();}
 function actionsHTML(){
- var edit=L.role==='ge'||(L.role==='coord'&&coordUnlocked()),d=workflowDraft(),editing=S.actions.find(function(a){return a.id===d.actionEdit;}),filter=L.actionFilter||'open';
+ var edit=L.role==='ge'||(L.role==='coord'&&coordUnlocked()),d=sharedWorkflowDraft(),editing=S.actions.find(function(a){return a.id===d.actionEdit;}),filter=L.actionFilter||'open';
  var h='<section class="card" id="actionsPanel"><h2>Follow-up actions</h2><p class="muted">Actions stay across meetings. Shared meeting data; exclude private feedback.</p><label class="f"><b>Show actions</b><select class="t" id="actionFilter">'+[['open','Open'],['done','Completed'],['archived','Archived'],['all','All']].map(function(x){return '<option value="'+x[0]+'"'+(filter===x[0]?' selected':'')+'>'+x[1]+'</option>';}).join('')+'</select></label>';
  if(edit)h+='<h3>'+(editing?'Edit action':'New action')+'</h3><label class="f"><b>Action</b><input class="t" id="actionText" value="'+wfDraft('actionText')+'"></label><label class="f"><b>Owner</b><input class="t" id="actionOwner" value="'+wfDraft('actionOwner')+'" list="roster"></label><label class="f"><b>Target meeting date</b><input class="t" type="date" id="actionDue" value="'+wfDraft('actionDue')+'"></label><button class="btn" id="actionAdd">'+(editing?'Save changes':'Add action')+'</button>'+(editing?'<button class="btn" id="actionCancel">Cancel edit</button>':'');
  h+=S.actions.filter(function(a){return filter==='all'||filter==='archived'&&a.archived||!a.archived&&(filter==='done'?a.state==='done':a.state!=='done');}).map(function(a){return '<div class="wcard" data-action-card="'+esc(a.id)+'"><b>'+esc(a.text)+'</b><div>'+esc((a.owner||'Unassigned')+' · '+(a.due||'No target date')+' · '+(a.state||'open')+(a.archived?' · archived':'')+(actionOverdue(a)?' · OVERDUE':''))+'</div>'+(edit?'<button class="btn sm" data-action-edit="'+esc(a.id)+'">Edit</button><button class="btn sm" data-action-toggle="'+esc(a.id)+'">'+(a.state==='done'?'Reopen':'Mark complete')+'</button><button class="btn sm" data-action-archive="'+esc(a.id)+'">'+(a.archived?'Restore':'Archive')+'</button>':'')+'</div>';}).join('');return h+'</section>';
 }
-function clearActionDraft(){var d=workflowDraft();['actionText','actionOwner','actionDue','actionEdit'].forEach(function(k){delete d[k];});saveL();}
-function editWorkflowAction(a){if(!a)return;var d=workflowDraft();d.actionEdit=a.id;d.actionText=a.text;d.actionOwner=a.owner||'';d.actionDue=a.due||'';L.actionFilter='all';saveL();renderAll();var el=document.getElementById('actionsPanel');if(el)el.scrollIntoView({block:'start'});}
+function clearActionDraft(){saveWorkflowFields({actionText:null,actionOwner:null,actionDue:null,actionEdit:null});}
+function editWorkflowAction(a){
+ if(!a)return;
+ saveWorkflowFields({actionEdit:a.id,actionText:a.text,actionOwner:a.owner||'',actionDue:a.due||''});
+ L.actionFilter='all';saveL();renderAll();var el=document.getElementById('actionsPanel');if(el)el.scrollIntoView({block:'start'});
+}
 function addWorkflowAction(text,owner,due,source){
  text=String(text||'').trim();if(!text)return;var existing=source&&actionForObservation(source);if(existing){editWorkflowAction(existing);return;}
  var a={id:source?'action|'+S.mid+'|'+source:uid(),text:text,owner:owner||'',due:due||'',state:'open',source:source||'',meeting:S.mid,ord:maxOrd(S.actions)+1,u:now()};S.actions.push(a);clearActionDraft();L.actionFilter='open';commit();
@@ -4849,16 +5416,15 @@ ROLE_GUIDE.ge.app.push('Record observations against specific agenda items; creat
  document.getElementById('repPick').addEventListener('click',function(e){if(e.target.closest('[data-reference-pack]'))downloadReferencePack();});
  var V=document.getElementById('view'),draftKeys=['geObservationText','geAgendaItem','geObservationKind','actionText','actionOwner','actionDue'];
  V.addEventListener('input',function(e){if(draftKeys.indexOf(e.target.id)>=0){
-   var draft=workflowDraft();
-   draft[e.target.id]=e.target.value;
+   var fields={}; fields[e.target.id]=e.target.value;
    if(e.target.id==='geObservationText'){
-    draft.geAgendaItem=document.getElementById('geAgendaItem').value;
-    draft.geObservationKind=document.getElementById('geObservationKind').value;
+    fields.geAgendaItem=document.getElementById('geAgendaItem').value;
+    fields.geObservationKind=document.getElementById('geObservationKind').value;
    }
-   saveL();
+   saveWorkflowFields(fields);
   }if(e.target.dataset.keynote&&(L.role==='keynote'||L.role==='coord'&&coordUnlocked()))updatePresentationField(e.target.dataset.keynote,e.target.value);});
  V.addEventListener('change',function(e){
-  var id=e.target.id;if(draftKeys.indexOf(id)>=0){workflowDraft()[id]=e.target.value;saveL();}
+  var id=e.target.id;if(draftKeys.indexOf(id)>=0){var fields={};fields[id]=e.target.value;saveWorkflowFields(fields);}
   if(id==='actionFilter'){L.actionFilter=e.target.value;saveL();renderAll();}
   if(id==='keynoteItem'){workflowDraft().keynoteItem=e.target.value;saveL();renderAll();}
   if(e.target.dataset.keynote==='kminutes'){var it=selectedPresentationItem(),p=it&&presentationOf(it.id);if(p){['g','a'].forEach(function(k){var el=V.querySelector('[data-keynote="'+(k==='g'?'kgreen':'kamber')+'"]');if(el)el.value=p.lim[k]/60;});}}
@@ -4868,36 +5434,115 @@ ROLE_GUIDE.ge.app.push('Record observations against specific agenda items; creat
   var ho=t.closest('[data-handover-accept],[data-handover-cancel]');if(ho){var id=ho.dataset.handoverAccept||ho.dataset.handoverCancel,x=S.handovers.find(function(o){return o.id===id;});if(!x||x.state!=='pending')return;if(ho.dataset.handoverAccept&&L.role===x.toRole&&(!x.toName||nkey(myName())===nkey(x.toName))){x.state='accepted';x.acceptedBy=myName();x.acceptedAt=now();}else if(ho.dataset.handoverCancel&&nkey(myName())===nkey(x.by)){x.state='cancelled';}else return;tick(x);commit();return;}
   if(t.closest('#handoverSend')&&myName()){var target=document.getElementById('handoverTarget').value,c=curItem(),existing=S.handovers.find(function(x){return x.state==='pending'&&x.fromRole===L.role&&nkey(x.by)===nkey(myName());});if(existing){alert('Your previous handover is still pending. Cancel it or ask the recipient to accept.');return;}S.handovers.push({id:uid(),fromRole:L.role,toRole:target,toName:whoFor(target),by:myName(),itemId:c.cur?c.cur.id:'',at:now(),state:'pending',ord:maxOrd(S.handovers)+1,u:now()});commit();return;}
   if(L.role!=='ge'&&!(L.role==='coord'&&coordUnlocked()))return;
-  if(t.closest('#geObservationAdd')){var it=S.agenda.items.find(function(i){return i.id===document.getElementById('geAgendaItem').value;}),note=document.getElementById('geObservationText').value.trim();if(!it){alert('Choose an existing agenda item.');return;}if(!note)return;delete workflowDraft().geObservationText;saveL();S.geobs.push({id:uid(),itemId:it.id,itemLabel:it.text,role:arole(it.role).n,who:whoFor(it.role),kind:document.getElementById('geObservationKind').value,note:note,at:now(),by:myName(),ord:maxOrd(S.geobs)+1,u:now()});commit();return;}
+  if(t.closest('#geObservationAdd')){var it=S.agenda.items.find(function(i){return i.id===document.getElementById('geAgendaItem').value;}),note=document.getElementById('geObservationText').value.trim();if(!it){alert('Choose an existing agenda item.');return;}if(!note)return;saveWorkflowFields({geObservationText:null});S.geobs.push({id:uid(),itemId:it.id,itemLabel:it.text,role:arole(it.role).n,who:whoFor(it.role),kind:document.getElementById('geObservationKind').value,note:note,at:now(),by:myName(),ord:maxOrd(S.geobs)+1,u:now()});commit();return;}
   var oa=t.closest('[data-observation-action]');if(oa){var o=S.geobs.find(function(x){return x.id===oa.dataset.observationAction;});if(o)addWorkflowAction(o.note,o.who,S.agenda.next,o.id);return;}
   var rem=t.closest('[data-observation-remove]');if(rem){removeItem(['geobs'],rem.dataset.observationRemove,'Observation');return;}
   if(t.closest('#actionCancel')){clearActionDraft();renderAll();return;}
-  if(t.closest('#actionAdd')){var d=workflowDraft(),editing=S.actions.find(function(a){return a.id===d.actionEdit;}),text=document.getElementById('actionText').value.trim(),owner=document.getElementById('actionOwner').value,due=document.getElementById('actionDue').value;if(!text)return;if(editing){editing.text=text;editing.owner=owner;editing.due=due;tick(editing);clearActionDraft();commit();}else addWorkflowAction(text,owner,due);return;}
+  if(t.closest('#actionAdd')){var d=sharedWorkflowDraft(),editing=S.actions.find(function(a){return a.id===d.actionEdit;}),text=document.getElementById('actionText').value.trim(),owner=document.getElementById('actionOwner').value,due=document.getElementById('actionDue').value;if(!text)return;if(editing){editing.text=text;editing.owner=owner;editing.due=due;tick(editing);clearActionDraft();commit();}else addWorkflowAction(text,owner,due);return;}
   var ae=t.closest('[data-action-edit]');if(ae){editWorkflowAction(S.actions.find(function(a){return a.id===ae.dataset.actionEdit;}));return;}
   var at=t.closest('[data-action-toggle]');if(at){var a=S.actions.find(function(x){return x.id===at.dataset.actionToggle;});if(a){a.state=a.state==='done'?'open':'done';tick(a);commit();}return;}
   var ar=t.closest('[data-action-archive]');if(ar){var a=S.actions.find(function(x){return x.id===ar.dataset.actionArchive;});if(a){a.archived=!a.archived;tick(a);commit();}}
  });
 })();
+/* Named form fields can follow the author between devices. */
+var DEVICE_DRAFT_FIELDS={
+  timer:["qname"], rrm:["rrQ","rrGuest"], ttm:["topicInput","callName"],
+  ah:["spkInput","wordInput"], gram:["spkInput","goodInput","slipInput"],
+  seval:["evAddIn"], tteval:["evAddIn"], member:["guestIn","noteTo","noteText"],
+  president:["gName","gFrom"], saa:["gName","gFrom"], coord:["memIn","memKind","coName"]
+};
+var DEVICE_SETTINGS=["theme","big","rrHere","rep"];
+function deviceDraftKey(id){
+  var context="";
+  if(id==="callName") context=S.cur.id||"";
+  if(id==="qname") context=L.tab;
+  if(id==="goodInput"||id==="slipInput") context=L.gramSel||"";
+  return "form|"+JSON.stringify([L.role,context,id]);
+}
+function deviceDraftValues(){
+  var id=JSON.stringify([S.mid,nkey(draftOwner())]);
+  L.deviceDraftValues=L.deviceDraftValues||{};
+  return L.deviceDraftValues[id]||(L.deviceDraftValues[id]={});
+}
+function setDeviceDraft(key,value){
+  deviceDraftValues()[key]=clone(value);
+  saveL();
+  queuePrivateDraft(draftOwner(),key,value);
+}
+function clearDeviceDraft(){
+  Array.from(arguments).forEach(function(id){
+    var key=deviceDraftKey(id);
+    if(Object.hasOwn(deviceDraftValues(),key)) setDeviceDraft(key,null);
+  });
+}
+function restoreDeviceForms(){
+  var values=deviceDraftValues();
+  (DEVICE_DRAFT_FIELDS[L.role]||[]).forEach(function(id){
+    var key=deviceDraftKey(id), input=document.querySelector("#view #"+id);
+    if(input&&document.activeElement!==input&&Object.hasOwn(values,key)){
+      if(values[key]===null){
+        input.value=input.tagName==="SELECT"?(input.options[0]||{}).value||"":input.defaultValue;
+      } else input.value=values[key];
+    }
+  });
+  var start=document.querySelector("#view #qstart");
+  if(start) start.innerHTML=startLabel(L.tab);
+}
+function captureDeviceForm(event){
+  var input=event.target, id=input.id;
+  if((DEVICE_DRAFT_FIELDS[L.role]||[]).includes(id)) setDeviceDraft(deviceDraftKey(id),input.value);
+}
+function syncDeviceSettings(){
+  Object.keys(deviceDraftValues()).filter(function(key){return key.startsWith("form|")||key.startsWith("setting|");}).forEach(function(key){
+    var owner=draftOwner();
+    if(!S.roleFields.some(function(r){return r.enc&&r.person===nkey(owner)&&r.key===key;})){
+      queuePrivateDraft(owner,key,deviceDraftValues()[key]);
+    }
+  });
+}
+document.getElementById("view").addEventListener("input",captureDeviceForm,true);
+document.addEventListener("change",function(e){
+  if(e.target.id==="bigText") setDeviceDraft("setting|big",!!L.big);
+  if(e.target.id==="rrHere") setDeviceDraft("setting|rrHere",!!L.rrHere);
+  if(e.target.dataset.rep) setDeviceDraft("setting|rep|"+e.target.dataset.rep,!!e.target.checked);
+});
+document.addEventListener("click",function(e){
+  if(e.target.closest("[data-theme-set]")) setDeviceDraft("setting|theme",L.theme);
+});
 /* ---------- start ---------- */
 if(!sessionOf(L.tab)) L.tab="tt";
 if(!ROLES.some(function(r){return r.id===L.role;})) L.role="timer";
 if(!Array.isArray(L.roles)||!L.roles.length) L.roles=[L.role]; L.roles=L.roles.filter(function(r){return ROLES.some(function(x){return x.id===r;});}); if(L.roles.indexOf(L.role)<0) L.roles.push(L.role);
 seedPractice(); shadowSync(); try{ cleanSampleLeak(); }catch(e){} renderAll(); wake(); save();
-var hashCode=""; try{ var hm=location.hash.match(/join=([A-Za-z0-9-]+)/); if(hm) hashCode=cleanCode(hm[1]); }catch(e){}
-var hashGuest=/[#&]guest=1/.test(location.hash);
-try{ var hc=location.hash.match(/co=([A-Za-z0-9-]+)/); if(hc){ L.pendingCo=cleanCode(hc[1]); saveL(); } }catch(e){}
-var hashRole=""; try{ var hr=location.hash.match(/role=([a-z]+)/); if(hr&&ROLES.some(function(r){return r.id===hr[1];})) hashRole=hr[1]; }catch(e){}
-if(hashCode.length===6){ try{ history.replaceState(null,"",location.pathname+location.search); }catch(e){} }
-var resumeCode = L.conn&&L.conn.code;
-if(hashCode.length===6 && hashGuest){ W.code=hashCode; startJoin(hashCode); openWelcome("guest"); }
-else if(hashCode.length===6 && hashRole){
-  /* scanned "my role on my phone": take that role, join the meeting and continue once connected */
-  if(!L.setup) L.roles=[hashRole]; L.role=hashRole; L.setup=true; saveL(); renderAll();
-  W.code=hashCode; W.auto=true; startJoin(hashCode); openWelcome("connect");
+function openMeetingInvite(){
+  var params=new URLSearchParams(location.hash.slice(1)), code=cleanCode(params.get("join"));
+  if(code.length!==6) return false;
+  var person=params.get("person"), role=params.get("role"), co=params.get("co");
+  if(co){ L.pendingCo=cleanCode(co); saveL(); }
+  try{ history.replaceState(null,"",location.pathname+location.search); }catch(e){}
+  W.code=code; W.auto=false; W.advance=false; W.add=false;
+  if(params.get("guest")==="1"){ startJoin(code); openWelcome("guest"); return true; }
+  if(roleObj(role)){
+    if(!L.setup||person){
+      L.roles=[role];
+      if(person){ L.me=person; L.myNames={}; }
+    }
+    L.role=role; L.setup=true; saveL();
+    W.auto=true;
+  } else W.advance=true;
+  startJoin(code);
+  openWelcome("connect");
+  return true;
 }
-else if(hashCode.length===6 && !(resumeCode===hashCode)){ W.code=hashCode; startJoin(hashCode); W.advance=true; openWelcome("connect"); }
-else if(resumeCode){ if(L.conn.mode==="host") startHost(L.conn.code); else startJoin(L.conn.code); if(!L.setup) openWelcome("connect"); }
-else if(!L.setup) openWelcome("connect");
+if(!openMeetingInvite()){
+  var resumeCode=L.conn&&L.conn.code;
+  if(resumeCode){
+    if(L.conn.mode==="host") startHost(resumeCode);
+    else { W.auto=!!L.setup; W.advance=!L.setup; startJoin(resumeCode); }
+    if(!L.setup||L.conn.mode==="join") openWelcome("connect");
+  } else if(!L.setup) openWelcome("connect");
+}
+window.addEventListener("hashchange",openMeetingInvite);
 window.addEventListener("pagehide",sayBye);
 window.addEventListener("beforeunload",sayBye);
 })();

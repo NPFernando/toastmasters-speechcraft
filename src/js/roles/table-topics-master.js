@@ -32,19 +32,25 @@ function ttmHTML(){
 }
 function pickTopic(id){ S.cur.id=id; tick(S.cur); commit(); }
 function randomTopic(){
+  if(!allowLiveAction("random-topic")) return;
   var rem=remaining().filter(function(x){return x.id!==S.cur.id;}); if(!rem.length) rem=remaining();
   if(!rem.length){ alert("No remaining topics."); return; }
-  pickTopic(rem[Math.floor(Math.random()*rem.length)].id);
+  rem.sort(function(a,b){return a.id.localeCompare(b.id);});
+  var seed=JSON.stringify([S.mid,S.cur.id,S.cur.u,rem.map(function(topic){return topic.id;})]);
+  var hash=2166136261;
+  for(var index=0;index<seed.length;index++) hash=Math.imul(hash^seed.charCodeAt(index),16777619);
+  pickTopic(rem[(hash>>>0)%rem.length].id);
 }
 function callSpeaker(){
-  var cur=topicById(S.cur.id); if(!cur) return;
+  var cur=topicById(S.cur.id); if(!cur||cur.used) return;
   var nm=(document.getElementById("callName").value||"").trim();
   if(!nm){ alert("Type who is taking this topic first."); document.getElementById("callName").focus(); return; }
+  clearDeviceDraft("callName");
   cur.speaker=nm; cur.used=true; cur.usedAt=now(); tick(cur); remember(nm); autoAssignTT(nm); if(linkRoles().length) selectPerson(nm,"ttm");
   /* queue them on the Timer's Table Topics list */
   var r=cur.rowId && findRow("tt",cur.rowId);
   if(r){ if(rowState(r)==="idle"){ r.name=nm; tick(r); } }
-  else { r=newRow("tt",nm); r.topicId=cur.id; S.rows.tt.push(r); cur.rowId=r.id; }
+  else { r=newRow("tt",nm); r.id="live|"+encodeURIComponent(JSON.stringify([S.mid,"topic",cur.id])); r.u=Math.max(r.u,(S.dead[r.id]||0)+1); r.topicId=cur.id; S.rows.tt.push(r); cur.rowId=r.id; }
   commit();
   if(document.getElementById("stage").classList.contains("on")) renderStage();
 }

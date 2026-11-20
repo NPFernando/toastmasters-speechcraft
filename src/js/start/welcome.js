@@ -12,7 +12,7 @@ function renderPhoneQR(){
   if(!NET.room){
     h+='<p class="muted">Your phone gets this role\'s data through a meeting connection. Start one now (it also lets the other roles join), then scan the code.</p><button class="btn primary big1" id="qrStart">Start meeting &amp; show QR</button>';
   } else {
-    var link=roleLink(NET.code,L.role);
+    var link=myDeviceLink();
     h+='<p class="muted" style="margin-top:0">Scan with your phone camera. It opens as <b>'+r.icon+' '+r.name+'</b> in meeting <b>'+fmtCode(NET.code)+'</b>, and all the data comes across. Keep this page open until the phone shows ✓ Connected.</p>'+
        '<div class="qrwrap">'+qrSvg(link)+'</div><div class="row" style="justify-content:center"><button class="btn" id="qrCopy">Copy link</button></div>'+
        '<div class="saved" style="margin-top:6px;word-break:break-all">'+esc(link)+'</div>'+
@@ -21,11 +21,14 @@ function renderPhoneQR(){
   h+='<div style="text-align:right;margin-top:12px"><button class="btn" id="qrClose">Close</button></div>';
   document.getElementById("qrBox").innerHTML=h;
 }
+function myDeviceLink(){
+  return roleLink(NET.code,L.role)+(L.me?'&person='+encodeURIComponent(L.me):'');
+}
 function openPhoneQR(){ renderPhoneQR(); document.getElementById("qrModal").classList.add("on"); }
 document.getElementById("qrBox").addEventListener("click",function(e){
   var t=e.target;
   if(t.closest("#qrStart")){ startHost(makeCode()); renderPhoneQR(); }
-  else if(t.closest("#qrCopy")){ try{ navigator.clipboard.writeText(roleLink(NET.code,L.role)); t.textContent="Copied ✓"; }catch(err){} }
+  else if(t.closest("#qrCopy")){ try{ navigator.clipboard.writeText(myDeviceLink()); t.textContent="Copied ✓"; }catch(err){} }
   else if(t.closest("#qrClose")) document.getElementById("qrModal").classList.remove("on");
 });
 document.getElementById("qrModal").addEventListener("click",function(e){ if(e.target.id==="qrModal") e.target.classList.remove("on"); });
@@ -35,8 +38,8 @@ function refreshWelcome(){
   if(document.getElementById("welcome").classList.contains("on") && W.step==="guest" && !W.guestDone){ var gc=document.getElementById("gCheck"); if(gc){ var ok=NET.status==="on"&&NET.synced; gc.disabled=!ok; if(gc.nextElementSibling) gc.nextElementSibling.textContent=ok?"":(NET.msg||"Connecting to the meeting…"); } }
   if(document.getElementById("welcome").classList.contains("on") && W.step==="connect"){
     renderWelcome();
-    if(W.auto && NET.status==="on" && (NET.peers.length>1||NET.mode==="host")){ W.auto=false; setTimeout(closeWelcome,900); }
-    else if(W.advance && NET.status==="on" && NET.synced && NET.peers.length>1){ W.advance=false; setTimeout(function(){ if(W.step==="connect"){ W.step="role"; renderWelcome(); } },700); }
+    if(W.auto && NET.synced && NET.status==="on" && (NET.peers.length>1||NET.mode==="host")){ W.auto=false; closeWelcome(); }
+    else if(W.advance && NET.status==="on" && NET.synced && NET.peers.length>1){ W.advance=false; W.step="role"; renderWelcome(); }
   }
   if(document.getElementById("qrModal").classList.contains("on")) renderPhoneQR();
 }
@@ -80,7 +83,7 @@ function connStatusHTML(){
 }
 function welcomeBackHTML(){ var w=welcomeBack0(); return w?w+upcomingHTML(true):""; }
 function welcomeBack0(){
-  if(!L.setup) return "";
+  if(!L.setup||(NET.mode==="join"&&!NET.synced)) return "";
   var nm=L.me||myName(), rs=myRoles().map(roleObj).filter(Boolean); if(!nm&&!rs.length) return "";
   var last=L.lastCode&&!NET.mode?L.lastCode:"";
   return '<div class="wcard wback"><div class="wbh">👋 Welcome back'+(nm?', <b>'+esc(nm)+'</b>':'')+'</div><div class="saved">'+rs.map(function(r){return r.icon+' '+r.name;}).join(" + ")+'</div>'+
@@ -104,7 +107,7 @@ function renderWelcome(){
          '<div class="wfoot"><span class="row"><button class="linkbtn" id="wSolo">Continue without connecting</button>'+(PRACTICE?'':'<button class="linkbtn" id="wPractice">🎓 Practice meeting</button>')+'</span><span class="saved">🔒 Encrypted direct connection · needs internet</span></div>';
     }
   } else {
-    var today=agendaRolesFor(wName().trim());
+    var today=uniq(agendaRolesFor(wName().trim()).concat(selectedRoles(wName())));
     if(W.add) h+='<div class="wcard" style="margin-bottom:8px"><b>＋ Add a role</b><div class="saved">Pick the extra role you’re doing today. Your other roles stay open.</div></div>';
     else h+=wNamesHTML();
     h+='<div class="saved" id="wToday" style="margin:10px 0 2px">'+wTodayText(today)+'</div><div id="wGrid">'+roleGridHTML(today)+'</div>';
@@ -113,14 +116,15 @@ function renderWelcome(){
   if(!who) h+='<div class="wlinks"><button class="linkbtn" id="wReport">💬 Report a problem or idea</button><a class="linkbtn" href="'+REPO_URL+'" target="_blank" rel="noopener">Open on GitHub ↗</a><a class="linkbtn" href="'+REPO_URL+'/issues" target="_blank" rel="noopener">Known issues &amp; ideas ↗</a></div>';
   document.getElementById("wbox").innerHTML=h;
 }
-function wRefreshWho(){ var t=agendaRolesFor(wName().trim()), g=document.getElementById("wGrid"); if(g) g.innerHTML=roleGridHTML(t); var tt=document.getElementById("wToday"); if(tt) tt.innerHTML=wTodayText(t); var nb=document.getElementById("wNext"); if(nb){ nb.textContent=wStartLabel(); nb.disabled=!(W.sel||[]).length; } document.querySelectorAll("[data-wname]").forEach(function(c){ c.classList.toggle("active",nkey(c.dataset.wname)===nkey(wName())); }); }
+function wRefreshWho(){ var t=uniq(agendaRolesFor(wName().trim()).concat(selectedRoles(wName()))), g=document.getElementById("wGrid"); if(g) g.innerHTML=roleGridHTML(t); var tt=document.getElementById("wToday"); if(tt) tt.innerHTML=wTodayText(t); var nb=document.getElementById("wNext"); if(nb){ nb.textContent=wStartLabel(); nb.disabled=!(W.sel||[]).length; } document.querySelectorAll("[data-wname]").forEach(function(c){ c.classList.toggle("active",nkey(c.dataset.wname)===nkey(wName())); }); }
 function wFinish(){
   var sel=(W.sel||[]).slice(); if(!sel.length) return;
   var nmEl=document.getElementById("wName"), nm=W.name!=null?String(W.name).trim():(nmEl?nmEl.value.trim():"");
-  if(W.add){ myRoles(); sel.forEach(function(r){ if(L.roles.indexOf(r)<0) L.roles.push(r); }); L.role=sel[0]; W.add=false; }
+  sel=uniq(sel.concat(selectedRoles(nm)));
+  if(W.add){ L.roles=myRoles(); sel.forEach(function(r){ if(L.roles.indexOf(r)<0) L.roles.push(r); }); L.role=sel[0]; W.add=false; }
   else { L.roles=sel; L.role=sel[0]; }
   if(nm){ var keep=L.role; sel.forEach(function(r){ L.role=r; if(nm!==myName()) setMyName(nm); }); L.role=keep; L.me=nm; }
-  saveL(); NET.hello(); closeWelcome();
+  L.rolesMid=S.mid; saveRoleChoices(sel,true); saveL(); NET.hello(); closeWelcome();
 }
 var wbox=document.getElementById("wbox");
 wbox.addEventListener("input",function(e){ if(e.target.id!=="wName") return; W.name=e.target.value; wRefreshWho(); });
@@ -129,18 +133,18 @@ wbox.addEventListener("click",function(e){
   if(t.closest("#wPractice")){ location.href=practiceUrl(true); return; }
   if(t.closest("#wReport")){ openFb(); return; }
   if((b=t.closest("[data-wrole]"))){ var r=b.dataset.wrole; W.sel=W.sel||[]; var i=W.sel.indexOf(r); if(i>=0) W.sel.splice(i,1); else W.sel.push(r); wRefreshWho(); return; }
-  if((b=t.closest("[data-wname]"))){ W.name=b.dataset.wname; var ni=document.getElementById("wName"); if(ni) ni.value=""; var td=agendaRolesFor(W.name); if(!W.add) W.sel=td.slice(); wRefreshWho(); return; }
-  if(t.closest("#wSelToday")){ W.sel=uniq((W.sel||[]).concat(agendaRolesFor(wName().trim()))); wRefreshWho(); return; }
+  if((b=t.closest("[data-wname]"))){ W.name=b.dataset.wname; var ni=document.getElementById("wName"); if(ni) ni.value=""; var td=uniq(agendaRolesFor(W.name).concat(selectedRoles(W.name))); if(!W.add) W.sel=td.slice(); wRefreshWho(); return; }
+  if(t.closest("#wSelToday")){ W.sel=uniq((W.sel||[]).concat(agendaRolesFor(wName().trim()),selectedRoles(wName()))); wRefreshWho(); return; }
   if(t.closest("#wNext")){ wFinish(); return; }
-  if(t.closest("#wNextWho")||t.closest("#wChange")){ W.step="role"; renderWelcome(); return; }
+  if(t.closest("#wNextWho")||t.closest("#wChange")){ if(NET.mode==="join"&&(!NET.synced||NET.status!=="on")) return; W.step="role"; renderWelcome(); return; }
   if(t.closest("#wToJoin")||t.closest("#wToJoin2")){ if(W.add) return; W.step="connect"; renderWelcome(); return; }
   if(t.closest("#wCancel")){ W.add=false; closeWelcome(); return; }
   if(t.closest("#wJoin")){ var code=cleanCode(document.getElementById("wCode").value); if(code.length!==6){ alert("The meeting code has 6 letters/numbers, e.g. K7Q-M4P."); return; } W.code=code; W.advance=true; startJoin(code); renderWelcome(); return; }
   if(t.closest("#wHost")){ startHost(makeCode()); renderWelcome(); return; }
   if(t.closest("#wRejoin")){ var lc=L.lastCode; W.code=lc; if(L.lastHost) startHost(lc); else startJoin(lc); W.auto=true; renderWelcome(); return; }
-  if(t.closest("#wSolo2")){ closeWelcome(); return; }
+  if(t.closest("#wSolo2")){ if(NET.mode==="join"&&!NET.synced) return; closeWelcome(); return; }
   if(t.closest("#wSolo")){ if(L.setup&&!W.fresh){ closeWelcome(); return; } W.step="role"; renderWelcome(); return; }
-  if(t.closest("#wDone")){ closeWelcome(); return; }
+  if(t.closest("#wDone")){ if(NET.mode==="join"&&(!NET.synced||NET.status!=="on")) return; closeWelcome(); return; }
   if(t.closest("#wLeave")){ stopNet(false); W.code=""; W.step="connect"; document.getElementById("welcome").classList.add("on"); renderWelcome(); return; }
   if(t.closest("#wCopyCode")){ try{ navigator.clipboard.writeText(fmtCode(NET.code)); t.textContent="Copied ✓"; }catch(err){} return; }
   if(t.closest("#wCopyLink")){ try{ navigator.clipboard.writeText(inviteLink(NET.code)); t.textContent="Link copied ✓"; }catch(err){} return; }

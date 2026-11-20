@@ -6,6 +6,7 @@ core/field-sync.js
 core/timer-logic.js
 core/render-shell.js
 roles/timer.js
+roles/timer-demo.js
 roles/table-topics-master.js
 roles/ah-counter-grammarian.js
 agenda/agenda.js
@@ -62,4 +63,5 @@ ui/display-settings.js
 ui/more-menu.js
 ui/home-about.js
 features/meeting-workflows.js
+features/device-drafts.js
 start/boot.js

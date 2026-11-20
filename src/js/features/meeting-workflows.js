@@ -1,6 +1,25 @@
 /* Meeting drafts are scoped to a meeting; selections travel with their text. */
 function workflowDraft(){if(!L.workflowDraft||L.workflowDraft.mid!==S.mid||!L.workflowDraft.fields)L.workflowDraft={mid:S.mid,fields:{}};return L.workflowDraft.fields;}
-function wfDraft(id){return esc(workflowDraft()[id]||'');}
+/* Room-visible working fields are scoped to the selected participant and role. */
+function sharedWorkflowDraft(){
+ var draft=Object.assign({},workflowDraft()), person=nkey(L.me||myName());
+ if(person) S.roleFields.forEach(function(field){
+  if(field.person===person&&field.role===L.role) draft[field.key]=field.value;
+ });
+ return draft;
+}
+function saveWorkflowFields(fields){
+ var person=nkey(L.me||myName()), draft=workflowDraft();
+ Object.keys(fields).forEach(function(key){
+  var value=fields[key];
+  if(value===null) delete draft[key]; else draft[key]=value;
+  if(!person) return;
+  var field=upsert(["roleFields"],"field|"+JSON.stringify([person,L.role,key]),{person:person,role:L.role,key:key});
+  field.value=value; tick(field);
+ });
+ saveL(); commitQuiet();
+}
+function wfDraft(id){return esc(sharedWorkflowDraft()[id]||'');}
 function workflowField(key,label,value,type){return '<label class="f evbox"><b>'+esc(label)+'</b><input class="t" type="'+(type||'text')+'" data-keynote="'+key+'" value="'+esc(value==null?'':value)+'"'+(type==='number'?' step="0.1" min="0.1" max="180"':'')+'></label>';}
 function keynoteItems(){return itemsSorted().filter(function(it){return it.role==='keynote';});}
 function selectedPresentationItem(){var items=keynoteItems(),draft=workflowDraft();return items.find(function(it){return it.id===draft.keynoteItem;})||items.find(function(it){return it.id===S.run.cur;})||items[0];}
@@ -31,20 +50,24 @@ function queueKeynote(){
  if(!r){r=newRow('ps',name+' – Educational presentation');r.id='keynote|'+S.mid+'|'+it.id;delete S.dead[r.id];S.rows.ps.push(r);}r.ak='keynote:'+S.mid+':'+it.id;r.presentationItemId=it.id;r.name=name+' – Educational presentation';r.lim=clone(lim);tick(r);tick(p);commit();
 }
 function geAgendaHTML(){
- var d=workflowDraft(),items=itemsSorted(),selected=d.geAgendaItem||S.run.cur||(items[0]&&items[0].id)||'',missing=selected&&!items.some(function(it){return it.id===selected;});
+ var d=sharedWorkflowDraft(),items=itemsSorted(),selected=d.geAgendaItem||S.run.cur||(items[0]&&items[0].id)||'',missing=selected&&!items.some(function(it){return it.id===selected;});
  var h='<section class="card"><h2>Agenda observations</h2><label class="f"><b>Agenda item</b><select class="t" id="geAgendaItem">'+(missing?'<option value="'+esc(selected)+'" selected>Removed agenda item — select another</option>':'')+items.map(function(it){return '<option value="'+esc(it.id)+'"'+(selected===it.id?' selected':'')+'>'+esc(fmtHM(it.time)+' · '+arole(it.role).n+' · '+it.text)+'</option>';}).join('')+'</select></label><label class="f"><b>Type</b><select class="t" id="geObservationKind"><option value="commend"'+(d.geObservationKind!=='improve'?' selected':'')+'>Commendation</option><option value="improve"'+(d.geObservationKind==='improve'?' selected':'')+'>Improvement</option></select></label><label class="f"><b>Evidence / suggestion</b><textarea class="t" id="geObservationText">'+wfDraft('geObservationText')+'</textarea></label><button class="btn" id="geObservationAdd">Save observation</button>';
  h+=S.geobs.map(function(o){var a=actionForObservation(o.id);return '<div class="wcard"><b>'+esc(o.itemLabel)+'</b><div>'+esc(o.kind+' · '+o.role+' · '+(o.who||'Unassigned')+' · '+clock(o.at))+'</div><p>'+esc(o.note)+'</p><button class="btn sm" data-observation-action="'+esc(o.id)+'">'+(a?'Open action':'Create follow-up action')+'</button><button class="linkbtn" data-observation-remove="'+esc(o.id)+'">Remove</button></div>';}).join('');return h+'</section>';
 }
 function actionForObservation(id){return S.actions.find(function(a){return a.source===id;});}
 function actionOverdue(a){return !a.archived&&a.state!=='done'&&/^\d{4}-\d{2}-\d{2}$/.test(a.due||'')&&a.due<todayISO();}
 function actionsHTML(){
- var edit=L.role==='ge'||(L.role==='coord'&&coordUnlocked()),d=workflowDraft(),editing=S.actions.find(function(a){return a.id===d.actionEdit;}),filter=L.actionFilter||'open';
+ var edit=L.role==='ge'||(L.role==='coord'&&coordUnlocked()),d=sharedWorkflowDraft(),editing=S.actions.find(function(a){return a.id===d.actionEdit;}),filter=L.actionFilter||'open';
  var h='<section class="card" id="actionsPanel"><h2>Follow-up actions</h2><p class="muted">Actions stay across meetings. Shared meeting data; exclude private feedback.</p><label class="f"><b>Show actions</b><select class="t" id="actionFilter">'+[['open','Open'],['done','Completed'],['archived','Archived'],['all','All']].map(function(x){return '<option value="'+x[0]+'"'+(filter===x[0]?' selected':'')+'>'+x[1]+'</option>';}).join('')+'</select></label>';
  if(edit)h+='<h3>'+(editing?'Edit action':'New action')+'</h3><label class="f"><b>Action</b><input class="t" id="actionText" value="'+wfDraft('actionText')+'"></label><label class="f"><b>Owner</b><input class="t" id="actionOwner" value="'+wfDraft('actionOwner')+'" list="roster"></label><label class="f"><b>Target meeting date</b><input class="t" type="date" id="actionDue" value="'+wfDraft('actionDue')+'"></label><button class="btn" id="actionAdd">'+(editing?'Save changes':'Add action')+'</button>'+(editing?'<button class="btn" id="actionCancel">Cancel edit</button>':'');
  h+=S.actions.filter(function(a){return filter==='all'||filter==='archived'&&a.archived||!a.archived&&(filter==='done'?a.state==='done':a.state!=='done');}).map(function(a){return '<div class="wcard" data-action-card="'+esc(a.id)+'"><b>'+esc(a.text)+'</b><div>'+esc((a.owner||'Unassigned')+' · '+(a.due||'No target date')+' · '+(a.state||'open')+(a.archived?' · archived':'')+(actionOverdue(a)?' · OVERDUE':''))+'</div>'+(edit?'<button class="btn sm" data-action-edit="'+esc(a.id)+'">Edit</button><button class="btn sm" data-action-toggle="'+esc(a.id)+'">'+(a.state==='done'?'Reopen':'Mark complete')+'</button><button class="btn sm" data-action-archive="'+esc(a.id)+'">'+(a.archived?'Restore':'Archive')+'</button>':'')+'</div>';}).join('');return h+'</section>';
 }
-function clearActionDraft(){var d=workflowDraft();['actionText','actionOwner','actionDue','actionEdit'].forEach(function(k){delete d[k];});saveL();}
-function editWorkflowAction(a){if(!a)return;var d=workflowDraft();d.actionEdit=a.id;d.actionText=a.text;d.actionOwner=a.owner||'';d.actionDue=a.due||'';L.actionFilter='all';saveL();renderAll();var el=document.getElementById('actionsPanel');if(el)el.scrollIntoView({block:'start'});}
+function clearActionDraft(){saveWorkflowFields({actionText:null,actionOwner:null,actionDue:null,actionEdit:null});}
+function editWorkflowAction(a){
+ if(!a)return;
+ saveWorkflowFields({actionEdit:a.id,actionText:a.text,actionOwner:a.owner||'',actionDue:a.due||''});
+ L.actionFilter='all';saveL();renderAll();var el=document.getElementById('actionsPanel');if(el)el.scrollIntoView({block:'start'});
+}
 function addWorkflowAction(text,owner,due,source){
  text=String(text||'').trim();if(!text)return;var existing=source&&actionForObservation(source);if(existing){editWorkflowAction(existing);return;}
  var a={id:source?'action|'+S.mid+'|'+source:uid(),text:text,owner:owner||'',due:due||'',state:'open',source:source||'',meeting:S.mid,ord:maxOrd(S.actions)+1,u:now()};S.actions.push(a);clearActionDraft();L.actionFilter='open';commit();
@@ -74,16 +97,15 @@ ROLE_GUIDE.ge.app.push('Record observations against specific agenda items; creat
  document.getElementById('repPick').addEventListener('click',function(e){if(e.target.closest('[data-reference-pack]'))downloadReferencePack();});
  var V=document.getElementById('view'),draftKeys=['geObservationText','geAgendaItem','geObservationKind','actionText','actionOwner','actionDue'];
  V.addEventListener('input',function(e){if(draftKeys.indexOf(e.target.id)>=0){
-   var draft=workflowDraft();
-   draft[e.target.id]=e.target.value;
+   var fields={}; fields[e.target.id]=e.target.value;
    if(e.target.id==='geObservationText'){
-    draft.geAgendaItem=document.getElementById('geAgendaItem').value;
-    draft.geObservationKind=document.getElementById('geObservationKind').value;
+    fields.geAgendaItem=document.getElementById('geAgendaItem').value;
+    fields.geObservationKind=document.getElementById('geObservationKind').value;
    }
-   saveL();
+   saveWorkflowFields(fields);
   }if(e.target.dataset.keynote&&(L.role==='keynote'||L.role==='coord'&&coordUnlocked()))updatePresentationField(e.target.dataset.keynote,e.target.value);});
  V.addEventListener('change',function(e){
-  var id=e.target.id;if(draftKeys.indexOf(id)>=0){workflowDraft()[id]=e.target.value;saveL();}
+  var id=e.target.id;if(draftKeys.indexOf(id)>=0){var fields={};fields[id]=e.target.value;saveWorkflowFields(fields);}
   if(id==='actionFilter'){L.actionFilter=e.target.value;saveL();renderAll();}
   if(id==='keynoteItem'){workflowDraft().keynoteItem=e.target.value;saveL();renderAll();}
   if(e.target.dataset.keynote==='kminutes'){var it=selectedPresentationItem(),p=it&&presentationOf(it.id);if(p){['g','a'].forEach(function(k){var el=V.querySelector('[data-keynote="'+(k==='g'?'kgreen':'kamber')+'"]');if(el)el.value=p.lim[k]/60;});}}
@@ -93,11 +115,11 @@ ROLE_GUIDE.ge.app.push('Record observations against specific agenda items; creat
   var ho=t.closest('[data-handover-accept],[data-handover-cancel]');if(ho){var id=ho.dataset.handoverAccept||ho.dataset.handoverCancel,x=S.handovers.find(function(o){return o.id===id;});if(!x||x.state!=='pending')return;if(ho.dataset.handoverAccept&&L.role===x.toRole&&(!x.toName||nkey(myName())===nkey(x.toName))){x.state='accepted';x.acceptedBy=myName();x.acceptedAt=now();}else if(ho.dataset.handoverCancel&&nkey(myName())===nkey(x.by)){x.state='cancelled';}else return;tick(x);commit();return;}
   if(t.closest('#handoverSend')&&myName()){var target=document.getElementById('handoverTarget').value,c=curItem(),existing=S.handovers.find(function(x){return x.state==='pending'&&x.fromRole===L.role&&nkey(x.by)===nkey(myName());});if(existing){alert('Your previous handover is still pending. Cancel it or ask the recipient to accept.');return;}S.handovers.push({id:uid(),fromRole:L.role,toRole:target,toName:whoFor(target),by:myName(),itemId:c.cur?c.cur.id:'',at:now(),state:'pending',ord:maxOrd(S.handovers)+1,u:now()});commit();return;}
   if(L.role!=='ge'&&!(L.role==='coord'&&coordUnlocked()))return;
-  if(t.closest('#geObservationAdd')){var it=S.agenda.items.find(function(i){return i.id===document.getElementById('geAgendaItem').value;}),note=document.getElementById('geObservationText').value.trim();if(!it){alert('Choose an existing agenda item.');return;}if(!note)return;delete workflowDraft().geObservationText;saveL();S.geobs.push({id:uid(),itemId:it.id,itemLabel:it.text,role:arole(it.role).n,who:whoFor(it.role),kind:document.getElementById('geObservationKind').value,note:note,at:now(),by:myName(),ord:maxOrd(S.geobs)+1,u:now()});commit();return;}
+  if(t.closest('#geObservationAdd')){var it=S.agenda.items.find(function(i){return i.id===document.getElementById('geAgendaItem').value;}),note=document.getElementById('geObservationText').value.trim();if(!it){alert('Choose an existing agenda item.');return;}if(!note)return;saveWorkflowFields({geObservationText:null});S.geobs.push({id:uid(),itemId:it.id,itemLabel:it.text,role:arole(it.role).n,who:whoFor(it.role),kind:document.getElementById('geObservationKind').value,note:note,at:now(),by:myName(),ord:maxOrd(S.geobs)+1,u:now()});commit();return;}
   var oa=t.closest('[data-observation-action]');if(oa){var o=S.geobs.find(function(x){return x.id===oa.dataset.observationAction;});if(o)addWorkflowAction(o.note,o.who,S.agenda.next,o.id);return;}
   var rem=t.closest('[data-observation-remove]');if(rem){removeItem(['geobs'],rem.dataset.observationRemove,'Observation');return;}
   if(t.closest('#actionCancel')){clearActionDraft();renderAll();return;}
-  if(t.closest('#actionAdd')){var d=workflowDraft(),editing=S.actions.find(function(a){return a.id===d.actionEdit;}),text=document.getElementById('actionText').value.trim(),owner=document.getElementById('actionOwner').value,due=document.getElementById('actionDue').value;if(!text)return;if(editing){editing.text=text;editing.owner=owner;editing.due=due;tick(editing);clearActionDraft();commit();}else addWorkflowAction(text,owner,due);return;}
+  if(t.closest('#actionAdd')){var d=sharedWorkflowDraft(),editing=S.actions.find(function(a){return a.id===d.actionEdit;}),text=document.getElementById('actionText').value.trim(),owner=document.getElementById('actionOwner').value,due=document.getElementById('actionDue').value;if(!text)return;if(editing){editing.text=text;editing.owner=owner;editing.due=due;tick(editing);clearActionDraft();commit();}else addWorkflowAction(text,owner,due);return;}
   var ae=t.closest('[data-action-edit]');if(ae){editWorkflowAction(S.actions.find(function(a){return a.id===ae.dataset.actionEdit;}));return;}
   var at=t.closest('[data-action-toggle]');if(at){var a=S.actions.find(function(x){return x.id===at.dataset.actionToggle;});if(a){a.state=a.state==='done'?'open':'done';tick(a);commit();}return;}
   var ar=t.closest('[data-action-archive]');if(ar){var a=S.actions.find(function(x){return x.id===ar.dataset.actionArchive;});if(a){a.archived=!a.archived;tick(a);commit();}}

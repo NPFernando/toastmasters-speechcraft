@@ -8,7 +8,7 @@
     if(L.role==="tmod"){
       var c=curItem();
       if(t.closest("#runStart")){ if(c.its[0]) runGo(c.its[0].id); return; }
-      if(t.closest("#runNext")){ if(c.next) runGo(c.next.id); return; }
+      if(t.closest("#runNext")){ if(c.next&&now()-(S.run.advanceAt||0)>=500&&allowLiveAction("agenda-next")){ S.run.advanceAt=now(); runGo(c.next.id); } return; }
       if(t.closest("#runPrev")){ if(c.i>0) runGo(c.its[c.i-1].id); return; }
       if(t.closest("#runEnd")){ runFinish(); return; }
       var li=t.closest("[data-run]"); if(li){ runGo(li.dataset.run); return; }
@@ -27,11 +27,28 @@
     if(t.closest("#coordLock")){ L.coordOK=null; saveL(); renderAll(); return; }
     if(t.closest("#pinChange")){ if(!isMainCoord()) return; L.coordForcePin=true; saveL(); renderAll(); var p=document.getElementById("pin1"); if(p) p.focus(); return; }
     if(!coordUnlocked()) return;
+    if(t.closest("#markAbsent")){
+      var absent=document.getElementById("absentName").value;
+      if(absent){ setRsvp(absent,"no",null); commit(); }
+      return;
+    }
+    var replace=t.closest("[data-replace-role]");
+    if(replace){
+      var name=replace.parentElement.querySelector("[data-replacement]").value.trim();
+      if(!replaceRolePlayer(replace.dataset.replaceRole,replace.dataset.oldName,name)) showToastMsg("Choose an available replacement for this assignment.");
+      return;
+    }
+    var fit=t.closest("[data-fit-speeches]");
+    if(fit){
+      var needed=preparedBlockRequirement(), items=itemsSorted(), index=items.findIndex(function(it){return it.id===fit.dataset.fitSpeeches;});
+      if(index>=0&&items[index].x==="speakers"&&needed>agDur(items,index)&&agSetDur(items[index].id,needed)){ agChanged(); commit(); }
+      return;
+    }
     if(t.closest("#memAdd")){
       var inp=document.getElementById("memIn"), names=inp.value.split(/[,;\n]+/).map(function(x){return x.trim();}).filter(Boolean), added=0;
       var mk=(document.getElementById("memKind")||{}).value||"auto";
       names.forEach(function(n){ if(!S.members.list.some(function(m){return m.name.toLowerCase()===n.toLowerCase();})){ S.members.list.push(Object.assign({id:uid(),name:n,kind:mk==="auto"?guessKind(n):mk},S.meta.test?{test:true}:{})); added++; } });
-      if(added){ tick(S.members); commit(); } var again=document.getElementById("memIn"); if(again){ again.value=""; again.focus(); } return;
+      if(names.length) clearDeviceDraft("memIn"); if(added){ tick(S.members); commit(); } var again=document.getElementById("memIn"); if(again){ again.value=""; again.focus(); } return;
     }
     var kr=t.closest("[data-keyreset]"); if(kr){ var nm=kr.dataset.keyreset; if(!confirm("Reset "+nm+"'s feedback PIN?\n\nThey can set a new one, but feedback encrypted for the old PIN can't be read any more.")) return; var rec=S.keys.find(function(k){return k.id==="k|"+nkey(nm);}); if(rec){ rec.pub=null; rec.wrapped=""; tick(rec); commit(); } return; }
     var md=t.closest("[data-mdel]"); if(md){ removeMember(md.dataset.mdel); return; }
@@ -40,7 +57,16 @@
       var arr=asList(k); v.split(/[,;]+/).map(function(x){return x.trim();}).filter(Boolean).forEach(function(n){ if(arr.indexOf(n)<0) arr.push(n); });
       S.agenda.assign[k]=arr; agChanged(); applyAgenda(); commit(); var b2=document.querySelector('[data-rpadd-in="'+k+'"]'); if(b2) b2.focus(); return;
     }
-    var rd=t.closest("[data-rpdel]"); if(rd){ var k2=rd.dataset.rpdel, arr2=asList(k2); arr2.splice(+rd.dataset.i,1); S.agenda.assign[k2]=arr2; agChanged(); applyAgenda(); commit(); return; }
+    var rd=t.closest("[data-rpdel]");
+    if(rd){
+      var role=rd.dataset.rpdel, names=asList(role), removed=names.splice(+rd.dataset.i,1)[0];
+      S.agenda.assign[role]=names;
+      if(role==="speakers"&&removed&&!names.some(function(name){return nkey(name)===nkey(removed);})){
+        var pair=S.assigns.find(function(entry){return nkey(entry.speaker)===nkey(removed);});
+        if(pair&&pair.evaluator){ pair.evaluator=""; tick(pair); }
+      }
+      agChanged(); applyAgenda(); commit(); return;
+    }
     if(t.closest("[data-itdel]")){ var id=t.closest("[data-iid]").dataset.iid; agRemove(id); agChanged(); commit(); return; }
     var mv=t.closest("[data-agmv]"); if(mv){ var r0=mv.closest("[data-iid]").dataset.iid; if(agMove(r0,+mv.dataset.agmv)){ agChanged(); commit(); var nb=document.querySelector('[data-iid="'+r0+'"] [data-agmv="'+mv.dataset.agmv+'"]'); if(nb&&!nb.disabled) nb.focus(); } return; }
     if(t.closest("[data-agins]")){ var ni=agInsertAfter(t.closest("[data-iid]").dataset.iid); if(ni){ agChanged(); commit(); var ta=document.querySelector('[data-iid="'+ni.id+'"] .agtext'); if(ta) ta.focus(); } return; }
