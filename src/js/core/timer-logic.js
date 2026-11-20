@@ -1,9 +1,20 @@
 /* ---------- timer logic ---------- */
 function sessionOf(id){ for(var i=0;i<SESSIONS.length;i++) if(SESSIONS[i].id===id) return SESSIONS[i]; }
-function elapsed(row,t,round){ if(row.manual!=null) return row.manual; if(row.start==null) return null; var e=(row.end!=null?row.end:t); return Math.max(0,(round||Math.round)((e-row.start-(row.pz||0)-(row.paused?Math.max(0,e-row.paused):0))/1000)); }
+var timerClockOffsets=new Map();
+function timerClockOwner(){ return typeof Trystero==="undefined"?"":Trystero.selfId||""; }
+function timerClockTime(row,t){ return t+(timerClockOffsets.get(row.clockOwner)||0); }
+function recordTimerClockOffset(peer,sent,remote,received){
+  if(!Number.isFinite(remote)||received<sent||received-sent>5000) return;
+  timerClockOffsets.set(peer,remote-(sent+received)/2);
+}
+function elapsed(row,t,round){ if(row.manual!=null) return row.manual; if(row.start==null) return null; var e=(row.end!=null?row.end:row.paused||timerClockTime(row,t)); return Math.max(0,(round||Math.round)((e-row.start-(row.pz||0)-(row.paused?Math.max(0,e-row.paused):0))/1000)); }
 function timerElapsed(sid,row,t){ return elapsed(row,t,sid==="rr"?Math.floor:Math.round); }
-function pauseRow(sid,id){ var r=findRow(sid,id); if(!r||rowState(r)!=="running"||r.paused) return; r.paused=now(); tick(r); commit(); }
-function resumeRow(sid,id){ var r=findRow(sid,id); if(!r||!r.paused) return; r.pz=(r.pz||0)+Math.max(0,now()-r.paused); r.paused=null; tick(r); commit(); }
+function pauseRow(sid,id){ var r=findRow(sid,id); if(!r||rowState(r)!=="running"||r.paused) return; r.paused=timerClockTime(r,now()); tick(r); commit(); }
+function resumeRow(sid,id){ var r=findRow(sid,id); if(!r||!r.paused) return; var local=now(), clock=timerClockTime(r,local);
+  if(!r.clockOwner||r.clockOwner===timerClockOwner()||timerClockOffsets.has(r.clockOwner)){
+    r.start+=local-clock; r.clockOwner=timerClockOwner();
+  }
+  r.pz=(r.pz||0)+Math.max(0,clock-r.paused); r.paused=null; tick(r); commit(); }
 /* Round Robin has a single bell, not green/amber/red */
 function isRR(r){ return !!(r&&S.rows.rr&&S.rows.rr.some(function(x){return x.id===r.id;})); }
 function sigLabel(sg,r){ if(r&&r.paused) return "⏸ Paused"; if(isRR(r)&&sg) return sg==="sr"?"🔔 BELL · time’s up":"● Within time"; return signalName(sg); }
@@ -48,33 +59,38 @@ function reconcileTimerTurns(state){
     return state.rows[session.id].filter(function(row){return rowState(row)==="running";})
       .map(function(row){return {sid:session.id,row:row};});
   });
-  if(running.length<2) return;
+  if(!running.length) return;
   var turn=state.timerTurn;
   var winner=running.find(function(x){return x.sid===turn.sid&&x.row.id===turn.id;});
-  if(!winner){
+  if(!winner&&!turn.id){
+    if(running.length<2) return;
     running.sort(function(a,b){return b.row.start-a.row.start||a.row.id.localeCompare(b.row.id);});
     winner=running[0];
   }
+  var rejected=false;
   running.forEach(function(x){
     if(x===winner) return;
+    rejected=true; delete x.row.clockOwner;
     x.row.start=null; x.row.end=null; x.row.paused=null; x.row.pz=0; delete x.row.timedLim;
     x.row.u=Math.max(x.row.u||0,turn.u||0)+1;
   });
-  if(state===S) timerConflictMessage="Two speakers were started at once. Timing "+displayName(winner.row,0)+". The other turn is back in the queue.";
+  if(rejected&&state===S) timerConflictMessage=winner
+    ?"Two speakers were started at once. Timing "+displayName(winner.row,0)+". The other turn is back in the queue."
+    :"A delayed timer start was returned to the queue.";
 }
 function startRow(sid,id){
   var r=findRow(sid,id);
   if(!r||rowState(r)!=="idle"||(sid==="rr"&&!timerRows(sid).includes(r))) return;
   if(S.timerDemo.until){ S.timerDemo.until=0; tick(S.timerDemo); }
   r.timedLim=clone(limOf(sid,r));
-  r.start=now(); r.end=null; r.manual=null; r.pz=0; r.paused=null;
+  r.start=now(); r.clockOwner=timerClockOwner(); r.end=null; r.manual=null; r.pz=0; r.paused=null;
   S.timerTurn.sid=sid; S.timerTurn.id=id; tick(S.timerTurn);
   timerConflictMessage="";
   tick(r); commit(); wake();
 }
 function endTiming(r,at){
-  r.end=at;
-  if(r.paused){ r.pz=(r.pz||0)+Math.max(0,at-r.paused); r.paused=null; }
+  r.end=timerClockTime(r,at);
+  if(r.paused){ r.pz=(r.pz||0)+Math.max(0,r.end-r.paused); r.paused=null; }
   tick(r);
 }
 function stopRow(sid,id){ var r=findRow(sid,id); if(!r||r.start==null||r.end!=null) return; endTiming(r,now()); commit(); wake(); }

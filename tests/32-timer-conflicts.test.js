@@ -27,7 +27,18 @@ module.exports = async () => {
     mergeInto(mergedLeft, right);
     mergeInto(mergedRight, left);
     const states = (state) => [rowState(state.rows.rr[0]), rowState(state.rows.ps[0])];
+    const ended = clone(right);
+    ended.rows.ps[0].end = 2000;
+    ended.rows.ps[0].u = 2001;
+    ended.timerTurn.u = 1100;
+    mergeInto(ended, left);
+    recordTimerClockOffset("timer", 12950, 10000, 13050);
+    const timed = { start: 10000, clockOwner: "timer" };
     return {
+      delayedStart: rowState(ended.rows.rr[0]),
+      finishedTurn: rowState(ended.rows.ps[0]),
+      adjustedClock: timerElapsed("rr", timed, 18000),
+      pausedClock: timerElapsed("rr", { ...timed, paused: 12000 }, 30000),
       left: states(mergedLeft),
       right: states(mergedRight),
       limits: [mergedLeft.limits.rr.b, mergedLeft.limits.ps.r],
@@ -35,9 +46,31 @@ module.exports = async () => {
       originalStatus: status("ps", { ...right.rows.ps[0], end: 441000 }, 441000).text,
     };
   })())`, model));
+  assert.strictEqual(result.delayedStart, "idle");
+  assert.strictEqual(result.finishedTurn, "done");
+  assert.strictEqual(result.adjustedClock, 5);
+  assert.strictEqual(result.pausedClock, 2);
   assert.deepStrictEqual(result.left, result.right);
   assert.deepStrictEqual(result.left.sort(), ["idle", "running"]);
   assert.deepStrictEqual(result.limits, [45, 460]);
   assert.strictEqual(result.originalSignal, "sr");
   assert.match(result.originalStatus, /^Overtime/);
+
+  const view = source("core/render-shell.js");
+  vm.runInContext(view.slice(view.indexOf("function nextAgendaTiming"), view.indexOf("function renderTimerHandoff")), model);
+  vm.runInContext(source("roles/toastmaster-order.js"), model);
+  const agendaQueue = vm.runInContext(`(() => {
+    S = blank();
+    S.run.cur = "d5";
+    S.run.skip = { d6: true, d7: true };
+    S.rows.ps.push({ id: "prepared", name: "Prepared speaker" });
+    S.rows.tt.push({ id: "topic", name: "Table Topics speaker" });
+    function liveItem() {
+      const its = runItems(), i = its.findIndex((item) => item.id === S.run.cur);
+      return { its, i, cur: its[i] };
+    }
+    globalThis.curItem = liveItem;
+    return nextAgendaTiming().row.id;
+  })()`, model);
+  assert.strictEqual(agendaQueue, "topic");
 };

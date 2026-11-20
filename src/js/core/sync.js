@@ -10,6 +10,14 @@ var NET={room:null,act:null,mode:null,code:"",status:"off",msg:"",info:{},peers:
 function flags(m){ m.host=NET.mode==="host"; m.synced=NET.synced||NET.mode==="host"; if(PRACTICE) m.pr=1; return m; }
 function sendAll(m){ try{ if(NET.act) NET.act.send(flags(m)); }catch(e){} }
 function sendTo(pid,m){ try{ if(NET.act) NET.act.send(flags(m),{target:pid}); }catch(e){} }
+var timerClockProbe=null;
+function probeTimerClock(){
+  var active=runningList()[0], peer=active?.r.clockOwner, t=now();
+  if(!NET.synced||!peer||peer===timerClockOwner()||!NET.info[peer]) return;
+  if(timerClockProbe?.peer===peer&&t-timerClockProbe.sent<3000) return;
+  timerClockProbe={peer:peer,sent:t};
+  sendTo(peer,{t:"timer-clock-request",sent:t});
+}
 function makeCode(){ var A="ABCDEFGHJKMNPQRSTUVWXYZ23456789", s="", r=new Uint8Array(6); (window.crypto||window.msCrypto).getRandomValues(r); for(var i=0;i<6;i++) s+=A[r[i]%A.length]; return s; }
 function fmtCode(c){ return c.slice(0,3)+"-"+c.slice(3); }
 function cleanCode(s){ return String(s||"").toUpperCase().replace(/[^A-Z0-9]/g,""); }
@@ -79,7 +87,7 @@ function stopNet(keep){
   if(!keep) NET.reconnecting=false;
   clearTimeout(NET.relayT); clearTimeout(NET.pushT);
   if(NET.room){ try{ sendAll({t:"bye"}); }catch(e){} var r=NET.room; NET.room=null; NET.act=null; try{ r.leave(); }catch(e){} }
-  NET.info={}; NET.peers=[]; NET.synced=false;
+  NET.info={}; NET.peers=[]; NET.synced=false; timerClockProbe=null;
   if(!keep){ NET.mode=null; NET.code=""; L.conn=null; saveL(); setStatus("off"); renderAll(); }
 }
 function sendHello(pid){
@@ -105,6 +113,11 @@ function onMsg(pid,m){
     if(!known && m.t!=="hello") sendHello(pid);
     refreshPeers();
   } else { known.last=now(); known.host=!!m.host; if(Array.isArray(m.roles)) known.roles=m.roles.slice(0,12).map(String); }
+  if(m.t==="timer-clock-request"){ sendTo(pid,{t:"timer-clock-response",sent:m.sent,clock:now()}); return; }
+  if(m.t==="timer-clock-response"){
+    if(timerClockProbe?.peer===pid&&timerClockProbe.sent===m.sent) recordTimerClockOffset(pid,m.sent,m.clock,now());
+    return;
+  }
   if(m.t==="pingrt"){ sendTo(pid,{t:"pongrt",ts:m.ts}); return; }
   if(m.t==="pongrt"){ CC.rtt[pid]=Math.max(0,now()-(+m.ts||now())); renderCC(); return; }
   if(m.t==="state-request"){ if(NET.synced) sendTo(pid,{t:"state",state:S}); return; }
@@ -128,6 +141,7 @@ function onMsg(pid,m){
   var first=!NET.synced||NET.awaitingSnapshot;
   NET.synced=true; NET.awaitingSnapshot=false; NET.reconnecting=false; NET.lastSync=now();
   if(L.syncedMid!==S.mid){ L.syncedMid=S.mid; saveL(); }
+  probeTimerClock();
   if(changed){ save(); softRender(); wake(); }
   if(first||newMeeting){ refreshPeers(); NET.hello(); }
   W.inviteRole=null;
@@ -138,6 +152,7 @@ setInterval(function(){
   if(!NET.room) return;
   sendAll({t:"ping",role:L.role,roles:myRoles(),name:myName()});
   if(NET.awaitingSnapshot) sendAll({t:"state-request"});
+  probeTimerClock();
   refreshPeers();
 },5000);
 window.addEventListener("offline",function(){

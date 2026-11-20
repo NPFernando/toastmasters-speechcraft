@@ -112,19 +112,35 @@ function meCardHTML(x,sec,sg){
 }
 document.getElementById("nowStrip").addEventListener("click",function(e){ var b=e.target.closest("[data-mefull]"); if(!b) return; var c=b.closest(".mecard"); try{ if(document.fullscreenElement) document.exitFullscreen(); else if(c.requestFullscreen) c.requestFullscreen(); }catch(err){} });
 /* who is speaking now (from the Timer) — shown on the other roles */
+function nextAgendaTiming(){
+  var live=curItem();
+  if(!live.cur) return null;
+  for(var i=live.i;i<live.its.length;i++){
+    var item=live.its[i];
+    if(isSkipped(item.id)) continue;
+    var sid, row;
+    if(item.role==="keynote"){ sid="ps"; row=presentationRow(item.id); }
+    else if(item.x==="speakers"){ sid="ps"; row=queuedPreparedRows()[0]; }
+    else if(item.role==="rrm"){ sid="rr"; row=firstQueued(sid); }
+    else if(item.role==="ttm"){ sid="tt"; row=firstQueued(sid); }
+    else if(item.x==="evals"){
+      sid="rep"; row=firstQueued(sid);
+      if(!row){ sid="ev"; row=firstQueued(sid); }
+    }
+    if(row&&rowState(row)==="idle") return {sid:sid,row:row};
+  }
+  return null;
+}
 function renderTimerHandoff(){
   var el=document.getElementById("timerHandoff"), html="";
   if(["tmod","ge","timer"].includes(L.role)){
-    var active=runningList()[0], sid=active?.sid||S.timerTurn.sid||(L.role==="timer"?L.tab:"");
-    var session=sessionOf(sid), next=session&&firstQueued(sid);
-    if(!next&&!active){
-      session=SESSIONS.find(function(format){return firstQueued(format.id);});
-      if(session){ sid=session.id; next=firstQueued(sid); }
-    }
+    var active=runningList()[0], agendaNext=nextAgendaTiming();
+    var sid=agendaNext?.sid||active?.sid||(L.role==="timer"?L.tab:S.timerTurn.sid);
+    var session=sessionOf(sid), next=agendaNext?.row||(session&&firstQueued(sid));
     if(active||next||(L.role==="timer"&&timerConflictMessage)){
       html='<section class="card" aria-label="Timing now and next"><div><b>Now timing</b> · '+
         (active?esc(displayName(active.r,active.i))+' · '+esc(active.s.name)+(active.r.paused?' · Paused':''):'—')+
-        '</div><div><b>Next queued</b> · '+(next?esc(displayName(next,S.rows[sid].indexOf(next)))+' · '+esc(session.name):'—')+'</div>'+
+        '</div><div><b>'+(agendaNext?'Next timed on agenda':session?esc(session.name)+' queue':'Next timed speaker')+'</b> · '+(next?esc(displayName(next,S.rows[sid].indexOf(next)))+' · '+esc(session.name):'—')+'</div>'+
         (L.role==="timer"&&timerConflictMessage?'<p class="note" role="status">'+esc(timerConflictMessage)+'</p>':'')+'</section>';
     }
   }
