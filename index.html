@@ -109,10 +109,6 @@ label.f,.f{display:flex;flex-direction:column;font-size:12px;color:var(--muted);
 .qr svg{width:100%;height:auto;display:block}
 .qrwrap{text-align:center;margin:10px 0}
 .qrwrap .saved{margin-top:6px}
-.qrpair{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:10px 0}
-.qrpair > div{border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center}
-.qrpair b{display:block;margin-bottom:6px}
-@media (max-width:520px){ .qrpair{grid-template-columns:1fr} }
 @media (max-width:520px){ .rolegrid{grid-template-columns:1fr} .rolecard{padding:12px 14px;display:flex;gap:12px;align-items:center} .rolecard b{margin-top:0} }
 .role{flex:0 0 auto;border:1px solid var(--line);background:var(--card);border-radius:10px;padding:9px 14px;cursor:pointer;font-weight:600;color:var(--muted);white-space:nowrap}
 .role.active{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
@@ -3865,14 +3861,12 @@ function renderConnBox(){
        '<div class="card"><b>Join a meeting</b><div class="saved" style="margin:4px 0 8px">Type the code the host gives you.</div><div class="row"><input class="t" id="joinCode" placeholder="e.g. K7Q-M4P" maxlength="9" style="text-transform:uppercase;letter-spacing:2px;font-weight:700"><button class="btn primary" id="joinBtn">Join</button></div></div>';
   } else {
     h+='<h3>'+(NET.mode==="host"?"You're hosting this meeting":(NET.synced?"Connected to meeting":"Joining meeting"))+'</h3>';
-    h+='<div class="saved">Share the code, or let people scan a QR code below with their phone camera.</div>';
+    h+='<div class="saved">Share the meeting code or invite link, or ask others to scan the QR code.</div>';
     h+='<div class="code">'+fmtCode(NET.code)+'</div><div role="status"><b>'+syncStatusLabel()+'</b>'+
       (NET.lastSync?' · Last meeting data received at '+esc(new Date(NET.lastSync).toLocaleTimeString()):'')+'</div>';
     if(NET.status!=="on") h+='<div class="'+(NET.status==="err"?"connerr":"saved")+'">'+esc(NET.msg||"Connecting…")+'</div>';
     if(NET.peers.length){ var ppl=onlinePeople(); h+='<b>Online: '+ppl.length+' '+(ppl.length===1?'person':'people')+' on '+NET.peers.length+' device'+(NET.peers.length===1?'':'s')+'</b><ul class="devlist">'+ppl.map(function(p){ return '<li>'+peopleRoleNames(p)+(p.name?' — '+esc(p.name):'')+devTag(p)+(p.me?' <span class="saved">(you)</span>':'')+(p.host?' <span class="saved">(started the meeting)</span>':'')+'</li>'; }).join("")+'</ul>'; }
-    var rr=ROLES.find(function(x){return x.id===L.role;});
-    h+='<div class="qrpair"><div><b>Others join</b>'+qrSvg(inviteLink(NET.code))+'<div class="saved">They scan, then pick their role</div></div>'+
-       '<div><b>📱 My role on my phone</b>'+qrSvg(myDeviceLink())+'<div class="saved">Opens as '+rr.icon+' '+rr.name+' with the same data</div></div></div>';
+    h+='<div class="qrwrap"><b>Join this meeting</b>'+qrSvg(inviteLink(NET.code))+'<div class="saved">Scan to join and choose a role</div></div>';
     h+='<div class="row" style="justify-content:space-between;margin-top:10px"><span class="row"><button class="btn" id="copyCode">Copy code</button><button class="btn" id="copyLink">Copy invite link</button></span><button class="btn" id="leaveBtn">Leave meeting</button></div>';
   }
   h+='<div class="note">🔒 Devices connect directly to each other and the link is encrypted (WebRTC). Public Nostr relays only help devices find each other, and even those messages are encrypted with your meeting code. Your meeting data never passes through them. Needs internet on every device. If a strict office network blocks it, use the same Wi-Fi or a phone hotspot. Anyone can close the page; the others stay connected.</div>'+
@@ -5450,7 +5444,7 @@ applyDisplay();
   document.addEventListener("keydown",function(e){ if(e.key==="Escape") M.classList.remove("on"); });
 })();
 /* ---------- home, about and clean-up ---------- */
-var APP_VERSION="3.11.4 · November 2026";
+var APP_VERSION="3.11.5 · November 2026";
 function aboutHTML(){
   var on=!!NET.mode, coord=L.role==="coord";
   return '<div class="finhead"><h2 class="sec" style="margin:0">ℹ️ About</h2><button class="btn ghost" id="aboutClose">Close</button></div>'+
