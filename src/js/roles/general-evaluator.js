@@ -37,6 +37,16 @@ var GE_SECTIONS=[
   ["Evaluation and closing",[["reports","GE called scheduled evaluations and team reports"],["quality","Evaluations specific, balanced, encouraging and actionable"],["finish","Agenda kept to time and meeting formally adjourned"],["atmosphere","Supportive atmosphere and audience engagement"]]]
 ];
 var GE_OPEN={};
+function geRoundRobinTurns(){
+  return S.rows.rr.filter(function(row){
+    return rowState(row)!=="idle"||["last","first","result","order"].some(function(field){return S.genotes["rr_"+row.id+"_"+field];});
+  }).sort(function(a,b){
+    var aq=rrById(a.qid), bq=rrById(b.qid);
+    return (aq?.ord||0)-(bq?.ord||0)||String(a.qid||"").localeCompare(String(b.qid||""))||
+      (Number(S.genotes["rr_"+a.id+"_order"])||Infinity)-(Number(S.genotes["rr_"+b.id+"_order"])||Infinity)||
+      (a.start??Infinity)-(b.start??Infinity)||a.ord-b.ord;
+  });
+}
 function gePanel(key,label){ return '<details data-ge-panel="'+esc(key)+'"'+(GE_OPEN[key]?' open':'')+'><summary>'+esc(label)+'</summary>'; }
 var GE_STATUS={yes:"Yes",partial:"Partly",no:"No",na:"Not applicable"};
 function geField(key,label,type){ return '<label class="f evbox"><b>'+esc(label)+'</b><input class="t" type="'+(type||'text')+'" data-ge="'+esc(key)+'" value="'+esc(S.genotes[key]||'')+'"></label>'; }
@@ -45,7 +55,7 @@ function geObservationLines(){
   var out=[];
   GE_SECTIONS.forEach(function(section){ section[1].forEach(function(item){var k='check_'+item[0], v=S.genotes[k], note=S.genotes[k+'_note']; if(v||note) out.push(section[0]+' — '+item[1]+': '+(GE_STATUS[v]||'Not observed')+(note?' — '+note:''));}); });
   [['plannedStart','Scheduled start'],['actualStart','Actual start'],['plannedEnd','Scheduled end'],['actualEnd','Actual end'],['rrFormat','Round Robin format / agreed rule'],['action','Priority recommendation / next action']].forEach(function(x){if(S.genotes[x[0]]) out.push(x[1]+': '+S.genotes[x[0]]);});
-  S.rows.rr.forEach(function(r){var k='rr_'+r.id, last=S.genotes[k+'_last'], first=S.genotes[k+'_first'], result=S.genotes[k+'_result']; if(last||first||result) out.push('Round Robin — '+r.name+': previous speaker’s last word: '+(last||'not recorded')+'; opening word: '+(first||'not recorded')+'; followed agreed rule: '+(GE_STATUS[result]||'Not observed'));});
+  geRoundRobinTurns().forEach(function(r){var k='rr_'+r.id, last=S.genotes[k+'_last'], first=S.genotes[k+'_first'], result=S.genotes[k+'_result']; if(last||first||result) out.push('Round Robin — '+r.name+': previous speaker’s last word: '+(last||'not recorded')+'; opening word: '+(first||'not recorded')+'; followed agreed rule: '+(GE_STATUS[result]||'Not observed'));});
   workflowReportLines().forEach(function(line){out.push(line);});
   return out;
 }
@@ -54,9 +64,9 @@ function geObservationsHTML(){
   var h='<h2 class="sec">Meeting observations</h2><p class="muted">Record what you observe. Leave unseen items as Not observed; use Not applicable for activities outside today’s agenda. Notes are shared meeting data, not private feedback.</p>';
   h+='<div class="row">'+geField('plannedStart','Scheduled start','time')+geField('actualStart','Actual start','time')+geField('plannedEnd','Scheduled end','time')+geField('actualEnd','Actual end','time')+'</div>';
   GE_SECTIONS.forEach(function(section){h+=gePanel(section[0],section[0]); section[1].forEach(function(item){var k='check_'+item[0]; h+=geSelect(k,item[1])+geField(k+'_note','Evidence / suggestion: '+item[1]);}); h+='</details>';});
-  h+=gePanel('handovers','Round Robin word handovers')+'<p class="muted">Use for the last-word format. Record turns in the observed speaking order; the first speaker may be Not applicable. Names below come from the Timer queue and do not prove speaking order. No audio or automatic word recognition is used.</p>'+geField('rrFormat','Round Robin format / agreed rule');
-  if(!S.rows.rr.length) h+='<p class="muted">Add participants through the Round Robin Master to record individual handovers.</p>';
-  S.rows.rr.forEach(function(r){var k='rr_'+r.id; h+=gePanel('rr_'+r.id,r.name)+geField(k+'_last','Previous speaker’s last word')+geField(k+'_first','This speaker’s opening word')+geSelect(k+'_result','Followed the agreed handover rule')+'</details>';});
+  h+=gePanel('handovers','Round Robin word handovers')+'<p class="muted">Use for the last-word format. Record turns in the observed speaking order; the first speaker may be Not applicable. Timed turns appear by question and start time. Enter an order number to correct the observed sequence.</p>'+geField('rrFormat','Round Robin format / agreed rule');
+  if(!geRoundRobinTurns().length) h+='<p class="muted">Timed Round Robin turns appear here when the Timer starts them.</p>';
+  geRoundRobinTurns().forEach(function(r){var k='rr_'+r.id; h+=gePanel('rr_'+r.id,(rrById(r.qid)?.text||'Round Robin')+' · '+r.name)+geField(k+'_order','Observed speaking order','number')+geField(k+'_last','Previous speaker’s last word')+geField(k+'_first','This speaker’s opening word')+geSelect(k+'_result','Followed the agreed handover rule')+'</details>';});
   return h+'</details>'+geField('action','Priority recommendation / next action');
 }
 

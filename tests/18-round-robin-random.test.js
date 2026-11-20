@@ -13,11 +13,8 @@ module.exports = async (b) => {
   await R.fill("#rrQ", "What made you smile this week?"); await R.click("#rrStart");
   await T.eventually(async () => /the same for everyone[\s\S]*What made you smile this week\?/i.test(await R.innerText("#view")), "question shown");
   T.assert.ok(!(await R.$("#rrNext")) && !(await R.$("#rrShuffleAll")), "no next-question or queue-all buttons");
-  // only people here: of the members, only Dilini is connected
-  await T.eventually(async () => await R.isChecked("#rrHere"), "only-people-here is on when people are connected");
-  await T.eventually(async () => /0 of 1 have had a turn/.test(await R.innerText("#view")), "pool is the members here (Dilini)");
-  await R.uncheck("#rrHere");
-  await T.eventually(async () => /0 of 4 have had a turn or are queued · 4 to go/.test(await R.innerText("#view")), "pool is everyone on the list");
+  await T.eventually(async () => (await R.locator('[data-rrcall="Dilini"]').count()) === 1 && (await R.locator('[data-rrcall="Naveen"]').count()) === 1, "both named connected people are eligible");
+  T.assert.strictEqual(await R.locator('[data-rrcall="Amal"]').count(), 0, "an absent member is excluded");
   // random picks: one at a time, different people
   await R.click("#rrRandom");
   await T.eventually(async () => (await chipsWith(R, "⏳")).length === 1, "first person queued");

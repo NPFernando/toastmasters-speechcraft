@@ -4,10 +4,10 @@
 var LINK_ROLES=["ah","gram","seval","tteval"];
 function linkRoles(){ return myRoles().filter(function(r){ return LINK_ROLES.indexOf(r)>=0; }); }
 function counterRow(kind,name,format){
-  if(kind==="ah") format=format||ahFormat();
-  var arr=kind==="ah"?S.ahRows:S.gramRows, ex=kind==="ah"?ahRecord(name,format):arr.find(function(r){return nkey(r.name)===nkey(name);});
-  if(!ex){ var id=kind+"|"+(kind==="ah"?format+"|":"")+nkey(name); delete S.dead[id];
-    ex = kind==="ah" ? {id:id,name:name,format:format,c:{},ord:maxOrd(arr)+1,u:now()} : {id:id,name:name,w:0,good:[],slips:[],ord:maxOrd(arr)+1,u:now()}; arr.push(ex); }
+  format=format||counterFormat(kind);
+  var arr=kind==="ah"?S.ahRows:S.gramRows, ex=formatRecord(kind,name,format);
+  if(!ex){ var id=kind+"|"+format+"|"+nkey(name); delete S.dead[id];
+    ex = kind==="ah" ? {id:id,name:name,format:format,c:{},ord:maxOrd(arr)+1,u:now()} : {id:id,name:name,format:format,w:0,good:[],slips:[],ord:maxOrd(arr)+1,u:now()}; arr.push(ex); }
   return ex;
 }
 function isPrepared(n){ return preparedSpeakers().some(function(x){return nkey(x)===nkey(n);}); }
@@ -18,10 +18,15 @@ function selectPerson(name,from){
   var rs=myRoles(), changed=false;
   L.person={name:name,at:now(),from:from||""};
   if(rs.indexOf("ah")>=0&&(from!=="timer"||!L.ahFormat)){ var n1=S.ahRows.length, r1=counterRow("ah",name,from==="ttm"||from==="tteval"?"tt":from==="seval"?"ps":null); L.ahSel=r1.id; if(S.ahRows.length!==n1) changed=true; }
-  if(rs.indexOf("gram")>=0){ var n2=S.gramRows.length, r2=counterRow("gram",name); L.gramSel=r2.id; if(S.gramRows.length!==n2) changed=true; }
+  if(rs.indexOf("gram")>=0&&(from!=="timer"||!L.gramFormat)){ var n2=S.gramRows.length, r2=counterRow("gram",name,from==="ttm"||from==="tteval"?"tt":from==="seval"?"ps":null); L.gramSel=r2.id; if(S.gramRows.length!==n2) changed=true; }
   L.evSel=L.evSel||{};
   if(rs.indexOf("seval")>=0 && (isPrepared(name)||from==="seval")) L.evSel.ps=name;
-  if(rs.indexOf("tteval")>=0 && (isTT(name)||from==="tteval")) L.evSel.tt=name;
+  if(rs.indexOf("tteval")>=0 && (isTT(name)||from==="tteval")) {
+    var current=from==="ttm"?topicById(S.cur.id):from==="timer"?topicById(runningList()[0]?.r.topicId):null;
+    var selected=ttTurn(L.evSel.tt);
+    if(current?.used&&nkey(current.speaker)===nkey(name)) L.evSel.tt=ttTurnKey(current);
+    else if(!selected||nkey(selected.speaker)!==nkey(name)) L.evSel.tt=name;
+  }
   L.fsel=name;
   saveL(); if(changed){ remember(name); }
   return changed;

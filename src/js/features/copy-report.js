@@ -10,7 +10,7 @@ function reportText(role){
   } else if(role==="gram"){
     L1.push("📝 Grammarian's report — "+hd); if(S.gram.wotd) L1.push("Word of the Day: "+S.gram.wotd+(S.gram.meaning?" — "+S.gram.meaning:""));
     if(S.gram.wotd && S.gram.example) L1.push("Example: "+S.gram.example);
-    S.gramRows.forEach(function(r){ L1.push("• "+r.name+": WOTD ×"+(r.w||0)+(r.good.length?"; great: "+r.good.join("; "):"")+(r.slips.length?"; to polish: "+r.slips.join("; "):"")); });
+    S.gramRows.forEach(function(r){ L1.push("• "+r.name+" ("+ahFormatName(r.format)+"): WOTD ×"+(r.w||0)+(r.good.length?"; great: "+r.good.join("; "):"")+(r.slips.length?"; to polish: "+r.slips.join("; "):"")); });
   } else if(role==="ge"){
     L1.push("🧭 General Evaluator's notes — "+hd);
     geObservationLines().forEach(function(line){ L1.push("• "+line); });
@@ -40,8 +40,7 @@ function copyBtn(role){ return '<button class="btn sm" data-copyrep="'+role+'">�
     if(a){ var who=a.dataset.who, w=a.dataset.cmpah, rec=counterRow("ah",who,a.dataset.format);
       rec.c[w]=(rec.c[w]||0)+1; tick(rec); commit(); return; }
     var g=e.target.closest("[data-cmpgram]");
-    if(g){ var who2=g.dataset.cmpgram, gr=S.gramRows.find(function(r){return nkey(r.name)===nkey(who2);});
-      if(!gr){ gr={id:uid(),name:who2,w:0,good:[],slips:[],ord:maxOrd(S.gramRows)+1,u:now()}; S.gramRows.push(gr); }
+    if(g){ var gr=counterRow("gram",g.dataset.cmpgram,g.dataset.format);
       gr.w=(gr.w||0)+1; tick(gr); commit(); return; }
   });
   var V=document.getElementById("view");

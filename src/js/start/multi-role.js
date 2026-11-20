@@ -93,9 +93,9 @@ function companionHTML(){
        (who?S.fill.words.map(function(w){ return '<button class="cmpb" data-format="'+format+'" data-cmpah="'+esc(w)+'" data-who="'+esc(who)+'">'+esc(w)+' <b>'+((rec&&rec.c[w])||0)+'</b></button>'; }).join(""):'')+'</div></div>';
   }
   if(rs.indexOf("gram")>=0 && L.role!=="gram"){
-    var g=personNow(); var gr=g?S.gramRows.find(function(r){return nkey(r.name)===nkey(g);}):null;
+    var g=personNow(); var format=runningList()[0]?.sid||counterFormat("gram"), gr=g?formatRecord("gram",g,format):null;
     h+='<div class="cmp"><b>📝 Grammarian</b> <span class="muted">'+(g?esc(g)+' (speaking now)':'— no one speaking')+'</span><div class="cmpbtns">'+
-       (g?'<button class="cmpb" data-cmpgram="'+esc(g)+'">+1 Word of the Day'+(S.gram.wotd?' “'+esc(S.gram.wotd)+'”':'')+' <b>'+((gr&&gr.w)||0)+'</b></button>':'')+'</div></div>';
+       (g?'<button class="cmpb" data-format="'+format+'" data-cmpgram="'+esc(g)+'">+1 Word of the Day'+(S.gram.wotd?' “'+esc(S.gram.wotd)+'”':'')+' <b>'+((gr&&gr.w)||0)+'</b></button>':'')+'</div></div>';
   }
   return h;
 }

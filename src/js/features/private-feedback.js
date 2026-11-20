@@ -77,7 +77,7 @@ function meetingEvalDrafts(){
 function evDraft(){
   var kind=evKind(), sel=(L.evSel||{})[kind]; if(!sel) return null;
   var id=evId(kind,sel,myName()), drafts=meetingEvalDrafts();
-  if(!drafts[id]) drafts[id]={kind:kind,speaker:sel,c1:"",r:"",c2:"",rate:{}};
+  if(!drafts[id]) drafts[id]={kind:kind,speaker:kind==="tt"?ttTargetName(sel):sel,turnId:kind==="tt"?ttTurn(sel)?.id:null,topic:kind==="tt"?ttTurn(sel)?.text:null,c1:"",r:"",c2:"",rate:{}};
   return {id:id,d:drafts[id]};
 }
 var markTimers={};
@@ -89,7 +89,7 @@ function markWriting(id){
     if(S.mid!==mid) return;
     var d=meetingEvalDrafts()[id]; if(!d||d.submitted) return;
     var rec=upsert(["evals"],id,{kind:d.kind,speaker:d.speaker});
-    if(rec.state!=="writing"){ rec.by=by||"Evaluator"; rec.kind=d.kind; rec.speaker=d.speaker; rec.state="writing"; rec.done=false; rec.enc=null; tick(rec); commitQuiet(); }
+    if(rec.state!=="writing"){ rec.by=by||"Evaluator"; rec.kind=d.kind; rec.speaker=d.speaker; rec.turnId=d.turnId||null; rec.state="writing"; rec.done=false; rec.enc=null; tick(rec); commitQuiet(); }
   },1200);
 }
 /* Submit: encrypt the final version for the speaker and share it */
@@ -100,9 +100,9 @@ function submitDraft(id,resend){
   if(!resend){ d.submitted=true; d.changed=false; d.submittedAt=now(); }
   saveL(); clearTimeout(markTimers[id]);
   var rec=upsert(["evals"],id,{kind:d.kind,speaker:d.speaker});
-  rec.by=d.by; rec.kind=d.kind; rec.speaker=d.speaker; rec.done=true; rec.at=d.submittedAt; delete rec.c1; delete rec.r; delete rec.c2; delete rec.rate;
+  rec.by=d.by; rec.kind=d.kind; rec.speaker=d.speaker; rec.turnId=d.turnId||null; rec.done=true; rec.at=d.submittedAt; delete rec.c1; delete rec.r; delete rec.c2; delete rec.rate;
   if(!keyRec(d.speaker)){ rec.state="queued"; rec.enc=null; rec.pending=true; tick(rec); commit(); return Promise.resolve(false); }
-  return encryptFor(d.speaker,{c1:d.c1,r:d.r,c2:d.c2,rate:d.rate||{},kind:d.kind,by:d.by,at:d.submittedAt}).then(function(enc){
+  return encryptFor(d.speaker,{c1:d.c1,r:d.r,c2:d.c2,rate:d.rate||{},kind:d.kind,topic:d.topic||"",by:d.by,at:d.submittedAt}).then(function(enc){
     if(S.mid!==mid) return false;
     var r2=S.evals.find(function(x){return x.id===id;})||rec;
     r2.enc=enc; r2.state="submitted"; r2.pending=false; r2.done=true; r2.at=d.submittedAt; tick(r2); d.sentKx=enc.kx; saveL(); commit(); return true;

@@ -33,8 +33,8 @@ function buildCard(name){
   if(tp.length) h+='<div style="margin-top:6px"><b>Table Topic:</b> '+esc(tp.map(function(x){return x.text;}).join(" · "))+'</div>';
   var ah=S.ahRows.filter(function(r){return nkey(r.name)===nkey(name);});
   h+='<h4>🔢 Ah-Counter</h4>'+(ah.length?ah.map(function(row){return '<div><b>'+esc(ahFormatName(row.format))+'</b> · '+S.fill.words.filter(function(w){return row.c[w];}).map(function(w){return esc(w)+' ×'+row.c[w];}).join(" · ")+' — total '+ahTotal(row)+'</div>';}).join(""):'<div class="none">Not counted.</div>');
-  var g=S.gramRows.find(function(r){return nkey(r.name)===nkey(name);});
-  h+='<h4>📝 Grammarian</h4>'+(g?'<div>Word of the Day'+(S.gram.wotd?' (“'+esc(S.gram.wotd)+'”)':'')+': used '+(g.w||0)+'×</div>'+(g.good.length?'<div><b>Great phrases:</b> '+esc(g.good.join("; "))+'</div>':'')+(g.slips.length?'<div><b>To polish:</b> '+esc(g.slips.join("; "))+'</div>':''):'<div class="none">No notes.</div>');
+  var grammar=S.gramRows.filter(function(r){return nkey(r.name)===nkey(name);});
+  h+='<h4>📝 Grammarian</h4>'+(grammar.length?grammar.map(function(g){ return '<div><b>'+esc(ahFormatName(g.format))+'</b></div><div>Word of the Day'+(S.gram.wotd?' (“'+esc(S.gram.wotd)+'”)':'')+': used '+(g.w||0)+'×</div>'+(g.good.length?'<div><b>Great phrases:</b> '+esc(g.good.join("; "))+'</div>':'')+(g.slips.length?'<div><b>To polish:</b> '+esc(g.slips.join("; "))+'</div>':''); }).join(""):'<div class="none">No notes.</div>');
   h+='<h4>🗣 Evaluation <span style="font-weight:400;font-size:12px;color:#666">🔒 private</span></h4><div id="cardEvals"><div class="none">Decrypting…</div></div>';
   h+='<h4>💌 Notes from the audience <span style="font-weight:400;font-size:12px;color:#666">🔒 private</span></h4><div id="cardNotes"><div class="none">Decrypting…</div></div>';
   if(S.vote.state==="shown"){ var won=VCATS.filter(function(c){ return tally(c.k).winners.some(function(w){return nkey(w.name)===nkey(name);}); }).map(function(c){return c.n;}); if(won.length) h+='<h4>🏆 Awards</h4><div><b>'+esc(won.join(", "))+'</b></div>'; }
@@ -48,7 +48,7 @@ function buildCard(name){
   var ev=submittedEvals(name), nt=S.notes.filter(function(n){return nkey(n.to)===nkey(name)&&n.enc;});
   var kx=keyRec(name).pub.x;
   Promise.all(ev.map(function(e){ return e.enc.kx!==kx?Promise.resolve(null):decryptFor(name,e.enc).catch(function(){return null;}); })).then(function(list){
-    var html=list.map(function(x,i){ if(!x) return ''; var rt=x.rate||{}; return '<div class="evcard"><div class="saved">'+(x.kind==="tt"?"Table Topics":"Prepared speech")+' · by '+esc(ev[i].by||x.by||"Evaluator")+'</div>'+(x.c1?'<div><b>Commend:</b> '+esc(x.c1)+'</div>':'')+(x.r?'<div><b>Recommend:</b> '+esc(x.r)+'</div>':'')+(x.c2?'<div><b>Commend:</b> '+esc(x.c2)+'</div>':'')+((rt.content||rt.delivery||rt.confidence)?'<div class="saved">Content '+(rt.content||"–")+'/5 · Voice & body '+(rt.delivery||"–")+'/5 · Confidence '+(rt.confidence||"–")+'/5</div>':'')+'</div>'; }).join("");
+    var html=list.map(function(x,i){ if(!x) return ''; var rt=x.rate||{}; return '<div class="evcard"><div class="saved">'+(x.kind==="tt"?"Table Topics":"Prepared speech")+(x.topic?' · '+esc(x.topic):'')+' · by '+esc(ev[i].by||x.by||"Evaluator")+'</div>'+(x.c1?'<div><b>Commend:</b> '+esc(x.c1)+'</div>':'')+(x.r?'<div><b>Recommend:</b> '+esc(x.r)+'</div>':'')+(x.c2?'<div><b>Commend:</b> '+esc(x.c2)+'</div>':'')+((rt.content||rt.delivery||rt.confidence)?'<div class="saved">Content '+(rt.content||"–")+'/5 · Voice & body '+(rt.delivery||"–")+'/5 · Confidence '+(rt.confidence||"–")+'/5</div>':'')+'</div>'; }).join("");
     var el=document.getElementById("cardEvals"); if(el) el.innerHTML=html||'<div class="none">No evaluation yet.</div>';
   });
   Promise.all(nt.map(function(n){ return n.enc.kx!==kx?Promise.resolve(null):decryptFor(name,n.enc).catch(function(){return null;}); })).then(function(list){

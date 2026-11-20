@@ -28,10 +28,10 @@
     if(t.closest("#geReport")){ document.getElementById("openReport").click(); return; }
     var ck=t.closest("[data-checkin]"); if(ck){ var n=ck.dataset.checkin; setPresent(n,!present(n)); if(L.role==="member"&&!myName()) setMyName(n); return; }
     if(L.role==="seval"||L.role==="tteval"){
-      var es=t.closest("[data-evsel]"); if(es){ L.evSel=L.evSel||{}; L.evSel[evKind()]=es.dataset.evsel; if(selectPerson(es.dataset.evsel,L.role)) commit(); else { saveL(); renderAll(); } return; }
+      var es=t.closest("[data-evsel]"); if(es){ L.evSel=L.evSel||{}; L.evSel[evKind()]=es.dataset.evsel; var changed=selectPerson(es.dataset.evsel,L.role); if(es.dataset.turn) L.evSel.tt=es.dataset.turn; saveL(); if(changed) commit(); else renderAll(); return; }
       if(t.closest("#evAdd")){ var v=(document.getElementById("evAddIn").value||"").trim(); if(v){ clearDeviceDraft("evAddIn"); L.evSel=L.evSel||{}; L.evSel[evKind()]=v; if(selectPerson(v,L.role)) commit(); else { saveL(); renderAll(); } } return; }
       var rb=t.closest("[data-rate]"); if(rb){ var dr=evDraft(); if(!dr) return; dr.d.rate=dr.d.rate||{}; dr.d.rate[rb.dataset.rate]=(dr.d.rate[rb.dataset.rate]===+rb.dataset.v)?0:+rb.dataset.v; if(dr.d.submitted) dr.d.changed=true; else markWriting(dr.id); saveL(); syncEvaluationDraft(dr.id,dr.d,"rate."+rb.dataset.rate); renderAll(); return; }
-      if(t.closest("#assignMe")){ var sa=(L.evSel||{})[evKind()]; if(!myName()){ alert("Type your name in Your name at the top first."); return; } var cur=anyEvaluatorOf(evKind(),sa); if(cur&&nkey(cur)!==nkey(myName())&&!confirm(sa+" is assigned to "+cur+". Assign to you instead?")) return; if(evKind()==="tt") setTTAssign(sa,myName()); else setAssign(sa,myName()); return; }
+      if(t.closest("#assignMe")){ var sa=(L.evSel||{})[evKind()]; if(!myName()){ alert("Type your name in Your name at the top first."); return; } var cur=anyEvaluatorOf(evKind(),sa); if(cur&&nkey(cur)!==nkey(myName())&&!confirm((evKind()==="tt"?ttTargetName(sa):sa)+" is assigned to "+cur+". Assign to you instead?")) return; if(evKind()==="tt") setTTAssign(sa,myName()); else setAssign(sa,myName()); return; }
       if(t.closest("#unassignMe")){ var us=(L.evSel||{})[evKind()]; if(evKind()==="tt") setTTAssign(us,""); else setAssign(us,""); return; }
       if(t.closest("#evSubmit")){ var ds=evDraft(); if(!ds) return; var dd2=ds.d; if(!(dd2.c1||dd2.r||dd2.c2)){ alert("Write at least one Commend or Recommend before submitting."); return; } if(!myName()){ alert("Type your name in Your name at the top first, so the speaker knows who evaluated them."); return; } t.disabled=true; submitDraft(ds.id).then(function(){ syncEvaluationDraft(ds.id,ds.d); renderAll(); }); return; }
     }
@@ -43,7 +43,7 @@
       var rf=t.closest("[data-rrforget]"); if(rf){ rrForget(rf.dataset.rrforget); return; }
       if(t.closest("#rrShow")){ L.stageMode="rr"; openStage(); return; }
       var rc=t.closest("[data-rrcall]"); if(rc){ rrCall(rc.dataset.rrcall); return; }
-      if(t.closest("#rrGuestAdd")){ var gi=document.getElementById("rrGuest"); var guest=gi.value.trim(); if(guest){ clearDeviceDraft("rrGuest"); rrCall(guest); } return; }
+      if(t.closest("#rrGuestAdd")){ var gi=document.getElementById("rrGuest"); var guest=gi.value.trim(); if(guest){ clearDeviceDraft("rrGuest"); setPresent(guest,true); rrCall(guest); } return; }
     }
     if(L.role==="speaker"){
       var me2=t.closest("[data-spme]"); if(me2){ setMyName(me2.dataset.spme); var s0=mySpeech(); applySpeech(s0); commit(); return; }
