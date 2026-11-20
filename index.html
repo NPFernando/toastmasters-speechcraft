@@ -1618,25 +1618,42 @@ function renderStage(){
 function openStage(){ renderStage(); var st=document.getElementById("stage"); st.classList.add("on"); try{ if(st.requestFullscreen) st.requestFullscreen().catch(function(){}); }catch(e){} }
 function closeStage(){ document.getElementById("stage").classList.remove("on"); try{ if(document.fullscreenElement) document.exitFullscreen(); }catch(e){} }
 
+function ahFormat(){ return L.ahFormat||runningList()[0]?.sid||S.timerTurn?.sid||"other"; }
+function ahFormatName(id){ return sessionOf(id)?.name||"Other / unassigned"; }
+function ahRecord(name,format){ return S.ahRows.find(function(row){ return (row.format||"other")===format&&(nkey(row.name)===nkey(name)||nkey(row.sourceName)===nkey(name)); }); }
+function ahNames(format){
+  var names=format==="other"?[]:timerRows(format).map(function(row){return baseName(row.name);});
+  if(format==="tt") names=names.concat(ttSpeakers());
+  if(format==="ps") names=names.concat(preparedSpeakers());
+  return uniq(names.filter(Boolean));
+}
+function ahTabs(){
+  return '<label class="f">Speaking format<select class="t" id="ahFormat"><option value="">Follow Timer</option>'+
+    SESSIONS.concat([{id:"other",name:ahFormatName("other")}]).map(function(s){
+      return '<option value="'+s.id+'"'+(L.ahFormat===s.id?' selected':'')+'>'+esc(s.name)+'</option>';
+    }).join("")+'</select></label><h2 class="sec">'+esc(ahFormatName(ahFormat()))+'</h2>';
+}
 /* ---------- Ah-Counter & Grammarian ---------- */
-function selRow(kind){ var arr=kind==="ah"?S.ahRows:S.gramRows, id=kind==="ah"?L.ahSel:L.gramSel; return arr.find(function(x){return x.id===id;})||null; }
+function selRow(kind){ var arr=kind==="ah"?S.ahRows:S.gramRows, id=kind==="ah"?L.ahSel:L.gramSel; return arr.find(function(x){return x.id===id&&(kind!=="ah"||(x.format||"other")===ahFormat());})||null; }
 function ahTotal(r){ return S.fill.words.reduce(function(s,w){return s+(r.c[w]||0);},0); }
 function speakerPicker(kind){
-  var arr=kind==="ah"?S.ahRows:S.gramRows, sel=selRow(kind);
+  var arr=kind==="ah"?S.ahRows.filter(function(r){return (r.format||"other")===ahFormat();}):S.gramRows, sel=selRow(kind);
+  var suggested=kind==="ah"?ahNames(ahFormat()).filter(function(n){return !ahRecord(n,ahFormat());}):[];
   var h='<div class="row"><input class="t" id="spkInput" list="roster" autocomplete="off" placeholder="Add speaker name"><button class="btn primary" id="spkAdd">+ Add speaker</button></div>';
   h+='<div class="chips" style="margin-top:10px">';
-  if(!arr.length) h+='<span class="muted">No speakers yet. Add them above, or tap <b>+ Add / select</b> on whoever is speaking now.</span>';
+  if(!arr.length&&!suggested.length) h+='<span class="muted">No speakers yet. Add them above, or tap <b>+ Add / select</b> on whoever is speaking now.</span>';
   arr.forEach(function(r){
     var c= kind==="ah"?ahTotal(r):(r.w||0);
     h+='<button class="chip'+(sel&&sel.id===r.id?' active':'')+'" data-sel="'+r.id+'">'+esc(r.name)+'<span class="c">'+c+'</span></button>';
   });
+  suggested.forEach(function(name){ h+='<button class="chip" data-ah-suggest="'+esc(name)+'">'+esc(name)+'</button>'; });
   return h+'</div>';
 }
 function ahHTML(){
   var sel=selRow("ah"), words=S.fill.words;
-  var h='<section class="card"><h2 class="sec" style="margin-top:0">Speakers</h2>'+speakerPicker("ah");
+  var h='<section class="card">'+ahTabs()+speakerPicker("ah");
   if(sel){
-    h+='<div class="selcard"><div class="hd"><b>'+esc(sel.name)+'</b><span class="pill">Total '+ahTotal(sel)+'</span><button class="iconbtn" data-rowdel="ah" title="Remove speaker">✕</button></div><div class="tapgrid">';
+    h+='<div class="selcard"><div class="hd"><label class="f">Speaker name<input class="t" id="ahSpeakerName" value="'+esc(sel.name)+'"></label><span class="pill">Total '+ahTotal(sel)+'</span><button class="iconbtn" data-rowdel="ah" title="Remove speaker">✕</button></div><div class="tapgrid">';
     words.forEach(function(w){ h+='<div class="tap" data-word="'+esc(w)+'"><button class="minus" data-minus="'+esc(w)+'" title="Undo one">−</button><div class="k">'+(sel.c[w]||0)+'</div><div class="w">'+esc(w)+'</div></div>'; });
     h+='</div></div>';
   } else if(S.ahRows.length) h+='<div class="selcard muted">Select a speaker above to start counting.</div>';
@@ -1645,8 +1662,8 @@ function ahHTML(){
      '</div><div class="row"><input class="t" id="wordInput" placeholder="Add a word, e.g. Basically"><button class="btn" id="wordAdd">+ Add word</button></div></details>';
   if(S.ahRows.length){
     var used=words.filter(function(w){return S.ahRows.some(function(r){return r.c[w];});});
-    h+='<h2 class="sec">Summary</h2><div style="overflow-x:auto"><table class="sumtable"><thead><tr><th>Speaker</th>'+used.map(function(w){return '<th>'+esc(w)+'</th>';}).join("")+'<th>Total</th></tr></thead><tbody>';
-    S.ahRows.forEach(function(r){ h+='<tr><td>'+esc(r.name)+'</td>'+used.map(function(w){return '<td>'+(r.c[w]||0)+'</td>';}).join("")+'<td><b>'+ahTotal(r)+'</b></td></tr>'; });
+    h+='<h2 class="sec">Summary</h2><div style="overflow-x:auto"><table class="sumtable"><thead><tr><th>Speaker</th><th>Format</th>'+used.map(function(w){return '<th>'+esc(w)+'</th>';}).join("")+'<th>Total</th></tr></thead><tbody>';
+    S.ahRows.forEach(function(r){ h+='<tr><td>'+esc(r.name)+'</td><td>'+esc(ahFormatName(r.format))+'</td>'+used.map(function(w){return '<td>'+(r.c[w]||0)+'</td>';}).join("")+'<td><b>'+ahTotal(r)+'</b></td></tr>'; });
     h+='</tbody></table></div><div class="row" style="margin-top:8px">'+copyBtn("ah")+'</div>';
   }
   return h+'</section>';
@@ -2537,7 +2554,7 @@ function reportsSummary(){
   var t=now(), out=[];
   var tim=[]; SESSIONS.forEach(function(s){ var d=S.rows[s.id].filter(function(r){return rowState(r)==="done";}); if(!d.length) return; var ok=d.filter(function(r){return status(s.id,r,t).ok;}).length; tim.push(s.name+": "+ok+"/"+d.length+" on time"); });
   out.push(["⏱ Timer",assigned("timer")||S.people.timer,tim.join(" · ")||"No times yet"]);
-  var ah=S.ahRows.map(function(r){return r.name+" "+ahTotal(r);}); out.push(["🔢 Ah-Counter",assigned("ah")||S.people.ah,ah.join(" · ")||"No counts yet"]);
+  var ah=S.ahRows.map(function(r){return r.name+" ("+ahFormatName(r.format)+") "+ahTotal(r);}); out.push(["🔢 Ah-Counter",assigned("ah")||S.people.ah,ah.join(" · ")||"No counts yet"]);
   var gw=S.gramRows.reduce(function(s,r){return s+(r.w||0);},0); out.push(["📝 Grammarian",assigned("gram")||S.people.gram,(S.gram.wotd?"Word of the Day “"+S.gram.wotd+"” used "+gw+"×":"No Word of the Day yet")+(S.gramRows.length?" · notes on "+S.gramRows.length+" speakers":"")]);
   return out;
 }
@@ -2743,8 +2760,8 @@ function buildCard(name){
   h+='<h4>⏱ Times</h4>'+(tm.length?'<table><thead><tr><th>Session</th><th class="c">Time</th><th>Result</th></tr></thead><tbody>'+tm.map(function(x){ return '<tr><td>'+x.s.name+'</td><td class="c">'+fmt(x.sec)+'</td><td>'+esc(x.st.text)+'</td></tr>'; }).join("")+'</tbody></table>':'<div class="none">No timed speeches.</div>');
   var tp=S.topics.filter(function(x){return x.used&&nkey(x.speaker)===nkey(name);});
   if(tp.length) h+='<div style="margin-top:6px"><b>Table Topic:</b> '+esc(tp.map(function(x){return x.text;}).join(" · "))+'</div>';
-  var ah=S.ahRows.find(function(r){return nkey(r.name)===nkey(name);});
-  h+='<h4>🔢 Ah-Counter</h4>'+(ah?'<div>'+S.fill.words.filter(function(w){return ah.c[w];}).map(function(w){return esc(w)+' ×'+ah.c[w];}).join(" · ")+' — total '+ahTotal(ah)+'</div>':'<div class="none">Not counted.</div>');
+  var ah=S.ahRows.filter(function(r){return nkey(r.name)===nkey(name);});
+  h+='<h4>🔢 Ah-Counter</h4>'+(ah.length?ah.map(function(row){return '<div><b>'+esc(ahFormatName(row.format))+'</b> · '+S.fill.words.filter(function(w){return row.c[w];}).map(function(w){return esc(w)+' ×'+row.c[w];}).join(" · ")+' — total '+ahTotal(row)+'</div>';}).join(""):'<div class="none">Not counted.</div>');
   var g=S.gramRows.find(function(r){return nkey(r.name)===nkey(name);});
   h+='<h4>📝 Grammarian</h4>'+(g?'<div>Word of the Day'+(S.gram.wotd?' (“'+esc(S.gram.wotd)+'”)':'')+': used '+(g.w||0)+'×</div>'+(g.good.length?'<div><b>Great phrases:</b> '+esc(g.good.join("; "))+'</div>':'')+(g.slips.length?'<div><b>To polish:</b> '+esc(g.slips.join("; "))+'</div>':''):'<div class="none">No notes.</div>');
   h+='<h4>🗣 Evaluation <span style="font-weight:400;font-size:12px;color:#666">🔒 private</span></h4><div id="cardEvals"><div class="none">Decrypting…</div></div>';
@@ -3361,7 +3378,8 @@ view.addEventListener("click",function(e){
     return;
   }
   /* counters */
-  var kind=L.role;
+  var kind=L.role, suggested=t.closest("[data-ah-suggest]");
+  if(suggested&&kind==="ah"){ addCounterSpeaker("ah",suggested.dataset.ahSuggest); return; }
   if(t.closest("#spkAdd")){ addCounterSpeaker(kind,document.getElementById("spkInput").value); return; }
   var ch=t.closest("[data-sel]"); if(ch){ if(kind==="ah") L.ahSel=ch.dataset.sel; else L.gramSel=ch.dataset.sel; var sr0=selRow(kind); if(sr0&&selectPerson(sr0.name,kind)) commit(); else { saveL(); renderAll(); } return; }
   var rd=t.closest("[data-rowdel]"); if(rd){ var sr=selRow(kind); if(sr) removeItem([kind==="ah"?"ahRows":"gramRows"],sr.id,sr.name); return; }
@@ -3397,6 +3415,13 @@ view.addEventListener("input",function(e){
 });
 view.addEventListener("change",function(e){
   var t=e.target, sid=L.tab;
+  if(t.id==="ahFormat"){ L.ahFormat=t.value; saveL(); renderAll(); document.getElementById("ahFormat")?.focus(); return; }
+  if(t.id==="ahSpeakerName"){
+    var speaker=selRow("ah"), name=t.value.trim();
+    var existing=name&&ahRecord(name,ahFormat());
+    if(!speaker||!name||(existing&&existing!==speaker)){ if(speaker) t.value=speaker.name; return; }
+    speaker.sourceName=speaker.sourceName||speaker.name; speaker.name=name; tick(speaker); remember(name); commit(); return;
+  }
   if(t.dataset.edit==="time"){
     var r=findRow(sid,t.closest("tr").dataset.id), v=parseTime(t.value);
     if(v===null){ if(r.manual!=null){ r.manual=null; if(r.start==null) delete r.timedLim; tick(r); } commit(); return; }
@@ -3663,9 +3688,9 @@ function buildReport(){
   }
   if(inc("ah")){
     var words=S.fill.words.filter(function(w){return S.ahRows.some(function(r){return r.c[w];});}), grand=0;
-    h+='<h4>🔢 Ah-Counter’s Report</h4><table><thead><tr><th>Speaker</th>'+words.map(function(w){return '<th class="c">'+esc(w)+'</th>';}).join("")+'<th class="c">Total</th></tr></thead><tbody>';
-    S.ahRows.forEach(function(r){ var tot=ahTotal(r); grand+=tot; h+='<tr><td>'+esc(r.name)+'</td>'+words.map(function(w){return '<td class="c">'+(r.c[w]||0)+'</td>';}).join("")+'<td class="c"><b>'+tot+'</b></td></tr>'; });
-    h+='</tbody></table><div style="margin-top:4px;color:#444">'+grand+' filler words counted across '+S.ahRows.length+' speakers.'+(S.ahRows.length?' Cleanest: '+esc(S.ahRows.slice().sort(function(a,b){return ahTotal(a)-ahTotal(b);})[0].name)+'.':'')+'</div>';
+    h+='<h4>🔢 Ah-Counter’s Report</h4><table><thead><tr><th>Speaker</th><th>Format</th>'+words.map(function(w){return '<th class="c">'+esc(w)+'</th>';}).join("")+'<th class="c">Total</th></tr></thead><tbody>';
+    S.ahRows.forEach(function(r){ var tot=ahTotal(r); grand+=tot; h+='<tr><td>'+esc(r.name)+'</td><td>'+esc(ahFormatName(r.format))+'</td>'+words.map(function(w){return '<td class="c">'+(r.c[w]||0)+'</td>';}).join("")+'<td class="c"><b>'+tot+'</b></td></tr>'; });
+    h+='</tbody></table><div style="margin-top:4px;color:#444">'+grand+' filler words counted across '+S.ahRows.length+' speaker entries.'+'</div>';
   }
   if(inc("gram")){
     h+='<h4>📝 Grammarian’s Report</h4>';
@@ -4192,9 +4217,9 @@ function companionHTML(){
   var rs=myRoles(), h="";
   if(rs.indexOf("ah")>=0 && L.role!=="ah"){
     var who=speakingNowName()||((S.ahRows.find(function(r){return r.id===L.ahSel;})||{}).name||"");
-    var rec=who?S.ahRows.find(function(r){return nkey(r.name)===nkey(who);}):null;
+    var format=runningList()[0]?.sid||ahFormat(), rec=who?ahRecord(who,format):null;
     h+='<div class="cmp"><b>🔢 Ah-Counter</b> <span class="muted">'+(who?esc(who)+(speakingNowName()?' (speaking now)':''):'— no one speaking')+'</span><div class="cmpbtns">'+
-       (who?S.fill.words.map(function(w){ return '<button class="cmpb" data-cmpah="'+esc(w)+'" data-who="'+esc(who)+'">'+esc(w)+' <b>'+((rec&&rec.c[w])||0)+'</b></button>'; }).join(""):'')+'</div></div>';
+       (who?S.fill.words.map(function(w){ return '<button class="cmpb" data-format="'+format+'" data-cmpah="'+esc(w)+'" data-who="'+esc(who)+'">'+esc(w)+' <b>'+((rec&&rec.c[w])||0)+'</b></button>'; }).join(""):'')+'</div></div>';
   }
   if(rs.indexOf("gram")>=0 && L.role!=="gram"){
     var g=personNow(); var gr=g?S.gramRows.find(function(r){return nkey(r.name)===nkey(g);}):null;
@@ -4374,7 +4399,7 @@ function reportText(role){
     SESSIONS.forEach(function(s){ var d=S.rows[s.id].filter(function(r){return rowState(r)==="done";}); if(!d.length) return; L1.push(""); L1.push(s.name+":"); d.forEach(function(r,i){ L1.push("• "+displayName(r,i)+" — "+fmt(elapsed(r,t))+" — "+status(s.id,r,t).text+pauseNote(r)); }); });
   } else if(role==="ah"){
     L1.push("🔢 Ah-Counter's report — "+hd);
-    S.ahRows.forEach(function(r){ var w=S.fill.words.filter(function(x){return r.c[x];}).map(function(x){return x+" "+r.c[x];}); L1.push("• "+r.name+": "+(w.join(", ")||"none")+" (total "+ahTotal(r)+")"); });
+    S.ahRows.forEach(function(r){ var w=S.fill.words.filter(function(x){return r.c[x];}).map(function(x){return x+" "+r.c[x];}); L1.push("• "+r.name+" ("+ahFormatName(r.format)+"): "+(w.join(", ")||"none")+" (total "+ahTotal(r)+")"); });
   } else if(role==="gram"){
     L1.push("📝 Grammarian's report — "+hd); if(S.gram.wotd) L1.push("Word of the Day: "+S.gram.wotd+(S.gram.meaning?" — "+S.gram.meaning:""));
     if(S.gram.wotd && S.gram.example) L1.push("Example: "+S.gram.example);
@@ -4405,8 +4430,7 @@ function copyBtn(role){ return '<button class="btn sm" data-copyrep="'+role+'">�
   });
   document.getElementById("companion").addEventListener("click",function(e){
     var a=e.target.closest("[data-cmpah]");
-    if(a){ var who=a.dataset.who, w=a.dataset.cmpah, rec=S.ahRows.find(function(r){return nkey(r.name)===nkey(who);});
-      if(!rec){ rec={id:uid(),name:who,c:{},ord:maxOrd(S.ahRows)+1,u:now()}; S.ahRows.push(rec); }
+    if(a){ var who=a.dataset.who, w=a.dataset.cmpah, rec=counterRow("ah",who,a.dataset.format);
       rec.c[w]=(rec.c[w]||0)+1; tick(rec); commit(); return; }
     var g=e.target.closest("[data-cmpgram]");
     if(g){ var who2=g.dataset.cmpgram, gr=S.gramRows.find(function(r){return nkey(r.name)===nkey(who2);});
@@ -4708,10 +4732,10 @@ function agendaViewHTML(){
 /* ---------- Focus mode: only what the role needs right now ---------- */
 var FOCUS_ROLES={timer:1,ah:1,gram:1,tmod:1,ttm:1};
 function inFocus(){ return curView()==="role" && !!L.focus && !!FOCUS_ROLES[L.role]; }
-function focusWho(){ return speakingNowName() || L.fsel || ""; }
+function focusWho(){ return (L.role==="ah"&&L.ahFormat&&runningList()[0]?.sid!==L.ahFormat?"":speakingNowName()) || L.fsel || ""; }
 function focusPeople(){ return uniq(asList("speakers").concat(S.ahRows.map(function(r){return r.name;}),S.gramRows.map(function(r){return r.name;}),S.topics.filter(function(t){return t.used;}).map(function(t){return t.speaker;}))); }
 function focusWhoPicker(who){
-  var live=!!speakingNowName(), ppl=focusPeople();
+  var live=!!speakingNowName()&&(L.role!=="ah"||!L.ahFormat||runningList()[0]?.sid===L.ahFormat), ppl=L.role==="ah"?uniq(ahNames(ahFormat()).concat(S.ahRows.filter(function(r){return (r.format||"other")===ahFormat();}).map(function(r){return r.name;}))):focusPeople();
   return '<div class="fwho"><div class="flbl">'+(live?'🎙 Speaking now':'Who are you listening to?')+'</div><div class="fname">'+(who?esc(who):'<span class="muted">Waiting for the Timer…</span>')+'</div>'+
     (!live?'<div class="chips" style="justify-content:center;margin-top:8px">'+ppl.map(function(n){ return '<button class="chip'+(nkey(n)===nkey(who)?' active':'')+'" data-fsel="'+esc(n)+'">'+esc(n)+'</button>'; }).join("")+'<input class="t" id="fselNew" list="roster" autocomplete="off" placeholder="Other name" style="max-width:170px"></div>':'')+'</div>';
 }
@@ -4725,7 +4749,8 @@ function focusHTML(){
        '<div class="fnext">'+(idle.length?idle.map(function(x){ return '<button class="btn go fbig" data-fstart="'+x.id+'">▶ Start '+esc(displayName(x,S.rows[sid].indexOf(x)))+'</button>'; }).join(""):'<div class="muted" style="text-align:center">No one waiting on this list.</div>')+'</div>'+
        '<div class="row" style="margin-top:10px"><input class="t" id="fNewName" list="roster" autocomplete="off" placeholder="Someone else? Type a name (optional)"><button class="btn primary" data-fstartnew>▶ Start</button></div></section>';
   } else if(r==="ah"){
-    var who=focusWho(), rec=who?S.ahRows.find(function(x){return nkey(x.name)===nkey(who);}):null;
+    var who=focusWho(), rec=who?ahRecord(who,ahFormat()):null;
+    h+=ahTabs();
     h+='<section class="card fcard">'+focusWhoPicker(who)+(who?'<div class="fgrid">'+S.fill.words.map(function(w){ return '<button class="fbtn" data-fah="'+esc(w)+'"><span>'+esc(w)+'</span><b>'+((rec&&rec.c[w])||0)+'</b></button>'; }).join("")+'</div><div class="row" style="justify-content:center;margin-top:10px"><button class="btn" data-fundo>↶ Undo last</button><span class="saved">Total for '+esc(who)+': '+(rec?ahTotal(rec):0)+'</span></div>':'')+'</section>';
   } else if(r==="gram"){
     var g=focusWho(), gr=g?S.gramRows.find(function(x){return nkey(x.name)===nkey(g);}):null;
@@ -4747,7 +4772,7 @@ function focusHTML(){
   }
   return h;
 }
-function fRec(kind,name){ var arr=kind==="ah"?S.ahRows:S.gramRows, ex=arr.find(function(x){return nkey(x.name)===nkey(name);}); if(!ex){ ex=kind==="ah"?{id:uid(),name:name,c:{},ord:maxOrd(arr)+1,u:now()}:{id:uid(),name:name,w:0,good:[],slips:[],ord:maxOrd(arr)+1,u:now()}; arr.push(ex); } return ex; }
+function fRec(kind,name){ if(kind==="ah") return counterRow("ah",name); var arr=kind==="ah"?S.ahRows:S.gramRows, ex=arr.find(function(x){return nkey(x.name)===nkey(name);}); if(!ex){ ex=kind==="ah"?{id:uid(),name:name,c:{},ord:maxOrd(arr)+1,u:now()}:{id:uid(),name:name,w:0,good:[],slips:[],ord:maxOrd(arr)+1,u:now()}; arr.push(ex); } return ex; }
 var fUndo=null;
 (function(){
   var V=document.getElementById("view");
@@ -4906,7 +4931,7 @@ function summarise(st){
     asList("speakers").forEach(function(n){ if(!o.speeches.some(function(x){return nkey(x.name)===nkey(n);})) addRole(n,"speaker"); });
     S.rows.tt.forEach(function(r,i){ if(rowState(r)!=="done") return; o.tt.push({name:baseName(displayName(r,i)),sec:elapsed(r,t),ok:!!status("tt",r,t).ok}); });
     var evs=uniq(asList("sevals").concat(asList("ttevals"),S.assigns.map(function(a){return a.evaluator;}))); evs.forEach(function(n){ addRole(n,"evaluator"); o.evals.push(n); });
-    S.ahRows.forEach(function(r){ o.ah[r.name]=ahTotal(r); });
+    S.ahRows.forEach(function(r){ o.ah[r.name]=(o.ah[r.name]||0)+ahTotal(r); });
     S.gramRows.forEach(function(r){ if(r.w) o.wotd[r.name]=r.w; });
     if(S.vote.state==="shown") VCATS.forEach(function(c){ tally(c.k).winners.forEach(function(w){ o.awards.push({cat:c.n,name:w.name}); }); });
     o.present=uniq(S.attend.filter(function(a){return a.mid===S.mid&&a.present;}).map(function(a){return a.name;}));
@@ -4991,10 +5016,10 @@ function histCapture(name){
   var ev=submittedEvals(name).map(function(e){ return {by:e.by||"",kind:e.kind||"",enc:e.enc}; });
   var nt=S.notes.filter(function(n){return nkey(n.to)===k&&n.enc;}).map(function(n){ return {enc:n.enc}; });
   var tm=timesFor(name).filter(function(x){return rowState(x.r)==="done";}).map(function(x){ return {s:x.s.name,sec:x.sec,res:x.st.text}; });
-  var ah=S.ahRows.find(function(r){return nkey(r.name)===k;}), g=S.gramRows.find(function(r){return nkey(r.name)===k;});
+  var ah=S.ahRows.filter(function(r){return nkey(r.name)===k;}), g=S.gramRows.find(function(r){return nkey(r.name)===k;});
   var won=S.vote.state==="shown"?VCATS.filter(function(c){ return tally(c.k).winners.some(function(w){return nkey(w.name)===k;}); }).map(function(c){return c.n;}):[];
   if(!ev.length&&!nt.length&&!tm.length&&!won.length) return;
-  var rec={date:S.meta.date||"",week:S.meta.week||"",title:speechTitle(name),times:tm,ah:ah?ahTotal(ah):null,wotd:g?(g.w||0):null,good:g?g.good.slice():[],slips:g?g.slips.slice():[],awards:won,evals:ev,notes:nt};
+  var rec={date:S.meta.date||"",week:S.meta.week||"",title:speechTitle(name),times:tm,ah:ah.length?ah.reduce(function(sum,r){return sum+ahTotal(r);},0):null,wotd:g?(g.w||0):null,good:g?g.good.slice():[],slips:g?g.slips.slice():[],awards:won,evals:ev,notes:nt};
   var prev=mine.meetings[S.mid]; if(prev&&JSON.stringify(prev)===JSON.stringify(rec)) return;
   mine.meetings[S.mid]=rec; histSave(H);
 }
@@ -5203,10 +5228,11 @@ function ideasHTML(){
    any role selects the same person in the others. When the Timer starts someone, every role follows. */
 var LINK_ROLES=["ah","gram","seval","tteval"];
 function linkRoles(){ return myRoles().filter(function(r){ return LINK_ROLES.indexOf(r)>=0; }); }
-function counterRow(kind,name){
-  var arr=kind==="ah"?S.ahRows:S.gramRows, ex=arr.find(function(r){return nkey(r.name)===nkey(name);});
-  if(!ex){ var id=kind+"|"+nkey(name); delete S.dead[id];
-    ex = kind==="ah" ? {id:id,name:name,c:{},ord:maxOrd(arr)+1,u:now()} : {id:id,name:name,w:0,good:[],slips:[],ord:maxOrd(arr)+1,u:now()}; arr.push(ex); }
+function counterRow(kind,name,format){
+  if(kind==="ah") format=format||ahFormat();
+  var arr=kind==="ah"?S.ahRows:S.gramRows, ex=kind==="ah"?ahRecord(name,format):arr.find(function(r){return nkey(r.name)===nkey(name);});
+  if(!ex){ var id=kind+"|"+(kind==="ah"?format+"|":"")+nkey(name); delete S.dead[id];
+    ex = kind==="ah" ? {id:id,name:name,format:format,c:{},ord:maxOrd(arr)+1,u:now()} : {id:id,name:name,w:0,good:[],slips:[],ord:maxOrd(arr)+1,u:now()}; arr.push(ex); }
   return ex;
 }
 function isPrepared(n){ return preparedSpeakers().some(function(x){return nkey(x)===nkey(n);}); }
@@ -5216,7 +5242,7 @@ function selectPerson(name,from){
   name=baseName(String(name||"").trim()); if(!name) return false;
   var rs=myRoles(), changed=false;
   L.person={name:name,at:now(),from:from||""};
-  if(rs.indexOf("ah")>=0){ var n1=S.ahRows.length, r1=counterRow("ah",name); L.ahSel=r1.id; if(S.ahRows.length!==n1) changed=true; }
+  if(rs.indexOf("ah")>=0&&(from!=="timer"||!L.ahFormat)){ var n1=S.ahRows.length, r1=counterRow("ah",name,from==="ttm"||from==="tteval"?"tt":from==="seval"?"ps":null); L.ahSel=r1.id; if(S.ahRows.length!==n1) changed=true; }
   if(rs.indexOf("gram")>=0){ var n2=S.gramRows.length, r2=counterRow("gram",name); L.gramSel=r2.id; if(S.gramRows.length!==n2) changed=true; }
   L.evSel=L.evSel||{};
   if(rs.indexOf("seval")>=0 && (isPrepared(name)||from==="seval")) L.evSel.ps=name;
@@ -5236,9 +5262,9 @@ function linkBarHTML(){
 var lastAutoSpeaker="";
 setInterval(function(){
   var sp=speakingNowName(); if(!sp){ lastAutoSpeaker=""; return; }
-  if(nkey(sp)===nkey(lastAutoSpeaker)) return; lastAutoSpeaker=sp;
+  var turn=runningList()[0], key=turn.sid+"|"+turn.r.id+"|"+nkey(sp);
+  if(key===lastAutoSpeaker) return; lastAutoSpeaker=key;
   if(!linkRoles().length) return;
-  if(L.person&&nkey(L.person.name)===nkey(sp)) return;
   var ch=selectPerson(sp,"timer"); if(ch) commit(); else softRender();
 },700);
 document.getElementById("roles").addEventListener("click",function(e){ if(e.target.closest("[data-unlink]")){ L.person=null; saveL(); renderAll(); } });

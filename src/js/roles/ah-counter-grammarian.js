@@ -1,22 +1,39 @@
+function ahFormat(){ return L.ahFormat||runningList()[0]?.sid||S.timerTurn?.sid||"other"; }
+function ahFormatName(id){ return sessionOf(id)?.name||"Other / unassigned"; }
+function ahRecord(name,format){ return S.ahRows.find(function(row){ return (row.format||"other")===format&&(nkey(row.name)===nkey(name)||nkey(row.sourceName)===nkey(name)); }); }
+function ahNames(format){
+  var names=format==="other"?[]:timerRows(format).map(function(row){return baseName(row.name);});
+  if(format==="tt") names=names.concat(ttSpeakers());
+  if(format==="ps") names=names.concat(preparedSpeakers());
+  return uniq(names.filter(Boolean));
+}
+function ahTabs(){
+  return '<label class="f">Speaking format<select class="t" id="ahFormat"><option value="">Follow Timer</option>'+
+    SESSIONS.concat([{id:"other",name:ahFormatName("other")}]).map(function(s){
+      return '<option value="'+s.id+'"'+(L.ahFormat===s.id?' selected':'')+'>'+esc(s.name)+'</option>';
+    }).join("")+'</select></label><h2 class="sec">'+esc(ahFormatName(ahFormat()))+'</h2>';
+}
 /* ---------- Ah-Counter & Grammarian ---------- */
-function selRow(kind){ var arr=kind==="ah"?S.ahRows:S.gramRows, id=kind==="ah"?L.ahSel:L.gramSel; return arr.find(function(x){return x.id===id;})||null; }
+function selRow(kind){ var arr=kind==="ah"?S.ahRows:S.gramRows, id=kind==="ah"?L.ahSel:L.gramSel; return arr.find(function(x){return x.id===id&&(kind!=="ah"||(x.format||"other")===ahFormat());})||null; }
 function ahTotal(r){ return S.fill.words.reduce(function(s,w){return s+(r.c[w]||0);},0); }
 function speakerPicker(kind){
-  var arr=kind==="ah"?S.ahRows:S.gramRows, sel=selRow(kind);
+  var arr=kind==="ah"?S.ahRows.filter(function(r){return (r.format||"other")===ahFormat();}):S.gramRows, sel=selRow(kind);
+  var suggested=kind==="ah"?ahNames(ahFormat()).filter(function(n){return !ahRecord(n,ahFormat());}):[];
   var h='<div class="row"><input class="t" id="spkInput" list="roster" autocomplete="off" placeholder="Add speaker name"><button class="btn primary" id="spkAdd">+ Add speaker</button></div>';
   h+='<div class="chips" style="margin-top:10px">';
-  if(!arr.length) h+='<span class="muted">No speakers yet. Add them above, or tap <b>+ Add / select</b> on whoever is speaking now.</span>';
+  if(!arr.length&&!suggested.length) h+='<span class="muted">No speakers yet. Add them above, or tap <b>+ Add / select</b> on whoever is speaking now.</span>';
   arr.forEach(function(r){
     var c= kind==="ah"?ahTotal(r):(r.w||0);
     h+='<button class="chip'+(sel&&sel.id===r.id?' active':'')+'" data-sel="'+r.id+'">'+esc(r.name)+'<span class="c">'+c+'</span></button>';
   });
+  suggested.forEach(function(name){ h+='<button class="chip" data-ah-suggest="'+esc(name)+'">'+esc(name)+'</button>'; });
   return h+'</div>';
 }
 function ahHTML(){
   var sel=selRow("ah"), words=S.fill.words;
-  var h='<section class="card"><h2 class="sec" style="margin-top:0">Speakers</h2>'+speakerPicker("ah");
+  var h='<section class="card">'+ahTabs()+speakerPicker("ah");
   if(sel){
-    h+='<div class="selcard"><div class="hd"><b>'+esc(sel.name)+'</b><span class="pill">Total '+ahTotal(sel)+'</span><button class="iconbtn" data-rowdel="ah" title="Remove speaker">✕</button></div><div class="tapgrid">';
+    h+='<div class="selcard"><div class="hd"><label class="f">Speaker name<input class="t" id="ahSpeakerName" value="'+esc(sel.name)+'"></label><span class="pill">Total '+ahTotal(sel)+'</span><button class="iconbtn" data-rowdel="ah" title="Remove speaker">✕</button></div><div class="tapgrid">';
     words.forEach(function(w){ h+='<div class="tap" data-word="'+esc(w)+'"><button class="minus" data-minus="'+esc(w)+'" title="Undo one">−</button><div class="k">'+(sel.c[w]||0)+'</div><div class="w">'+esc(w)+'</div></div>'; });
     h+='</div></div>';
   } else if(S.ahRows.length) h+='<div class="selcard muted">Select a speaker above to start counting.</div>';
@@ -25,8 +42,8 @@ function ahHTML(){
      '</div><div class="row"><input class="t" id="wordInput" placeholder="Add a word, e.g. Basically"><button class="btn" id="wordAdd">+ Add word</button></div></details>';
   if(S.ahRows.length){
     var used=words.filter(function(w){return S.ahRows.some(function(r){return r.c[w];});});
-    h+='<h2 class="sec">Summary</h2><div style="overflow-x:auto"><table class="sumtable"><thead><tr><th>Speaker</th>'+used.map(function(w){return '<th>'+esc(w)+'</th>';}).join("")+'<th>Total</th></tr></thead><tbody>';
-    S.ahRows.forEach(function(r){ h+='<tr><td>'+esc(r.name)+'</td>'+used.map(function(w){return '<td>'+(r.c[w]||0)+'</td>';}).join("")+'<td><b>'+ahTotal(r)+'</b></td></tr>'; });
+    h+='<h2 class="sec">Summary</h2><div style="overflow-x:auto"><table class="sumtable"><thead><tr><th>Speaker</th><th>Format</th>'+used.map(function(w){return '<th>'+esc(w)+'</th>';}).join("")+'<th>Total</th></tr></thead><tbody>';
+    S.ahRows.forEach(function(r){ h+='<tr><td>'+esc(r.name)+'</td><td>'+esc(ahFormatName(r.format))+'</td>'+used.map(function(w){return '<td>'+(r.c[w]||0)+'</td>';}).join("")+'<td><b>'+ahTotal(r)+'</b></td></tr>'; });
     h+='</tbody></table></div><div class="row" style="margin-top:8px">'+copyBtn("ah")+'</div>';
   }
   return h+'</section>';

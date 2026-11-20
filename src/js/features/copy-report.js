@@ -6,7 +6,7 @@ function reportText(role){
     SESSIONS.forEach(function(s){ var d=S.rows[s.id].filter(function(r){return rowState(r)==="done";}); if(!d.length) return; L1.push(""); L1.push(s.name+":"); d.forEach(function(r,i){ L1.push("• "+displayName(r,i)+" — "+fmt(elapsed(r,t))+" — "+status(s.id,r,t).text+pauseNote(r)); }); });
   } else if(role==="ah"){
     L1.push("🔢 Ah-Counter's report — "+hd);
-    S.ahRows.forEach(function(r){ var w=S.fill.words.filter(function(x){return r.c[x];}).map(function(x){return x+" "+r.c[x];}); L1.push("• "+r.name+": "+(w.join(", ")||"none")+" (total "+ahTotal(r)+")"); });
+    S.ahRows.forEach(function(r){ var w=S.fill.words.filter(function(x){return r.c[x];}).map(function(x){return x+" "+r.c[x];}); L1.push("• "+r.name+" ("+ahFormatName(r.format)+"): "+(w.join(", ")||"none")+" (total "+ahTotal(r)+")"); });
   } else if(role==="gram"){
     L1.push("📝 Grammarian's report — "+hd); if(S.gram.wotd) L1.push("Word of the Day: "+S.gram.wotd+(S.gram.meaning?" — "+S.gram.meaning:""));
     if(S.gram.wotd && S.gram.example) L1.push("Example: "+S.gram.example);
@@ -37,8 +37,7 @@ function copyBtn(role){ return '<button class="btn sm" data-copyrep="'+role+'">�
   });
   document.getElementById("companion").addEventListener("click",function(e){
     var a=e.target.closest("[data-cmpah]");
-    if(a){ var who=a.dataset.who, w=a.dataset.cmpah, rec=S.ahRows.find(function(r){return nkey(r.name)===nkey(who);});
-      if(!rec){ rec={id:uid(),name:who,c:{},ord:maxOrd(S.ahRows)+1,u:now()}; S.ahRows.push(rec); }
+    if(a){ var who=a.dataset.who, w=a.dataset.cmpah, rec=counterRow("ah",who,a.dataset.format);
       rec.c[w]=(rec.c[w]||0)+1; tick(rec); commit(); return; }
     var g=e.target.closest("[data-cmpgram]");
     if(g){ var who2=g.dataset.cmpgram, gr=S.gramRows.find(function(r){return nkey(r.name)===nkey(who2);});

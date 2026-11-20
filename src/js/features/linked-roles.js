@@ -3,10 +3,11 @@
    any role selects the same person in the others. When the Timer starts someone, every role follows. */
 var LINK_ROLES=["ah","gram","seval","tteval"];
 function linkRoles(){ return myRoles().filter(function(r){ return LINK_ROLES.indexOf(r)>=0; }); }
-function counterRow(kind,name){
-  var arr=kind==="ah"?S.ahRows:S.gramRows, ex=arr.find(function(r){return nkey(r.name)===nkey(name);});
-  if(!ex){ var id=kind+"|"+nkey(name); delete S.dead[id];
-    ex = kind==="ah" ? {id:id,name:name,c:{},ord:maxOrd(arr)+1,u:now()} : {id:id,name:name,w:0,good:[],slips:[],ord:maxOrd(arr)+1,u:now()}; arr.push(ex); }
+function counterRow(kind,name,format){
+  if(kind==="ah") format=format||ahFormat();
+  var arr=kind==="ah"?S.ahRows:S.gramRows, ex=kind==="ah"?ahRecord(name,format):arr.find(function(r){return nkey(r.name)===nkey(name);});
+  if(!ex){ var id=kind+"|"+(kind==="ah"?format+"|":"")+nkey(name); delete S.dead[id];
+    ex = kind==="ah" ? {id:id,name:name,format:format,c:{},ord:maxOrd(arr)+1,u:now()} : {id:id,name:name,w:0,good:[],slips:[],ord:maxOrd(arr)+1,u:now()}; arr.push(ex); }
   return ex;
 }
 function isPrepared(n){ return preparedSpeakers().some(function(x){return nkey(x)===nkey(n);}); }
@@ -16,7 +17,7 @@ function selectPerson(name,from){
   name=baseName(String(name||"").trim()); if(!name) return false;
   var rs=myRoles(), changed=false;
   L.person={name:name,at:now(),from:from||""};
-  if(rs.indexOf("ah")>=0){ var n1=S.ahRows.length, r1=counterRow("ah",name); L.ahSel=r1.id; if(S.ahRows.length!==n1) changed=true; }
+  if(rs.indexOf("ah")>=0&&(from!=="timer"||!L.ahFormat)){ var n1=S.ahRows.length, r1=counterRow("ah",name,from==="ttm"||from==="tteval"?"tt":from==="seval"?"ps":null); L.ahSel=r1.id; if(S.ahRows.length!==n1) changed=true; }
   if(rs.indexOf("gram")>=0){ var n2=S.gramRows.length, r2=counterRow("gram",name); L.gramSel=r2.id; if(S.gramRows.length!==n2) changed=true; }
   L.evSel=L.evSel||{};
   if(rs.indexOf("seval")>=0 && (isPrepared(name)||from==="seval")) L.evSel.ps=name;
@@ -36,9 +37,9 @@ function linkBarHTML(){
 var lastAutoSpeaker="";
 setInterval(function(){
   var sp=speakingNowName(); if(!sp){ lastAutoSpeaker=""; return; }
-  if(nkey(sp)===nkey(lastAutoSpeaker)) return; lastAutoSpeaker=sp;
+  var turn=runningList()[0], key=turn.sid+"|"+turn.r.id+"|"+nkey(sp);
+  if(key===lastAutoSpeaker) return; lastAutoSpeaker=key;
   if(!linkRoles().length) return;
-  if(L.person&&nkey(L.person.name)===nkey(sp)) return;
   var ch=selectPerson(sp,"timer"); if(ch) commit(); else softRender();
 },700);
 document.getElementById("roles").addEventListener("click",function(e){ if(e.target.closest("[data-unlink]")){ L.person=null; saveL(); renderAll(); } });

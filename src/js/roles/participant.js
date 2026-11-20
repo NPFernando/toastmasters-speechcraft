@@ -31,8 +31,8 @@ function buildCard(name){
   h+='<h4>⏱ Times</h4>'+(tm.length?'<table><thead><tr><th>Session</th><th class="c">Time</th><th>Result</th></tr></thead><tbody>'+tm.map(function(x){ return '<tr><td>'+x.s.name+'</td><td class="c">'+fmt(x.sec)+'</td><td>'+esc(x.st.text)+'</td></tr>'; }).join("")+'</tbody></table>':'<div class="none">No timed speeches.</div>');
   var tp=S.topics.filter(function(x){return x.used&&nkey(x.speaker)===nkey(name);});
   if(tp.length) h+='<div style="margin-top:6px"><b>Table Topic:</b> '+esc(tp.map(function(x){return x.text;}).join(" · "))+'</div>';
-  var ah=S.ahRows.find(function(r){return nkey(r.name)===nkey(name);});
-  h+='<h4>🔢 Ah-Counter</h4>'+(ah?'<div>'+S.fill.words.filter(function(w){return ah.c[w];}).map(function(w){return esc(w)+' ×'+ah.c[w];}).join(" · ")+' — total '+ahTotal(ah)+'</div>':'<div class="none">Not counted.</div>');
+  var ah=S.ahRows.filter(function(r){return nkey(r.name)===nkey(name);});
+  h+='<h4>🔢 Ah-Counter</h4>'+(ah.length?ah.map(function(row){return '<div><b>'+esc(ahFormatName(row.format))+'</b> · '+S.fill.words.filter(function(w){return row.c[w];}).map(function(w){return esc(w)+' ×'+row.c[w];}).join(" · ")+' — total '+ahTotal(row)+'</div>';}).join(""):'<div class="none">Not counted.</div>');
   var g=S.gramRows.find(function(r){return nkey(r.name)===nkey(name);});
   h+='<h4>📝 Grammarian</h4>'+(g?'<div>Word of the Day'+(S.gram.wotd?' (“'+esc(S.gram.wotd)+'”)':'')+': used '+(g.w||0)+'×</div>'+(g.good.length?'<div><b>Great phrases:</b> '+esc(g.good.join("; "))+'</div>':'')+(g.slips.length?'<div><b>To polish:</b> '+esc(g.slips.join("; "))+'</div>':''):'<div class="none">No notes.</div>');
   h+='<h4>🗣 Evaluation <span style="font-weight:400;font-size:12px;color:#666">🔒 private</span></h4><div id="cardEvals"><div class="none">Decrypting…</div></div>';

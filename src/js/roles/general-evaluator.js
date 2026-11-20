@@ -3,7 +3,7 @@ function reportsSummary(){
   var t=now(), out=[];
   var tim=[]; SESSIONS.forEach(function(s){ var d=S.rows[s.id].filter(function(r){return rowState(r)==="done";}); if(!d.length) return; var ok=d.filter(function(r){return status(s.id,r,t).ok;}).length; tim.push(s.name+": "+ok+"/"+d.length+" on time"); });
   out.push(["⏱ Timer",assigned("timer")||S.people.timer,tim.join(" · ")||"No times yet"]);
-  var ah=S.ahRows.map(function(r){return r.name+" "+ahTotal(r);}); out.push(["🔢 Ah-Counter",assigned("ah")||S.people.ah,ah.join(" · ")||"No counts yet"]);
+  var ah=S.ahRows.map(function(r){return r.name+" ("+ahFormatName(r.format)+") "+ahTotal(r);}); out.push(["🔢 Ah-Counter",assigned("ah")||S.people.ah,ah.join(" · ")||"No counts yet"]);
   var gw=S.gramRows.reduce(function(s,r){return s+(r.w||0);},0); out.push(["📝 Grammarian",assigned("gram")||S.people.gram,(S.gram.wotd?"Word of the Day “"+S.gram.wotd+"” used "+gw+"×":"No Word of the Day yet")+(S.gramRows.length?" · notes on "+S.gramRows.length+" speakers":"")]);
   return out;
 }
