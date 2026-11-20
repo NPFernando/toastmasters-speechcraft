@@ -26,10 +26,10 @@ document.addEventListener("change",function(e){ var d=e.target.dataset&&e.target
 var view=document.getElementById("view");
 function quickStart(){
   var sid=L.tab, q=document.getElementById("qname"), nx=firstQueued(sid);
-  if(!okToStart()) return;
+  if(!allowLiveAction("quick-timer")||!okToStart()) return;
   clearDeviceDraft("qname");
   if(!q.value.trim()&&nx){ startRow(sid,nx.id); }
-  else { var r=newRow(sid,q.value.trim()); remember(r.name); S.rows[sid].push(r); q.value=""; startRow(sid,r.id); }
+  else { var r=newRow(sid,q.value.trim()); var last=S.rows[sid].reduce(function(peak,row){return Math.max(peak,row.ord||0);},0); r.id="live|"+JSON.stringify([S.mid,sid,last,nkey(r.name)]); remember(r.name); S.rows[sid].push(r); q.value=""; startRow(sid,r.id); }
   var q2=document.getElementById("qname"); if(q2) q2.focus();
 }
 function planSpeakers(){

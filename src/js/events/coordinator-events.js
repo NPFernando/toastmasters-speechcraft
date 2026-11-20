@@ -8,7 +8,7 @@
     if(L.role==="tmod"){
       var c=curItem();
       if(t.closest("#runStart")){ if(c.its[0]) runGo(c.its[0].id); return; }
-      if(t.closest("#runNext")){ if(c.next) runGo(c.next.id); return; }
+      if(t.closest("#runNext")){ if(c.next&&now()-(S.run.advanceAt||0)>=500&&allowLiveAction("agenda-next")){ S.run.advanceAt=now(); runGo(c.next.id); } return; }
       if(t.closest("#runPrev")){ if(c.i>0) runGo(c.its[c.i-1].id); return; }
       if(t.closest("#runEnd")){ runFinish(); return; }
       var li=t.closest("[data-run]"); if(li){ runGo(li.dataset.run); return; }
@@ -27,6 +27,17 @@
     if(t.closest("#coordLock")){ L.coordOK=null; saveL(); renderAll(); return; }
     if(t.closest("#pinChange")){ if(!isMainCoord()) return; L.coordForcePin=true; saveL(); renderAll(); var p=document.getElementById("pin1"); if(p) p.focus(); return; }
     if(!coordUnlocked()) return;
+    if(t.closest("#markAbsent")){
+      var absent=document.getElementById("absentName").value;
+      if(absent){ setRsvp(absent,"no",null); commit(); }
+      return;
+    }
+    var replace=t.closest("[data-replace-role]");
+    if(replace){
+      var name=replace.parentElement.querySelector("[data-replacement]").value.trim();
+      if(!replaceRolePlayer(replace.dataset.replaceRole,replace.dataset.oldName,name)) showToastMsg("Choose an available replacement for this assignment.");
+      return;
+    }
     var fit=t.closest("[data-fit-speeches]");
     if(fit){
       var needed=preparedBlockRequirement(), items=itemsSorted(), index=items.findIndex(function(it){return it.id===fit.dataset.fitSpeeches;});

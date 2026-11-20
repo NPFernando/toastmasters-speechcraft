@@ -65,3 +65,20 @@ Tick each box as you go. If something fails, use **⋯ More → 💬 Report a pr
 - **PINs are a lock against accidental changes, not strong security.** Speaker feedback *is* properly encrypted.
 - If a phone drops off, reopen the app: it reconnects to the same meeting and catches up.
 - New Speechcrafters: **🎓 Practice meeting** and **📘 Role guides** (⋯ More) before their first role.
+
+## Two-device release check
+
+Use a test meeting with a laptop and phone. Open its invite on a browser that
+has an older meeting saved. Confirm that the role chooser opens after the shared
+meeting loads and that both devices show the same meeting code.
+
+1. Check the coordinator’s readiness list. Assign a replacement to an absent
+   role player and confirm that the role and evaluator assignments update.
+2. Reorder a prepared speaker and check the same queue on the Timer’s device.
+   Double-tap Start, Call speaker, Random topic and Next. Check for duplicate
+   rows or skipped agenda items.
+3. Unlock a private draft on both devices. Edit separate fields and check that
+   both edits arrive. Join from a different participant and check that the
+   unpublished content is absent there.
+4. Disconnect the phone from the network. Make a meeting change on the laptop.
+   Reconnect the phone and confirm that it shows Synced and receives the change.

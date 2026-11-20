@@ -36,7 +36,8 @@ function refreshPeers(){
   var osig=list.map(function(p){return nkey(p.name||"");}).sort().join("|");
   if(osig!==NET.onSig){ NET.onSig=osig; if(L.role==="coord"&&curView()==="role"&&coTab()==="setup") laterRender(); }
   if(NET.room){
-    if(NET.mode==="host" || (list.length>1 && NET.synced)) setStatus("on");
+    if(NET.mode==="join"&&NET.synced&&list.length===1) NET.awaitingSnapshot=true;
+    if(NET.mode==="host" || (list.length>1 && NET.synced&&!NET.awaitingSnapshot)) setStatus("on");
     else if(list.length>1) setStatus("wait","Connected to a device. Waiting for the shared meeting data…");
     else if(NET.status!=="wait") setStatus("wait", NET.synced?"Waiting for the others to reconnect…":"Looking for meeting "+fmtCode(NET.code)+"…");
     else { renderConnBtn(); renderRoles(); refreshWelcome(); }
@@ -46,7 +47,7 @@ function relayCount(){ try{ var m=Trystero.getRelaySockets(); return Object.keys
 function startMeeting(code,asHost){
   stopNet(true);
   if(typeof Trystero==="undefined"){ setStatus("err","The connection library didn't load."); return; }
-  NET.mode=asHost?"host":"join"; NET.code=code; NET.info={}; NET.peers=[]; L.lastCode=code; L.lastHost=!!asHost; NET.synced=!!asHost; NET.decided=!!asHost;
+  NET.mode=asHost?"host":"join"; NET.code=code; NET.info={}; NET.peers=[]; L.lastCode=code; L.lastHost=!!asHost; NET.synced=!!asHost; NET.awaitingSnapshot=!asHost; NET.lastSync=0; NET.decided=!!asHost;
   L.conn={mode:NET.mode,code:code}; saveL();
   var cfg={appId:APP_ID,password:"dtc-speechcraft|"+code};
   try{ var q=new URLSearchParams(location.search).get("relay"); if(q) cfg.relayConfig={urls:[q],redundancy:1}; }catch(e){}
@@ -58,7 +59,7 @@ function startMeeting(code,asHost){
   room.onPeerJoin=function(pid){
     if(NET.room!==room) return;
     sendHello(pid);
-    if(!NET.synced) sendTo(pid,{t:"state-request"});
+    if(NET.awaitingSnapshot) sendTo(pid,{t:"state-request"});
   };
   room.onPeerLeave=function(pid){ if(NET.room===room){ delete NET.info[pid]; refreshPeers(); } };
   setStatus(asHost?"on":"wait", asHost?"":"Looking for meeting "+fmtCode(code)+"…");
@@ -75,6 +76,7 @@ function startMeeting(code,asHost){
 function startHost(code){ startMeeting(code,true); }
 function startJoin(code){ startMeeting(code,false); }
 function stopNet(keep){
+  if(!keep) NET.reconnecting=false;
   clearTimeout(NET.relayT); clearTimeout(NET.pushT);
   if(NET.room){ try{ sendAll({t:"bye"}); }catch(e){} var r=NET.room; NET.room=null; NET.act=null; try{ r.leave(); }catch(e){} }
   NET.info={}; NET.peers=[]; NET.synced=false;
@@ -119,8 +121,8 @@ function onMsg(pid,m){
   } else {
     changed=mergeInto(S,remote);
   }
-  var first=!NET.synced;
-  NET.synced=true;
+  var first=!NET.synced||NET.awaitingSnapshot;
+  NET.synced=true; NET.awaitingSnapshot=false; NET.reconnecting=false; NET.lastSync=now();
   if(L.syncedMid!==S.mid){ L.syncedMid=S.mid; saveL(); }
   if(changed){ save(); softRender(); wake(); }
   if(first){ refreshPeers(); NET.hello(); }
@@ -130,9 +132,18 @@ function onMsg(pid,m){
 setInterval(function(){
   if(!NET.room) return;
   sendAll({t:"ping",role:L.role,roles:myRoles(),name:myName()});
-  if(!NET.synced) sendAll({t:"state-request"});
+  if(NET.awaitingSnapshot) sendAll({t:"state-request"});
   refreshPeers();
 },5000);
+window.addEventListener("offline",function(){
+  if(NET.mode!=="join"||!NET.room) return;
+  NET.reconnecting=NET.synced;
+  stopNet(true);
+  setStatus("wait","Network disconnected. Reconnecting when you’re back online…");
+});
+window.addEventListener("online",function(){
+  if(NET.mode==="join"&&!NET.room&&NET.code) startJoin(NET.code);
+});
 function sayBye(){ if(NET.room) sendAll({t:"bye"}); }
 function describeMeeting(st){
   var parts=[], sp=0; SESSIONS.forEach(function(s){ sp+=st.rows[s.id].length; });
@@ -141,12 +152,18 @@ function describeMeeting(st){
   return "Data from "+(st.meta.week||"another meeting")+" ("+parts.join(", ")+")";
 }
 function roleName(id){ var r=ROLES.find(function(x){return x.id===id;}); return r?r.icon+" "+r.name:"Device"; }
+function syncStatusLabel(){
+  if(!NET.mode) return "Not connected";
+  if(NET.status==="err") return "Connection problem";
+  if(NET.status==="on") return NET.mode==="host"&&NET.peers.length<2?"Hosting":"Synced";
+  if(NET.synced||NET.reconnecting) return "Reconnecting";
+  return NET.peers.length>1?"Waiting for meeting data":"Connecting";
+}
 function renderConnBtn(){
   var b=document.getElementById("connBtn"), tx=document.getElementById("connTxt");
   b.className="conn"+(NET.status==="on"?" on":NET.status==="wait"?" wait":NET.status==="err"?" err":"");
-  if(!NET.mode) tx.textContent="Not connected";
-  else if(NET.status==="on") tx.textContent=fmtCode(NET.code)+" · "+Math.max(onlinePeople().length,1)+" online";
-  else tx.textContent=NET.status==="err"?"Connection problem":"Connecting "+fmtCode(NET.code)+"…";
+  tx.textContent=syncStatusLabel()+(NET.mode?" · "+fmtCode(NET.code):"")+(NET.status==="on"&&NET.peers.length>1?" · "+onlinePeople().length+" online":"");
+  b.title=NET.lastSync?"Last meeting data received at "+new Date(NET.lastSync).toLocaleTimeString():syncStatusLabel();
 }
 function renderConnBox(){
   var h="";
@@ -157,7 +174,8 @@ function renderConnBox(){
   } else {
     h+='<h3>'+(NET.mode==="host"?"You're hosting this meeting":(NET.synced?"Connected to meeting":"Joining meeting"))+'</h3>';
     h+='<div class="saved">Share the code, or let people scan a QR code below with their phone camera.</div>';
-    h+='<div class="code">'+fmtCode(NET.code)+'</div>';
+    h+='<div class="code">'+fmtCode(NET.code)+'</div><div role="status"><b>'+syncStatusLabel()+'</b>'+
+      (NET.lastSync?' · Last meeting data received at '+esc(new Date(NET.lastSync).toLocaleTimeString()):'')+'</div>';
     if(NET.status!=="on") h+='<div class="'+(NET.status==="err"?"connerr":"saved")+'">'+esc(NET.msg||"Connecting…")+'</div>';
     if(NET.peers.length){ var ppl=onlinePeople(); h+='<b>Online: '+ppl.length+' '+(ppl.length===1?'person':'people')+' on '+NET.peers.length+' device'+(NET.peers.length===1?'':'s')+'</b><ul class="devlist">'+ppl.map(function(p){ return '<li>'+peopleRoleNames(p)+(p.name?' — '+esc(p.name):'')+devTag(p)+(p.me?' <span class="saved">(you)</span>':'')+(p.host?' <span class="saved">(started the meeting)</span>':'')+'</li>'; }).join("")+'</ul>'; }
     var rr=ROLES.find(function(x){return x.id===L.role;});
