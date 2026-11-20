@@ -17,6 +17,10 @@ function renderRepPick(){
     return '<label><input type="checkbox" data-rep="'+r.id+'"'+(L.rep[r.id]!==false?' checked':'')+(hasData(r.id)?'':' disabled')+'> '+r.name+(hasData(r.id)?'':' <span style="color:#999">(no data)</span>')+'</label>';
   }).join("");
 }
+function refreshOpenMeetingReport(){
+  var wrap=document.getElementById("reportWrap");
+  if(wrap.classList.contains("on")&&wrap.dataset.kind==="report"){ renderRepPick(); buildReport(); }
+}
 function buildReport(){
   var t=now(), m=S.meta, h="";
   var inc=function(k){ return L.rep[k]!==false && hasData(k); };
@@ -28,7 +32,7 @@ function buildReport(){
     h+='<h4>⏱ Timer’s Report</h4>';
     var totalDone=0,totalOk=0,script=[];
     SESSIONS.forEach(function(s){
-      var L2=S.limits[s.id], rows=S.rows[s.id];
+      var L2=S.limits[s.id], rows=timerRows(s.id);
       var lim=s.type==="rr"?"Bell at "+fmt(L2.b):s.type==="rep"?"Timer & Ah-Counter 1 min · Grammarian 2 min":"Green "+fmt(L2.g)+" · Amber "+fmt(L2.a)+" · Red "+fmt(L2.r);
       var done=rows.filter(function(r){return rowState(r)!=="idle";}), ok=done.filter(function(r){return rowState(r)==="done"&&status(s.id,r,t).ok;}).length;
       var untimed=rows.filter(function(r){return rowState(r)==="idle";}).map(function(r){return displayName(r,rows.indexOf(r));});

@@ -23,7 +23,7 @@ function stampObj(obj,parts,shadow){
   return ch;
 }
 /* Keep independent edits made on different devices, including cleared values. */
-var roleEditShadow={};
+var roleEditShadow={}, limitsShadow=null;
 function roleEditObjects(state){
   var result={pres:state.pres,saa:state.saa};
   ["speeches","presentations"].forEach(function(key){
@@ -60,11 +60,13 @@ function mergeRoleEdit(a,b){
 function stampFields(){
   var edits=roleEditObjects(S);
   Object.keys(edits).forEach(function(key){ stampObj(edits[key],roleEditParts(edits[key]),roleEditShadow[key]||{}); });
+ stampObj(S.limits,geParts(S.limits),limitsShadow);
  stampObj(S.agenda,agParts(S.agenda),shadowAg); stampObj(S.members,memParts(S.members),shadowMem); stampObj(S.genotes,geParts(S.genotes),shadowGE); shadowSync(); }
 function shadowSync(){
   var edits=roleEditObjects(S);
   roleEditShadow={};
   Object.keys(edits).forEach(function(key){roleEditShadow[key]=roleEditParts(edits[key]);});
+ limitsShadow=geParts(S.limits);
  shadowAg=agParts(S.agenda); shadowMem=memParts(S.members); shadowGE=geParts(S.genotes); }
 function hasFu(o){ return !!(o&&o.fu&&Object.keys(o.fu).length); }
 function mergeAgenda(A,B){
@@ -99,7 +101,7 @@ function mergeInto(A,B,mode){
   var before=stable(A);
   B.names.forEach(function(n){ addName(A,n); });
   A.attend=mergeColl(A.attend,B.attend,{}); A.keys=mergeColl(A.keys,B.keys,{});
-  KEEP_LWW.forEach(function(k){ if(k==="members") mergeMembers(A,B); else if((B[k].u||0)>(A[k].u||0)) A[k]=clone(B[k]); });
+  KEEP_LWW.forEach(function(k){ if(k==="members") mergeMembers(A,B); else if(k==="limits") A.limits=mergeRoleEdit(A.limits,B.limits); else if((B[k].u||0)>(A[k].u||0)) A[k]=clone(B[k]); });
   A.actions=mergeColl(A.actions,B.actions,{}); A.voterPeople=mergeColl(A.voterPeople,B.voterPeople,{});
   A.coorg=mergeColl(A.coorg,B.coorg,{}); A.ideas=mergeColl(A.ideas,B.ideas,{}); A.tpls=mergeColl(A.tpls,B.tpls,{});
   Object.keys(A.people).forEach(function(k){ if((B.peopleU[k]||0)>(A.peopleU[k]||0)){ A.people[k]=B.people[k]; A.peopleU[k]=B.peopleU[k]; } });
@@ -112,9 +114,10 @@ function mergeInto(A,B,mode){
     COLLS.forEach(function(p){ setColl(A,p,clone(getColl(B,p))); });
   } else if(B.mid===A.mid){
     Object.keys(B.dead).forEach(function(id){ if(!(A.dead[id]>=B.dead[id])) A.dead[id]=B.dead[id]; });
-    MEETING_LWW.forEach(function(k){ if(k==="agenda") mergeAgenda(A,B); else if(k==="genotes") mergeGENotes(A,B); else if(k==="pres"||k==="saa") A[k]=mergeRoleEdit(A[k],B[k]); else if((B[k].u||0)>(A[k].u||0)) A[k]=clone(B[k]); });
+    MEETING_LWW.forEach(function(k){ if(k==="agenda") mergeAgenda(A,B); else if(k==="genotes") mergeGENotes(A,B); else if(k==="pres"||k==="saa") A[k]=mergeRoleEdit(A[k],B[k]); else if((B[k].u||0)>(A[k].u||0)||(k==="timerTurn"&&B[k].u===A[k].u&&stable(B[k])>stable(A[k]))) A[k]=clone(B[k]); });
     COLLS.forEach(function(p){ setColl(A,p,mergeColl(getColl(A,p),getColl(B,p),A.dead,["speeches","presentations"].includes(p[0])?mergeRoleEdit:null)); });
   }
+  reconcileTimerTurns(A);
   if(A===S) shadowSync();
   return stable(A)!==before;
 }
