@@ -21,7 +21,7 @@ function probeTimerClock(){
 function makeCode(){ var A="ABCDEFGHJKMNPQRSTUVWXYZ23456789", s="", r=new Uint8Array(6); (window.crypto||window.msCrypto).getRandomValues(r); for(var i=0;i<6;i++) s+=A[r[i]%A.length]; return s; }
 function fmtCode(c){ return c.slice(0,3)+"-"+c.slice(3); }
 function cleanCode(s){ return String(s||"").toUpperCase().replace(/[^A-Z0-9]/g,""); }
-function setStatus(st,msg){ NET.status=st; NET.msg=msg||""; renderConnBtn(); renderRoles(); if(document.getElementById("connModal").classList.contains("on")) renderConnBox(); refreshWelcome(); }
+function setStatus(st,msg){ NET.status=st; NET.msg=msg||""; refreshDashboardOnline(); renderConnBtn(); renderRoles(); if(document.getElementById("connModal").classList.contains("on")) renderConnBox(); refreshWelcome(); }
 /* the same person on several devices (e.g. laptop + phone) counts once */
 function onlinePeople(){
   var out=[], by={};
@@ -48,7 +48,7 @@ function refreshPeers(){
     if(NET.mode==="host" || (list.length>1 && NET.synced&&!NET.awaitingSnapshot)) setStatus("on");
     else if(list.length>1) setStatus("wait","Connected to a device. Waiting for the shared meeting data…");
     else if(NET.status!=="wait") setStatus("wait", NET.synced?"Waiting for the others to reconnect…":"Looking for meeting "+fmtCode(NET.code)+"…");
-    else { renderConnBtn(); renderRoles(); refreshWelcome(); }
+    else { refreshDashboardOnline(); renderConnBtn(); renderRoles(); refreshWelcome(); }
   }
 }
 function relayCount(){ try{ var m=Trystero.getRelaySockets(); return Object.keys(m).filter(function(k){ return m[k]&&m[k].readyState===1; }).length; }catch(e){ return -1; } }

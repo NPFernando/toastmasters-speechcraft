@@ -3729,7 +3729,7 @@ function probeTimerClock(){
 function makeCode(){ var A="ABCDEFGHJKMNPQRSTUVWXYZ23456789", s="", r=new Uint8Array(6); (window.crypto||window.msCrypto).getRandomValues(r); for(var i=0;i<6;i++) s+=A[r[i]%A.length]; return s; }
 function fmtCode(c){ return c.slice(0,3)+"-"+c.slice(3); }
 function cleanCode(s){ return String(s||"").toUpperCase().replace(/[^A-Z0-9]/g,""); }
-function setStatus(st,msg){ NET.status=st; NET.msg=msg||""; renderConnBtn(); renderRoles(); if(document.getElementById("connModal").classList.contains("on")) renderConnBox(); refreshWelcome(); }
+function setStatus(st,msg){ NET.status=st; NET.msg=msg||""; refreshDashboardOnline(); renderConnBtn(); renderRoles(); if(document.getElementById("connModal").classList.contains("on")) renderConnBox(); refreshWelcome(); }
 /* the same person on several devices (e.g. laptop + phone) counts once */
 function onlinePeople(){
   var out=[], by={};
@@ -3756,7 +3756,7 @@ function refreshPeers(){
     if(NET.mode==="host" || (list.length>1 && NET.synced&&!NET.awaitingSnapshot)) setStatus("on");
     else if(list.length>1) setStatus("wait","Connected to a device. Waiting for the shared meeting data…");
     else if(NET.status!=="wait") setStatus("wait", NET.synced?"Waiting for the others to reconnect…":"Looking for meeting "+fmtCode(NET.code)+"…");
-    else { renderConnBtn(); renderRoles(); refreshWelcome(); }
+    else { refreshDashboardOnline(); renderConnBtn(); renderRoles(); refreshWelcome(); }
   }
 }
 function relayCount(){ try{ var m=Trystero.getRelaySockets(); return Object.keys(m).filter(function(k){ return m[k]&&m[k].readyState===1; }).length; }catch(e){ return -1; } }
@@ -4650,6 +4650,24 @@ function agendaProgress(){ var its=runItems().filter(function(i){return !isSkipp
 /* green dot for a connected person (text for screen readers); with label: "online" / "not connected" */
 function onDot(n,label){ if(!NET.room||!n) return ""; var on=isOnlineName(n); return on?'<i class="dotg" role="img" aria-label="online" title="Connected now"></i>'+(label?'<span class="saved">online</span>':''):(label?'<span class="saved">not connected</span>':''); }
 function isOnlineName(n){ return !!n && (NET.peers||[]).some(function(p){ return nkey(p.name)===nkey(n); }); }
+function dashboardOnlineHTML(){
+  var ppl=NET.room&&NET.status==="on"?onlinePeople():[];
+  var heading='<h2 class="sec" style="margin-top:0">🟢 Online <span class="cnt">'+ppl.length+'</span></h2>';
+  if(!NET.room||NET.status!=="on"){
+    return heading+'<div class="note" style="margin:0">'+esc(NET.msg||"Not connected. Tap the connection button at the top to join the meeting.")+'</div>';
+  }
+  return heading+'<div class="chips">'+ppl.map(function(p){
+    var icons=p.roles.map(function(r){ return roleObj(r)?.icon||""; }).join("");
+    return '<span class="chip word">'+icons+' '+esc(p.name||peopleRoleNames(p))+
+      (p.devices>1?' <small>· '+p.devices+' devices</small>':'')+'</span>';
+  }).join("")+'</div>';
+}
+function refreshDashboardOnline(){
+  var card=document.getElementById("dashboardOnline");
+  if(!card) return;
+  var html=dashboardOnlineHTML();
+  if(card.onlineHTML!==html){ card.onlineHTML=html; card.innerHTML=html; }
+}
 function dashHTML(){
   var ss=scheduleStatus(), pr=agendaProgress(), h='';
   h+='<section class="card dash-hero"><div class="dh-top"><div><div class="dh-kicker">'+esc(GROUP)+(S.meta.week?' · '+esc(S.meta.week):'')+'</div><div class="dh-title">'+esc(fmtDate(S.meta.date)||"Today’s meeting")+'</div></div>'+
@@ -4666,8 +4684,7 @@ function dashHTML(){
   var tparts=[]; SESSIONS.forEach(function(s){ var done=S.rows[s.id].filter(function(r){return rowState(r)==="done";}); if(done.length){ var ok=done.filter(function(r){return status(s.id,r,now()).ok;}).length; tparts.push('<div class="dstat"><b>'+done.length+'</b><span>'+esc(s.name)+'</span><small>'+ok+' within time</small></div>'); } });
   h+='<div class="dgrid">';
   h+='<section class="card"><h2 class="sec" style="margin-top:0">⏱ Timing</h2>'+(runningList().length?'<div class="saved" style="margin-bottom:6px">Live time is shown at the top of the screen.</div>':'')+(tparts.length?'<div class="dstats">'+tparts.join("")+'</div>':'<div class="note" style="margin:0">No one timed yet.</div>')+'</section>';
-  var ppl=onlinePeople();
-  h+='<section class="card"><h2 class="sec" style="margin-top:0">🟢 Online <span class="cnt">'+(NET.mode?ppl.length:0)+'</span></h2>'+(NET.mode&&ppl.length?'<div class="chips">'+ppl.map(function(p){ return '<span class="chip word">'+p.roles.map(function(r){var o=roleObj(r);return o?o.icon:"";}).join("")+' '+esc(p.name||peopleRoleNames(p))+(p.devices>1?' <small>· '+p.devices+'</small>':'')+'</span>'; }).join("")+'</div>':'<div class="note" style="margin:0">Not connected. Tap the connection button at the top to join the meeting.</div>')+'</section>';
+  h+='<section class="card" id="dashboardOnline">'+dashboardOnlineHTML()+'</section>';
   var rp=AG_SIDE.filter(function(a){return asList(a[0]).length;});
   h+='<section class="card"><h2 class="sec" style="margin-top:0">👥 Role players</h2>'+(rp.length?'<div class="dplayers">'+rp.map(function(a){ return '<div><span class="muted">'+esc(a[1])+'</span><b>'+asList(a[0]).map(function(n){ return (isOnlineName(n)?'<i class="dotg" title="online"></i>':'')+esc(n)+kindBadge(n); }).join(", ")+'</b></div>'; }).join("")+'</div>':'<div class="note" style="margin:0">The Coordinator hasn’t set the role players yet.</div>')+'</section>';
   h+='<section class="card"><h2 class="sec" style="margin-top:0">📝 Word of the Day</h2>'+(S.gram.wotd?'<div class="dwotd">'+esc(S.gram.wotd)+'</div>'+wordOfDayDetailsHTML():'<div class="note" style="margin:0">The Grammarian will reveal it during the meeting.</div>')+
