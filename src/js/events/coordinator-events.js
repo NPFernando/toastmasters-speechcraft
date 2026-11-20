@@ -57,7 +57,16 @@
       var arr=asList(k); v.split(/[,;]+/).map(function(x){return x.trim();}).filter(Boolean).forEach(function(n){ if(arr.indexOf(n)<0) arr.push(n); });
       S.agenda.assign[k]=arr; agChanged(); applyAgenda(); commit(); var b2=document.querySelector('[data-rpadd-in="'+k+'"]'); if(b2) b2.focus(); return;
     }
-    var rd=t.closest("[data-rpdel]"); if(rd){ var k2=rd.dataset.rpdel, arr2=asList(k2); arr2.splice(+rd.dataset.i,1); S.agenda.assign[k2]=arr2; agChanged(); applyAgenda(); commit(); return; }
+    var rd=t.closest("[data-rpdel]");
+    if(rd){
+      var role=rd.dataset.rpdel, names=asList(role), removed=names.splice(+rd.dataset.i,1)[0];
+      S.agenda.assign[role]=names;
+      if(role==="speakers"&&removed&&!names.some(function(name){return nkey(name)===nkey(removed);})){
+        var pair=S.assigns.find(function(entry){return nkey(entry.speaker)===nkey(removed);});
+        if(pair&&pair.evaluator){ pair.evaluator=""; tick(pair); }
+      }
+      agChanged(); applyAgenda(); commit(); return;
+    }
     if(t.closest("[data-itdel]")){ var id=t.closest("[data-iid]").dataset.iid; agRemove(id); agChanged(); commit(); return; }
     var mv=t.closest("[data-agmv]"); if(mv){ var r0=mv.closest("[data-iid]").dataset.iid; if(agMove(r0,+mv.dataset.agmv)){ agChanged(); commit(); var nb=document.querySelector('[data-iid="'+r0+'"] [data-agmv="'+mv.dataset.agmv+'"]'); if(nb&&!nb.disabled) nb.focus(); } return; }
     if(t.closest("[data-agins]")){ var ni=agInsertAfter(t.closest("[data-iid]").dataset.iid); if(ni){ agChanged(); commit(); var ta=document.querySelector('[data-iid="'+ni.id+'"] .agtext'); if(ta) ta.focus(); } return; }

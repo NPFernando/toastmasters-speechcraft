@@ -1766,7 +1766,7 @@ function applyAgenda(){
   });
   var want={ps:[],ev:[],rep:[]};
   asList("speakers").forEach(function(n){ want.ps.push({ak:"ps:"+n.toLowerCase(),name:n}); });
-  var asg=(S.assigns||[]).filter(function(a){return a.evaluator;});
+  var asg=activeEvaluatorPairs("ps");
   asg.forEach(function(a){ want.ev.push({ak:"ev:a:"+nkey(a.speaker),name:a.evaluator+" – evaluating "+a.speaker}); });
   asList("sevals").forEach(function(n){ if(asg.some(function(a){return nkey(a.evaluator)===nkey(n);})) return; want.ev.push({ak:"ev:s:"+n.toLowerCase(),name:n+" – speech evaluation"}); });
   asList("ttevals").forEach(function(n){ want.ev.push({ak:"ev:t:"+n.toLowerCase(),name:n+" – Table Topics evaluation"}); });
@@ -3323,7 +3323,16 @@ document.addEventListener("fullscreenchange",function(){ if(!document.fullscreen
       var arr=asList(k); v.split(/[,;]+/).map(function(x){return x.trim();}).filter(Boolean).forEach(function(n){ if(arr.indexOf(n)<0) arr.push(n); });
       S.agenda.assign[k]=arr; agChanged(); applyAgenda(); commit(); var b2=document.querySelector('[data-rpadd-in="'+k+'"]'); if(b2) b2.focus(); return;
     }
-    var rd=t.closest("[data-rpdel]"); if(rd){ var k2=rd.dataset.rpdel, arr2=asList(k2); arr2.splice(+rd.dataset.i,1); S.agenda.assign[k2]=arr2; agChanged(); applyAgenda(); commit(); return; }
+    var rd=t.closest("[data-rpdel]");
+    if(rd){
+      var role=rd.dataset.rpdel, names=asList(role), removed=names.splice(+rd.dataset.i,1)[0];
+      S.agenda.assign[role]=names;
+      if(role==="speakers"&&removed&&!names.some(function(name){return nkey(name)===nkey(removed);})){
+        var pair=S.assigns.find(function(entry){return nkey(entry.speaker)===nkey(removed);});
+        if(pair&&pair.evaluator){ pair.evaluator=""; tick(pair); }
+      }
+      agChanged(); applyAgenda(); commit(); return;
+    }
     if(t.closest("[data-itdel]")){ var id=t.closest("[data-iid]").dataset.iid; agRemove(id); agChanged(); commit(); return; }
     var mv=t.closest("[data-agmv]"); if(mv){ var r0=mv.closest("[data-iid]").dataset.iid; if(agMove(r0,+mv.dataset.agmv)){ agChanged(); commit(); var nb=document.querySelector('[data-iid="'+r0+'"] [data-agmv="'+mv.dataset.agmv+'"]'); if(nb&&!nb.disabled) nb.focus(); } return; }
     if(t.closest("[data-agins]")){ var ni=agInsertAfter(t.closest("[data-iid]").dataset.iid); if(ni){ agChanged(); commit(); var ta=document.querySelector('[data-iid="'+ni.id+'"] .agtext'); if(ta) ta.focus(); } return; }
@@ -3910,13 +3919,23 @@ function myRoles(){
 }
 function switchRole(id){ L.view="role"; L.roles=myRoles(); if(!L.roles.includes(id)) L.roles.push(id); L.rolesMid=S.mid; L.role=id; saveL(); NET.hello(); renderAll(); window.scrollTo(0,0); }
 function dropRole(id){ L.roles=myRoles(); if(L.roles.length<2) return; saveRoleChoices([id],false); L.roles=L.roles.filter(function(r){return r!==id;}); if(L.role===id) L.role=L.roles[0]; saveL(); NET.hello(); renderAll(); }
+/* Stored evaluator pairs can outlive the speaker's place on the agenda. */
+function agendaPreparedSpeakers(){
+  return Object.hasOwn(S.agenda.assign,"speakers")?asList("speakers"):preparedSpeakers();
+}
+function activeEvaluatorPairs(kind){
+  var names=(kind==="ps"?agendaPreparedSpeakers():ttSpeakers()).map(nkey);
+  return (kind==="ps"?S.assigns:S.ttassign).filter(function(pair){
+    return pair.evaluator&&names.includes(nkey(pair.speaker));
+  });
+}
 /* roles the agenda gives this person today */
 function agendaRoleNames(role){
   switch(role){
     case "keynote": return asList("keynote").concat(S.presentations.map(function(p){ return p.name; }));
-    case "speaker": return asList("speakers").concat(S.assigns.map(function(a){ return a.speaker; }));
-    case "seval": return asList("sevals").concat(S.assigns.map(function(a){ return a.evaluator; }));
-    case "tteval": return asList("ttevals").concat(S.ttassign.map(function(a){ return a.evaluator; }));
+    case "speaker": return agendaPreparedSpeakers();
+    case "seval": return asList("sevals").concat(activeEvaluatorPairs("ps").map(function(a){ return a.evaluator; }));
+    case "tteval": return asList("ttevals").concat(activeEvaluatorPairs("tt").map(function(a){ return a.evaluator; }));
     case "member": return [];
     default: return asList(role);
   }

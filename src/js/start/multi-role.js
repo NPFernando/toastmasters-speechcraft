@@ -24,13 +24,23 @@ function myRoles(){
 }
 function switchRole(id){ L.view="role"; L.roles=myRoles(); if(!L.roles.includes(id)) L.roles.push(id); L.rolesMid=S.mid; L.role=id; saveL(); NET.hello(); renderAll(); window.scrollTo(0,0); }
 function dropRole(id){ L.roles=myRoles(); if(L.roles.length<2) return; saveRoleChoices([id],false); L.roles=L.roles.filter(function(r){return r!==id;}); if(L.role===id) L.role=L.roles[0]; saveL(); NET.hello(); renderAll(); }
+/* Stored evaluator pairs can outlive the speaker's place on the agenda. */
+function agendaPreparedSpeakers(){
+  return Object.hasOwn(S.agenda.assign,"speakers")?asList("speakers"):preparedSpeakers();
+}
+function activeEvaluatorPairs(kind){
+  var names=(kind==="ps"?agendaPreparedSpeakers():ttSpeakers()).map(nkey);
+  return (kind==="ps"?S.assigns:S.ttassign).filter(function(pair){
+    return pair.evaluator&&names.includes(nkey(pair.speaker));
+  });
+}
 /* roles the agenda gives this person today */
 function agendaRoleNames(role){
   switch(role){
     case "keynote": return asList("keynote").concat(S.presentations.map(function(p){ return p.name; }));
-    case "speaker": return asList("speakers").concat(S.assigns.map(function(a){ return a.speaker; }));
-    case "seval": return asList("sevals").concat(S.assigns.map(function(a){ return a.evaluator; }));
-    case "tteval": return asList("ttevals").concat(S.ttassign.map(function(a){ return a.evaluator; }));
+    case "speaker": return agendaPreparedSpeakers();
+    case "seval": return asList("sevals").concat(activeEvaluatorPairs("ps").map(function(a){ return a.evaluator; }));
+    case "tteval": return asList("ttevals").concat(activeEvaluatorPairs("tt").map(function(a){ return a.evaluator; }));
     case "member": return [];
     default: return asList(role);
   }
