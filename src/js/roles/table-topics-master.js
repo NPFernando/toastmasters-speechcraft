@@ -40,6 +40,7 @@ function callSpeaker(){
   var cur=topicById(S.cur.id); if(!cur) return;
   var nm=(document.getElementById("callName").value||"").trim();
   if(!nm){ alert("Type who is taking this topic first."); document.getElementById("callName").focus(); return; }
+  clearDeviceDraft("callName");
   cur.speaker=nm; cur.used=true; cur.usedAt=now(); tick(cur); remember(nm); autoAssignTT(nm); if(linkRoles().length) selectPerson(nm,"ttm");
   /* queue them on the Timer's Table Topics list */
   var r=cur.rowId && findRow("tt",cur.rowId);

@@ -62,4 +62,5 @@ ui/display-settings.js
 ui/more-menu.js
 ui/home-about.js
 features/meeting-workflows.js
+features/device-drafts.js
 start/boot.js

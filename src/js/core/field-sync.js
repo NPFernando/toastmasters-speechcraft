@@ -22,8 +22,50 @@ function stampObj(obj,parts,shadow){
   if(ch) obj.u=Math.max(t,(obj.u||0)+1);
   return ch;
 }
-function stampFields(){ stampObj(S.agenda,agParts(S.agenda),shadowAg); stampObj(S.members,memParts(S.members),shadowMem); stampObj(S.genotes,geParts(S.genotes),shadowGE); shadowSync(); }
-function shadowSync(){ shadowAg=agParts(S.agenda); shadowMem=memParts(S.members); shadowGE=geParts(S.genotes); }
+/* Keep independent edits made on different devices, including cleared values. */
+var roleEditShadow={};
+function roleEditObjects(state){
+  var result={pres:state.pres,saa:state.saa};
+  ["speeches","presentations"].forEach(function(key){
+    state[key].forEach(function(record){ result[key+"|"+record.id]=record; });
+  });
+  return result;
+}
+function roleEditParts(record){
+  var fields=geParts(record);
+  delete fields.id; delete fields.ord;
+  if(record.chk){
+    delete fields.chk;
+    Object.keys(record.chk).forEach(function(key){fields["chk|"+key]=js(record.chk[key]);});
+  }
+  return fields;
+}
+function mergeRoleEdit(a,b){
+  if(!hasFu(a)&&!hasFu(b)) return b.u>a.u?clone(b):a;
+  var result=clone(a), ap=roleEditParts(a), bp=roleEditParts(b), af=a.fu||{}, bf=b.fu||{};
+  result.fu={};
+  new Set(Object.keys(ap).concat(Object.keys(bp),Object.keys(af),Object.keys(bf))).forEach(function(key){
+    var at=af[key]??(hasFu(a)?0:a.u), bt=bf[key]??(hasFu(b)?0:b.u);
+    result.fu[key]=Math.max(at||0,bt||0);
+    if((bt||0)<(at||0)||((bt||0)===(at||0)&&String(bp[key]??"")<=String(ap[key]??""))) return;
+    var target=result, source=b, field=key;
+    if(key.startsWith("chk|")){
+      field=key.slice(4); target=result.chk||(result.chk={}); source=b.chk||{};
+    }
+    if(Object.hasOwn(source,field)) target[field]=clone(source[field]); else delete target[field];
+  });
+  result.u=Math.max(a.u||0,b.u||0);
+  return result;
+}
+function stampFields(){
+  var edits=roleEditObjects(S);
+  Object.keys(edits).forEach(function(key){ stampObj(edits[key],roleEditParts(edits[key]),roleEditShadow[key]||{}); });
+ stampObj(S.agenda,agParts(S.agenda),shadowAg); stampObj(S.members,memParts(S.members),shadowMem); stampObj(S.genotes,geParts(S.genotes),shadowGE); shadowSync(); }
+function shadowSync(){
+  var edits=roleEditObjects(S);
+  roleEditShadow={};
+  Object.keys(edits).forEach(function(key){roleEditShadow[key]=roleEditParts(edits[key]);});
+ shadowAg=agParts(S.agenda); shadowMem=memParts(S.members); shadowGE=geParts(S.genotes); }
 function hasFu(o){ return !!(o&&o.fu&&Object.keys(o.fu).length); }
 function mergeAgenda(A,B){
   if(!hasFu(A.agenda)&&!hasFu(B.agenda)){ if((B.agenda.u||0)>(A.agenda.u||0)) A.agenda=clone(B.agenda); return; }
@@ -70,8 +112,8 @@ function mergeInto(A,B,mode){
     COLLS.forEach(function(p){ setColl(A,p,clone(getColl(B,p))); });
   } else if(B.mid===A.mid){
     Object.keys(B.dead).forEach(function(id){ if(!(A.dead[id]>=B.dead[id])) A.dead[id]=B.dead[id]; });
-    MEETING_LWW.forEach(function(k){ if(k==="agenda") mergeAgenda(A,B); else if(k==="genotes") mergeGENotes(A,B); else if((B[k].u||0)>(A[k].u||0)) A[k]=clone(B[k]); });
-    COLLS.forEach(function(p){ setColl(A,p,mergeColl(getColl(A,p),getColl(B,p),A.dead)); });
+    MEETING_LWW.forEach(function(k){ if(k==="agenda") mergeAgenda(A,B); else if(k==="genotes") mergeGENotes(A,B); else if(k==="pres"||k==="saa") A[k]=mergeRoleEdit(A[k],B[k]); else if((B[k].u||0)>(A[k].u||0)) A[k]=clone(B[k]); });
+    COLLS.forEach(function(p){ setColl(A,p,mergeColl(getColl(A,p),getColl(B,p),A.dead,["speeches","presentations"].includes(p[0])?mergeRoleEdit:null)); });
   }
   if(A===S) shadowSync();
   return stable(A)!==before;

@@ -56,7 +56,7 @@ function coorgHTML(){
     if(L.role!=="coord") return;
     if(t.closest("#coUnlock")){ var v=document.getElementById("coCode").value; tryCoCode(v).then(function(ok){ if(!ok){ if(!coActive().length){ L.pendingCo=cleanCode(v); saveL(); showToastMsg("Waiting for the meeting data… join the meeting so the invite can be checked"); } else alert("That invite code doesn’t match. Ask the Coordinator for a new one."); } }); return; }
     if(!coordUnlocked()) return;
-    if(t.closest("#coInvite")){ var n=(document.getElementById("coName").value||"").trim(); if(!n){ document.getElementById("coName").focus(); return; } if(coActive().some(function(c){return nkey(c.name)===nkey(n);})&&!confirm(n+" already has access. Create a new invite for them?")) return; createInvite(n); return; }
+    if(t.closest("#coInvite")){ var n=(document.getElementById("coName").value||"").trim(); if(!n){ document.getElementById("coName").focus(); return; } if(coActive().some(function(c){return nkey(c.name)===nkey(n);})&&!confirm(n+" already has access. Create a new invite for them?")) return; clearDeviceDraft("coName"); createInvite(n); return; }
     if((b=t.closest("[data-corevoke]"))){ var c=coRec(b.dataset.corevoke); if(c&&confirm("Remove "+c.name+"’s access to the meeting set-up?")){ c.revoked=true; tick(c); if(lastInvite&&lastInvite.id===c.id) lastInvite=null; commit(); } return; }
     if((b=t.closest("[data-cocopy]"))){ if(lastInvite) copyText(coLink(lastInvite.code)); return; }
     if(t.closest("[data-codone]")){ lastInvite=null; renderAll(); return; }

@@ -31,7 +31,7 @@
       var inp=document.getElementById("memIn"), names=inp.value.split(/[,;\n]+/).map(function(x){return x.trim();}).filter(Boolean), added=0;
       var mk=(document.getElementById("memKind")||{}).value||"auto";
       names.forEach(function(n){ if(!S.members.list.some(function(m){return m.name.toLowerCase()===n.toLowerCase();})){ S.members.list.push(Object.assign({id:uid(),name:n,kind:mk==="auto"?guessKind(n):mk},S.meta.test?{test:true}:{})); added++; } });
-      if(added){ tick(S.members); commit(); } var again=document.getElementById("memIn"); if(again){ again.value=""; again.focus(); } return;
+      if(names.length) clearDeviceDraft("memIn"); if(added){ tick(S.members); commit(); } var again=document.getElementById("memIn"); if(again){ again.value=""; again.focus(); } return;
     }
     var kr=t.closest("[data-keyreset]"); if(kr){ var nm=kr.dataset.keyreset; if(!confirm("Reset "+nm+"'s feedback PIN?\n\nThey can set a new one, but feedback encrypted for the old PIN can't be read any more.")) return; var rec=S.keys.find(function(k){return k.id==="k|"+nkey(nm);}); if(rec){ rec.pub=null; rec.wrapped=""; tick(rec); commit(); } return; }
     var md=t.closest("[data-mdel]"); if(md){ removeMember(md.dataset.mdel); return; }

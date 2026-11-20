@@ -901,10 +901,10 @@ function renderRoster(){
 function renderMemberList(){ var el=document.getElementById("memberlist"); if(el) el.innerHTML=meetingNames().map(function(n){return '<option value="'+esc(n)+'">';}).join(""); }
 
 /* ---------- merge (for live sync and restore) ---------- */
-function mergeColl(a,b,dead){
+function mergeColl(a,b,dead,mergeRecord){
   var m={};
   a.forEach(function(x){ m[x.id]=x; });
-  b.forEach(function(x){ var y=m[x.id]; if(!y||x.u>y.u||(x.u===y.u&&/^(v|role|field)\|/.test(x.id)&&stable(x)>stable(y))) m[x.id]=clone(x); });
+  b.forEach(function(x){ var y=m[x.id]; if(y&&mergeRecord){ m[x.id]=mergeRecord(y,x); return; } if(!y||x.u>y.u||(x.u===y.u&&/^(v|role|field|note)\|/.test(x.id)&&stable(x)>stable(y))) m[x.id]=clone(x); });
   var out=Object.keys(m).map(function(k){return m[k];}).filter(function(x){ return !(dead[x.id]>=x.u); });
   out.sort(function(p,q){ return (p.ord-q.ord)||(p.id<q.id?-1:p.id>q.id?1:0); });
   return out;
@@ -934,8 +934,50 @@ function stampObj(obj,parts,shadow){
   if(ch) obj.u=Math.max(t,(obj.u||0)+1);
   return ch;
 }
-function stampFields(){ stampObj(S.agenda,agParts(S.agenda),shadowAg); stampObj(S.members,memParts(S.members),shadowMem); stampObj(S.genotes,geParts(S.genotes),shadowGE); shadowSync(); }
-function shadowSync(){ shadowAg=agParts(S.agenda); shadowMem=memParts(S.members); shadowGE=geParts(S.genotes); }
+/* Keep independent edits made on different devices, including cleared values. */
+var roleEditShadow={};
+function roleEditObjects(state){
+  var result={pres:state.pres,saa:state.saa};
+  ["speeches","presentations"].forEach(function(key){
+    state[key].forEach(function(record){ result[key+"|"+record.id]=record; });
+  });
+  return result;
+}
+function roleEditParts(record){
+  var fields=geParts(record);
+  delete fields.id; delete fields.ord;
+  if(record.chk){
+    delete fields.chk;
+    Object.keys(record.chk).forEach(function(key){fields["chk|"+key]=js(record.chk[key]);});
+  }
+  return fields;
+}
+function mergeRoleEdit(a,b){
+  if(!hasFu(a)&&!hasFu(b)) return b.u>a.u?clone(b):a;
+  var result=clone(a), ap=roleEditParts(a), bp=roleEditParts(b), af=a.fu||{}, bf=b.fu||{};
+  result.fu={};
+  new Set(Object.keys(ap).concat(Object.keys(bp),Object.keys(af),Object.keys(bf))).forEach(function(key){
+    var at=af[key]??(hasFu(a)?0:a.u), bt=bf[key]??(hasFu(b)?0:b.u);
+    result.fu[key]=Math.max(at||0,bt||0);
+    if((bt||0)<(at||0)||((bt||0)===(at||0)&&String(bp[key]??"")<=String(ap[key]??""))) return;
+    var target=result, source=b, field=key;
+    if(key.startsWith("chk|")){
+      field=key.slice(4); target=result.chk||(result.chk={}); source=b.chk||{};
+    }
+    if(Object.hasOwn(source,field)) target[field]=clone(source[field]); else delete target[field];
+  });
+  result.u=Math.max(a.u||0,b.u||0);
+  return result;
+}
+function stampFields(){
+  var edits=roleEditObjects(S);
+  Object.keys(edits).forEach(function(key){ stampObj(edits[key],roleEditParts(edits[key]),roleEditShadow[key]||{}); });
+ stampObj(S.agenda,agParts(S.agenda),shadowAg); stampObj(S.members,memParts(S.members),shadowMem); stampObj(S.genotes,geParts(S.genotes),shadowGE); shadowSync(); }
+function shadowSync(){
+  var edits=roleEditObjects(S);
+  roleEditShadow={};
+  Object.keys(edits).forEach(function(key){roleEditShadow[key]=roleEditParts(edits[key]);});
+ shadowAg=agParts(S.agenda); shadowMem=memParts(S.members); shadowGE=geParts(S.genotes); }
 function hasFu(o){ return !!(o&&o.fu&&Object.keys(o.fu).length); }
 function mergeAgenda(A,B){
   if(!hasFu(A.agenda)&&!hasFu(B.agenda)){ if((B.agenda.u||0)>(A.agenda.u||0)) A.agenda=clone(B.agenda); return; }
@@ -982,8 +1024,8 @@ function mergeInto(A,B,mode){
     COLLS.forEach(function(p){ setColl(A,p,clone(getColl(B,p))); });
   } else if(B.mid===A.mid){
     Object.keys(B.dead).forEach(function(id){ if(!(A.dead[id]>=B.dead[id])) A.dead[id]=B.dead[id]; });
-    MEETING_LWW.forEach(function(k){ if(k==="agenda") mergeAgenda(A,B); else if(k==="genotes") mergeGENotes(A,B); else if((B[k].u||0)>(A[k].u||0)) A[k]=clone(B[k]); });
-    COLLS.forEach(function(p){ setColl(A,p,mergeColl(getColl(A,p),getColl(B,p),A.dead)); });
+    MEETING_LWW.forEach(function(k){ if(k==="agenda") mergeAgenda(A,B); else if(k==="genotes") mergeGENotes(A,B); else if(k==="pres"||k==="saa") A[k]=mergeRoleEdit(A[k],B[k]); else if((B[k].u||0)>(A[k].u||0)) A[k]=clone(B[k]); });
+    COLLS.forEach(function(p){ setColl(A,p,mergeColl(getColl(A,p),getColl(B,p),A.dead,["speeches","presentations"].includes(p[0])?mergeRoleEdit:null)); });
   }
   if(A===S) shadowSync();
   return stable(A)!==before;
@@ -1149,7 +1191,11 @@ function renderAll(){
   else if(L.role==="ah") v.innerHTML=ahHTML();
   else v.innerHTML=gramHTML();
   if(curView()==="now" || (curView()==="role" && L.role==="speaker")) v.insertAdjacentHTML("beforeend",preparedRunHTML(false));
-  if(curView()==="role") v.insertAdjacentHTML("beforeend",handoverHTML());
+  if(curView()==="role"){
+    v.insertAdjacentHTML("beforeend",handoverHTML());
+    if(!["gram","seval","tteval"].includes(L.role)) v.insertAdjacentHTML("beforeend",draftAccessHTML());
+    restoreDeviceForms();
+  }
   if(curView()!=="now" && (curView()!=="role" || L.role!=="gram" || inFocus()) && S.gram.wotd){
     v.insertAdjacentHTML("afterbegin",'<section class="card" id="publishedWord"><h2 class="sec" style="margin-top:0">📝 Word of the Day · '+esc(S.gram.wotd)+'</h2>'+wordOfDayDetailsHTML()+'</section>');
   }
@@ -1338,6 +1384,7 @@ function callSpeaker(){
   var cur=topicById(S.cur.id); if(!cur) return;
   var nm=(document.getElementById("callName").value||"").trim();
   if(!nm){ alert("Type who is taking this topic first."); document.getElementById("callName").focus(); return; }
+  clearDeviceDraft("callName");
   cur.speaker=nm; cur.used=true; cur.usedAt=now(); tick(cur); remember(nm); autoAssignTT(nm); if(linkRoles().length) selectPerson(nm,"ttm");
   /* queue them on the Timer's Table Topics list */
   var r=cur.rowId && findRow("tt",cur.rowId);
@@ -1439,6 +1486,7 @@ function gramHTML(){
 }
 function addCounterSpeaker(kind,name){
   name=String(name||"").trim(); if(!name) return;
+  clearDeviceDraft("spkInput");
   var ex=counterRow(kind,name);
   if(kind==="ah") L.ahSel=ex.id; else L.gramSel=ex.id; selectPerson(name,kind); saveL(); remember(name); commit();
 }
@@ -1731,7 +1779,7 @@ function coorgHTML(){
     if(L.role!=="coord") return;
     if(t.closest("#coUnlock")){ var v=document.getElementById("coCode").value; tryCoCode(v).then(function(ok){ if(!ok){ if(!coActive().length){ L.pendingCo=cleanCode(v); saveL(); showToastMsg("Waiting for the meeting data… join the meeting so the invite can be checked"); } else alert("That invite code doesn’t match. Ask the Coordinator for a new one."); } }); return; }
     if(!coordUnlocked()) return;
-    if(t.closest("#coInvite")){ var n=(document.getElementById("coName").value||"").trim(); if(!n){ document.getElementById("coName").focus(); return; } if(coActive().some(function(c){return nkey(c.name)===nkey(n);})&&!confirm(n+" already has access. Create a new invite for them?")) return; createInvite(n); return; }
+    if(t.closest("#coInvite")){ var n=(document.getElementById("coName").value||"").trim(); if(!n){ document.getElementById("coName").focus(); return; } if(coActive().some(function(c){return nkey(c.name)===nkey(n);})&&!confirm(n+" already has access. Create a new invite for them?")) return; clearDeviceDraft("coName"); createInvite(n); return; }
     if((b=t.closest("[data-corevoke]"))){ var c=coRec(b.dataset.corevoke); if(c&&confirm("Remove "+c.name+"’s access to the meeting set-up?")){ c.revoked=true; tick(c); if(lastInvite&&lastInvite.id===c.id) lastInvite=null; commit(); } return; }
     if((b=t.closest("[data-cocopy]"))){ if(lastInvite) copyText(coLink(lastInvite.code)); return; }
     if(t.closest("[data-codone]")){ lastInvite=null; renderAll(); return; }
@@ -2189,7 +2237,7 @@ function autoAssignTT(speaker){
   var a=upsert(["ttassign"],"tta|"+nkey(speaker),{speaker:speaker,evaluator:""}); a.speaker=speaker; a.evaluator=best; tick(a);
 }
 function anyEvaluatorOf(kind,n){ return kind==="ps"?evaluatorOf(n):ttEvaluatorOf(n); }
-function evStatusOf(kind,n,me){ var dd=(L.evDrafts||{})[evId(kind,n,me)]; if((dd&&dd.submitted)||S.evals.some(function(e){return e.id===evId(kind,n,me)&&e.done&&e.state!=="writing";})) return "done"; if(dd&&(dd.c1||dd.r||dd.c2)) return "writing"; return "todo"; }
+function evStatusOf(kind,n,me){ var dd=meetingEvalDrafts()[evId(kind,n,me)]; if((dd&&dd.submitted)||S.evals.some(function(e){return e.id===evId(kind,n,me)&&e.done&&e.state!=="writing";})) return "done"; if(dd&&(dd.c1||dd.r||dd.c2)) return "writing"; return "todo"; }
 function evalProgressHTML(kind,list,me){
   if(!list.length) return "";
   var c={done:0,writing:0,todo:0}; list.forEach(function(n){ c[evStatusOf(kind,n,me)]++; });
@@ -2214,7 +2262,7 @@ function evalHTML(){
   L.evSel=L.evSel||{}; var sel=L.evSel[kind];
   var h='<section class="card">'+draftAccessHTML();
   if(!me) h+='<div class="note" style="margin:0 0 10px">Type your name in <b>Your name</b> above, so each speaker knows who evaluated them.</div>';
-  var chip=function(n){ var dd=(L.evDrafts||{})[evId(kind,n,me)], done=!!(dd&&dd.submitted)||S.evals.some(function(e){return e.id===evId(kind,n,me)&&e.done;}), t=kind==="ps"?speechTitle(n):"", ev=anyEvaluatorOf(kind,n);
+  var chip=function(n){ var dd=meetingEvalDrafts()[evId(kind,n,me)], done=!!(dd&&dd.submitted)||S.evals.some(function(e){return e.id===evId(kind,n,me)&&e.done;}), t=kind==="ps"?speechTitle(n):"", ev=anyEvaluatorOf(kind,n);
     return '<button class="chip spchip'+(nkey(sel)===nkey(n)?' active':'')+'" data-evsel="'+esc(n)+'">'+(done?'✓ ':'')+esc(n)+(t?'<span class="c">“'+esc(t)+'”</span>':'')+(ev&&nkey(ev)!==nkey(me)?'<span class="c">evaluator: '+esc(ev)+'</span>':'')+'</button>'; };
   if(kind==="ps"){
     var mine=list.filter(function(n){return me&&nkey(evaluatorOf(n))===nkey(me);}), rest=list.filter(function(n){return mine.indexOf(n)<0;});
@@ -2227,8 +2275,8 @@ function evalHTML(){
   }
   h+='</div><div class="row" style="margin-top:8px"><input class="t" id="evAddIn" list="roster" autocomplete="off" placeholder="Someone else? Type a name"><button class="btn" id="evAdd">+ Add</button></div>';
   if(sel){
-    var e=(L.evDrafts||{})[evId(kind,sel,me)]||{c1:"",r:"",c2:"",rate:{}};
-    var other=!((L.evDrafts||{})[evId(kind,sel,me)]) && S.evals.some(function(x){return x.id===evId(kind,sel,me)&&x.done;});
+    var e=meetingEvalDrafts()[evId(kind,sel,me)]||{c1:"",r:"",c2:"",rate:{}};
+    var other=!(meetingEvalDrafts()[evId(kind,sel,me)]) && S.evals.some(function(x){return x.id===evId(kind,sel,me)&&x.done;});
     var stl=speechTitle(sel), sob=(speechRec(sel)||{}).obj;
     var tm=timesFor(sel).filter(function(x){ return kind==="ps"?x.s.id==="ps":x.s.id==="tt"; });
     var asg=anyEvaluatorOf(kind,sel);
@@ -2409,7 +2457,7 @@ function rrCall(name,quiet){
 }
 
 (function(){ document.getElementById("view").addEventListener("change",function(e){ if(e.target.id==="rrHere"&&L.role==="rrm"){ L.rrHere=e.target.checked; saveL(); renderAll(); } }); })();
-function rrStart(text){ text=String(text||"").trim(); if(!text){ var el=document.getElementById("rrQ"); if(el) el.focus(); return; } var q={id:uid(),text:text,used:true,ord:maxOrd(S.rrq)+1,u:now()}; S.rrq.push(q); S.rrcur.id=q.id; S.rrcur.last=""; tick(S.rrcur); commit(); }
+function rrStart(text){ text=String(text||"").trim(); if(!text){ var el=document.getElementById("rrQ"); if(el) el.focus(); return; } var q={id:uid(),text:text,used:true,ord:maxOrd(S.rrq)+1,u:now()}; clearDeviceDraft("rrQ"); S.rrq.push(q); S.rrcur.id=q.id; S.rrcur.last=""; tick(S.rrcur); commit(); }
 function rrForget(name){ var hid=(S.rrcur.hide||[]).slice(); if(hid.indexOf(nkey(name))<0) hid.push(nkey(name)); S.rrcur.hide=hid; tick(S.rrcur); commit(); offerUndo("“"+name+"” removed from the list",function(){ S.rrcur.hide=(S.rrcur.hide||[]).filter(function(k){return k!==nkey(name);}); tick(S.rrcur); }); }
 /* ---------- Member: check-in, notes, feedback card ---------- */
 function attendLive(){ return S.attend.filter(function(a){return !a.void;}); }
@@ -2545,43 +2593,96 @@ function decryptFor(name,enc){
 }
 
 /* Evaluation drafts are editable locally and can sync encrypted to the author. */
-function evDraft(){ var kind=evKind(), sel=(L.evSel||{})[kind]; if(!sel) return null; var id=evId(kind,sel,myName()); L.evDrafts=L.evDrafts||{}; if(!L.evDrafts[id]) L.evDrafts[id]={kind:kind,speaker:sel,c1:"",r:"",c2:"",rate:{}}; return {id:id,d:L.evDrafts[id]}; }
+function meetingEvalDrafts(){
+  L.evDraftsByMeeting=L.evDraftsByMeeting||{};
+  if(!L.evDraftsByMeeting[S.mid]){
+    var legacy={};
+    S.evals.forEach(function(entry){
+      if(L.evDrafts&&Object.hasOwn(L.evDrafts,entry.id)) legacy[entry.id]=L.evDrafts[entry.id];
+    });
+    L.evDraftsByMeeting[S.mid]=legacy;
+    if(L.evDrafts){
+      L.unscopedEvalDrafts=L.evDrafts;
+      delete L.evDrafts;
+    }
+  }
+  return L.evDraftsByMeeting[S.mid];
+}
+function evDraft(){
+  var kind=evKind(), sel=(L.evSel||{})[kind]; if(!sel) return null;
+  var id=evId(kind,sel,myName()), drafts=meetingEvalDrafts();
+  if(!drafts[id]) drafts[id]={kind:kind,speaker:sel,c1:"",r:"",c2:"",rate:{}};
+  return {id:id,d:drafts[id]};
+}
 var markTimers={};
 /* while an evaluator is writing, only a "writing" marker is shared: never the content */
 function markWriting(id){
+  var mid=S.mid, by=myName();
   clearTimeout(markTimers[id]);
   markTimers[id]=setTimeout(function(){
-    var d=(L.evDrafts||{})[id]; if(!d||d.submitted) return;
+    if(S.mid!==mid) return;
+    var d=meetingEvalDrafts()[id]; if(!d||d.submitted) return;
     var rec=upsert(["evals"],id,{kind:d.kind,speaker:d.speaker});
-    if(rec.state!=="writing"){ rec.by=myName()||"Evaluator"; rec.kind=d.kind; rec.speaker=d.speaker; rec.state="writing"; rec.done=false; rec.enc=null; tick(rec); commitQuiet(); }
+    if(rec.state!=="writing"){ rec.by=by||"Evaluator"; rec.kind=d.kind; rec.speaker=d.speaker; rec.state="writing"; rec.done=false; rec.enc=null; tick(rec); commitQuiet(); }
   },1200);
 }
 /* Submit: encrypt the final version for the speaker and share it */
 function submitDraft(id,resend){
-  var d=(L.evDrafts||{})[id]; if(!d) return Promise.resolve(false);
-  d.by=myName()||d.by||"Evaluator";
+  var d=meetingEvalDrafts()[id]; if(!d) return Promise.resolve(false);
+  var mid=S.mid;
+  d.by=d.by||myName()||"Evaluator";
   if(!resend){ d.submitted=true; d.changed=false; d.submittedAt=now(); }
   saveL(); clearTimeout(markTimers[id]);
   var rec=upsert(["evals"],id,{kind:d.kind,speaker:d.speaker});
   rec.by=d.by; rec.kind=d.kind; rec.speaker=d.speaker; rec.done=true; rec.at=d.submittedAt; delete rec.c1; delete rec.r; delete rec.c2; delete rec.rate;
   if(!keyRec(d.speaker)){ rec.state="queued"; rec.enc=null; rec.pending=true; tick(rec); commit(); return Promise.resolve(false); }
   return encryptFor(d.speaker,{c1:d.c1,r:d.r,c2:d.c2,rate:d.rate||{},kind:d.kind,by:d.by,at:d.submittedAt}).then(function(enc){
+    if(S.mid!==mid) return false;
     var r2=S.evals.find(function(x){return x.id===id;})||rec;
     r2.enc=enc; r2.state="submitted"; r2.pending=false; r2.done=true; r2.at=d.submittedAt; tick(r2); d.sentKx=enc.kx; saveL(); commit(); return true;
   }).catch(function(){ return false; });
 }
+function pendingNotes(){
+  L.notesByMeeting=L.notesByMeeting||{};
+  return L.notesByMeeting[S.mid]||(L.notesByMeeting[S.mid]={});
+}
 function sendNote(to,text){
-  if(!keyRec(to)){ L.noteQueue=L.noteQueue||[]; L.noteQueue.push({to:to,text:text}); saveL(); return Promise.resolve(false); }
-  return encryptFor(to,{text:text}).then(function(enc){ S.notes.push({id:uid(),to:to,enc:enc,ord:maxOrd(S.notes)+1,u:now()}); commit(); return true; });
+  var id="note|"+uid(), note={id:id,to:to,text:text};
+  if(keyRec(to)) return deliverNote(note);
+  pendingNotes()[id]=note;
+  saveL(); queuePrivateDraft(draftOwner(),"pending|"+id,note);
+  return Promise.resolve(false);
+}
+function deliverNote(note){
+  var mid=S.mid;
+  if(S.notes.some(function(n){return n.id===note.id;})) return Promise.resolve(true);
+  return encryptFor(note.to,{text:note.text}).then(function(enc){
+    if(S.mid!==mid) return false;
+    if(!S.notes.some(function(n){return n.id===note.id;})){
+      S.notes.push({id:note.id,to:note.to,enc:enc,ord:maxOrd(S.notes)+1,u:now()}); commit();
+    }
+    return true;
+  });
+}
+function syncPendingNotes(){
+  Object.values(pendingNotes()).forEach(function(note){
+    if(!S.roleFields.some(function(r){return r.key==="pending|"+note.id&&r.person===nkey(draftOwner())&&r.enc;})){
+      queuePrivateDraft(draftOwner(),"pending|"+note.id,note);
+    }
+  });
 }
 var flushing=false;
 function flushPending(){
   if(flushing||!cryptoOK()) return; flushing=true;
   var jobs=[];
-  Object.keys(L.evDrafts||{}).forEach(function(id){ var d=L.evDrafts[id], r=keyRec(d.speaker); if(d.submitted && r && d.sentKx!==r.pub.x) jobs.push(submitDraft(id,true)); });
-  var q=(L.noteQueue||[]).slice(), keep=[];
-  q.forEach(function(n){ if(keyRec(n.to)) jobs.push(sendNote(n.to,n.text)); else keep.push(n); });
-  if(q.length!==keep.length){ L.noteQueue=keep; saveL(); }
+  Object.keys(meetingEvalDrafts()).forEach(function(id){ var d=meetingEvalDrafts()[id], r=keyRec(d.speaker); if(d.submitted && r && d.sentKx!==r.pub.x) jobs.push(submitDraft(id,true)); });
+  var mid=S.mid, pending=pendingNotes();
+  Object.values(pending).forEach(function(note){
+    if(!keyRec(note.to)&&!S.notes.some(function(n){return n.id===note.id;})) return;
+    jobs.push(deliverNote(note).then(function(sent){
+      if(sent&&S.mid===mid){ delete pending[note.id]; saveL(); }
+    }).catch(function(){ /* Leave the note queued for the next retry. */ }));
+  });
   Promise.all(jobs).then(function(){ flushing=false; },function(){ flushing=false; });
 }
 setInterval(flushPending,5000);
@@ -2609,7 +2710,7 @@ function submittedEvals(name){ return S.evals.filter(function(e){ return nkey(e.
 
 /* Drafts use the author's feedback key. The meeting only receives ciphertext. */
 var draftReads=new Set(), draftWrites=new Map();
-function draftOwner(){ return L.role==="gram"?L.me||myName():myName(); }
+function draftOwner(){ return L.me||myName(); }
 function draftAccessHTML(){
   var name=draftOwner();
   if(!name||!cryptoOK()) return "";
@@ -2636,11 +2737,12 @@ function queuePrivateDraft(name,key,value){
   }).catch(function(){ showToastMsg("Draft saved here. Private sync failed."); });
 }
 function syncPrivateDrafts(){
-  if(!["gram","seval","tteval"].includes(L.role)) return;
   var name=draftOwner(), person=nkey(name), mid=S.mid, role=L.role;
   if(!hasPriv(name)) return;
   S.roleFields.filter(function(r){
-    return r.enc&&r.person===person&&(role==="gram"?r.key==="word":r.key.startsWith("e|"+evKind()+"|"));
+    return r.enc&&r.person===person&&(r.key.startsWith("form|")||r.key.startsWith("setting|")||r.key.startsWith("pending|")||
+      (role==="gram"&&r.key==="word")||
+      (["seval","tteval"].includes(role)&&r.key.startsWith("e|"+evKind()+"|")));
   }).forEach(function(r){
     var read=JSON.stringify([mid,r.id,r.u,r.enc.ct,r.enc.kx]), writeKey=JSON.stringify([mid,r.id]);
     if(draftReads.has(read)||(draftWrites.get(writeKey)||0)>=r.u) return;
@@ -2649,14 +2751,28 @@ function syncPrivateDrafts(){
       if(S.mid!==mid||L.role!==role||nkey(draftOwner())!==person){ draftReads.delete(read); return; }
       var latest=S.roleFields.find(function(x){return x.id===r.id;});
       if(!latest||latest.enc.ct!==r.enc.ct||(draftWrites.get(writeKey)||0)>=r.u) return;
-      if(role==="gram"){
+      if(r.key.startsWith("pending|")){
+        if(value&&r.key==="pending|"+value.id&&typeof value.to==="string"&&typeof value.text==="string"&&
+          !S.notes.some(function(n){return n.id===value.id;})) pendingNotes()[value.id]=value;
+      } else if(r.key.startsWith("form|")||r.key.startsWith("setting|")){
+        deviceDraftValues()[r.key]=value;
+        if(r.key.startsWith("setting|rep|")&&typeof value==="boolean"){
+          var report=r.key.slice("setting|rep|".length);
+          if(/^[a-z]+$/.test(report)) L.rep[report]=value;
+          if(document.getElementById("reportWrap")?.classList.contains("on")) buildReport();
+        } else if(r.key.startsWith("setting|")){
+          var setting=r.key.slice("setting|".length);
+          if(DEVICE_SETTINGS.includes(setting)&&setting!=="rep"&&
+            (setting==="theme"?["auto","light","dark"].includes(value):typeof value==="boolean")) L[setting]=value;
+          applyDisplay();
+        }
+      } else if(role==="gram"){
         if(value.epoch!==(S.gram.u||0)) return;
         var draft=workflowDraft();
         Object.keys(WORD_FIELDS).forEach(function(id){ delete draft[id]; });
         Object.assign(draft,value.fields);
       } else {
-        L.evDrafts=L.evDrafts||{};
-        L.evDrafts[r.key]=value;
+        meetingEvalDrafts()[r.key]=value;
       }
       saveL(); softRender();
     }).catch(function(){ draftReads.delete(read); });
@@ -2667,7 +2783,7 @@ function syncWordDraft(){
   Object.keys(WORD_FIELDS).forEach(function(id){ if(Object.hasOwn(draft,id)) fields[id]=draft[id]; });
   queuePrivateDraft(draftOwner(),"word",{epoch:S.gram.u||0,fields:fields});
 }
-function syncEvaluationDraft(id,draft){ queuePrivateDraft(myName(),id,draft); }
+function syncEvaluationDraft(id,draft){ queuePrivateDraft(draftOwner(),id,draft); }
 /* ---------- Speaker role: my speech, my timing, my result, my private feedback ---------- */
 var LIMIT_PRESETS=[["","Standard for the session"],["2-3","2–3 min"],["3-5","3–5 min"],["4-6","4–6 min"],["5-7","5–7 min"],["6-8","6–8 min"]];
 function presetLim(p){ var m=String(p||"").match(/^(\d+)-(\d+)$/); if(!m) return null; var g=+m[1]*60, r=+m[2]*60; return {g:g,a:Math.round((g+r)/2),r:r}; }
@@ -2741,9 +2857,11 @@ function feedbackPinsHTML(){
       if(!/^\d{4,8}$/.test(pin)){ alert("Use 4 to 8 digits."); return; }
       access.disabled=true;
       (exists?unlockSpeaker(name,pin):createSpeakerKey(name,pin)).then(function(){
+        syncDeviceSettings();
+        syncPendingNotes();
         if(L.role==="gram"){
           if(!exists||!S.roleFields.some(function(r){return r.person===nkey(name)&&r.enc&&r.key==="word";})) syncWordDraft();
-        } else {
+        } else if(["seval","tteval"].includes(L.role)){
           var draft=evDraft();
           if(draft&&!S.roleFields.some(function(r){return r.person===nkey(name)&&r.enc&&r.key===draft.id;})) syncEvaluationDraft(draft.id,draft.d);
         }
@@ -2759,7 +2877,7 @@ function feedbackPinsHTML(){
     var ck=t.closest("[data-checkin]"); if(ck){ var n=ck.dataset.checkin; setPresent(n,!present(n)); if(L.role==="member"&&!myName()) setMyName(n); return; }
     if(L.role==="seval"||L.role==="tteval"){
       var es=t.closest("[data-evsel]"); if(es){ L.evSel=L.evSel||{}; L.evSel[evKind()]=es.dataset.evsel; if(selectPerson(es.dataset.evsel,L.role)) commit(); else { saveL(); renderAll(); } return; }
-      if(t.closest("#evAdd")){ var v=(document.getElementById("evAddIn").value||"").trim(); if(v){ L.evSel=L.evSel||{}; L.evSel[evKind()]=v; if(selectPerson(v,L.role)) commit(); else { saveL(); renderAll(); } } return; }
+      if(t.closest("#evAdd")){ var v=(document.getElementById("evAddIn").value||"").trim(); if(v){ clearDeviceDraft("evAddIn"); L.evSel=L.evSel||{}; L.evSel[evKind()]=v; if(selectPerson(v,L.role)) commit(); else { saveL(); renderAll(); } } return; }
       var rb=t.closest("[data-rate]"); if(rb){ var dr=evDraft(); if(!dr) return; dr.d.rate=dr.d.rate||{}; dr.d.rate[rb.dataset.rate]=(dr.d.rate[rb.dataset.rate]===+rb.dataset.v)?0:+rb.dataset.v; if(dr.d.submitted) dr.d.changed=true; else markWriting(dr.id); saveL(); syncEvaluationDraft(dr.id,dr.d); renderAll(); return; }
       if(t.closest("#assignMe")){ var sa=(L.evSel||{})[evKind()]; if(!myName()){ alert("Type your name in Your name at the top first."); return; } var cur=anyEvaluatorOf(evKind(),sa); if(cur&&nkey(cur)!==nkey(myName())&&!confirm(sa+" is assigned to "+cur+". Assign to you instead?")) return; if(evKind()==="tt") setTTAssign(sa,myName()); else setAssign(sa,myName()); return; }
       if(t.closest("#unassignMe")){ var us=(L.evSel||{})[evKind()]; if(evKind()==="tt") setTTAssign(us,""); else setAssign(us,""); return; }
@@ -2773,18 +2891,18 @@ function feedbackPinsHTML(){
       var rf=t.closest("[data-rrforget]"); if(rf){ rrForget(rf.dataset.rrforget); return; }
       if(t.closest("#rrShow")){ L.stageMode="rr"; openStage(); return; }
       var rc=t.closest("[data-rrcall]"); if(rc){ rrCall(rc.dataset.rrcall); return; }
-      if(t.closest("#rrGuestAdd")){ var gi=document.getElementById("rrGuest"); rrCall((gi.value||"").trim()); return; }
+      if(t.closest("#rrGuestAdd")){ var gi=document.getElementById("rrGuest"); var guest=gi.value.trim(); if(guest){ clearDeviceDraft("rrGuest"); rrCall(guest); } return; }
     }
     if(L.role==="speaker"){
       var me2=t.closest("[data-spme]"); if(me2){ setMyName(me2.dataset.spme); var s0=mySpeech(); applySpeech(s0); commit(); return; }
     }
     if(L.role==="member"||L.role==="speaker"){
       if(L.role==="speaker") L.cardName=myName();
-      if(t.closest("#guestAdd")){ var gn=(document.getElementById("guestIn").value||"").trim(); if(gn){ setPresent(gn,true); if(!myName()) setMyName(gn); } return; }
+      if(t.closest("#guestAdd")){ var gn=(document.getElementById("guestIn").value||"").trim(); if(gn){ clearDeviceDraft("guestIn"); setPresent(gn,true); if(!myName()) setMyName(gn); } return; }
       if(t.closest("#noteSend")){
         var to=document.getElementById("noteTo").value, tx=(document.getElementById("noteText").value||"").trim();
         if(!to||!tx){ alert("Choose a speaker and write a note."); return; }
-        sendNote(to,tx.slice(0,500)).then(function(sent){ var m=document.getElementById("noteMsg"), ta=document.getElementById("noteText"); if(ta) ta.value=""; if(m) m.textContent=sent?"Sent ✓ (anonymous, encrypted)":"Saved ✓ — it will be delivered, encrypted, when "+to+" sets up their feedback PIN"; });
+        sendNote(to,tx.slice(0,500)).then(function(sent){ clearDeviceDraft("noteText"); var m=document.getElementById("noteMsg"), ta=document.getElementById("noteText"); if(ta) ta.value=""; if(m) m.textContent=sent?"Sent ✓ (anonymous, encrypted)":"Saved ✓ — it will be delivered, encrypted, when "+to+" sets up their feedback PIN"; }).catch(function(){ showToastMsg("Could not send the note. Your draft is still here."); });
         return;
       }
       if(t.closest("#cardOpen")){ if(L.cardName) buildCard(L.cardName); return; }
@@ -2881,6 +2999,7 @@ var view=document.getElementById("view");
 function quickStart(){
   var sid=L.tab, q=document.getElementById("qname"), nx=firstQueued(sid);
   if(!okToStart()) return;
+  clearDeviceDraft("qname");
   if(!q.value.trim()&&nx){ startRow(sid,nx.id); }
   else { var r=newRow(sid,q.value.trim()); remember(r.name); S.rows[sid].push(r); q.value=""; startRow(sid,r.id); }
   var q2=document.getElementById("qname"); if(q2) q2.focus();
@@ -2889,7 +3008,7 @@ function planSpeakers(){
   var sid=L.tab, q=document.getElementById("qname"), names=q.value.split(/[,;\n]+/).map(function(n){return n.trim();}).filter(Boolean);
   if(!names.length) S.rows[sid].push(newRow(sid,""));
   names.forEach(function(n){ S.rows[sid].push(newRow(sid,n)); addName(S,n); });
-  q.value=""; commit(); var q2=document.getElementById("qname"); if(q2) q2.focus();
+  q.value=""; clearDeviceDraft("qname"); commit(); var q2=document.getElementById("qname"); if(q2) q2.focus();
 }
 view.addEventListener("click",function(e){
   var t=e.target;
@@ -2898,7 +3017,7 @@ view.addEventListener("click",function(e){
   if(t.closest("#qstart")){ quickStart(); return; }
   if(t.closest("#qplan")){ planSpeakers(); return; }
   if(t.closest("#qadd")){
-    var q=document.getElementById("qname"), nr=newRow(L.tab,q.value.trim()); remember(nr.name); S.rows[L.tab].push(nr); q.value=""; commit();
+    var q=document.getElementById("qname"), nr=newRow(L.tab,q.value.trim()); remember(nr.name); S.rows[L.tab].push(nr); q.value=""; clearDeviceDraft("qname"); commit();
     var ti=document.querySelector('#view tr[data-id="'+nr.id+'"] [data-edit="time"]'); if(ti) ti.focus(); return;
   }
   var b=t.closest("[data-act]");
@@ -2916,7 +3035,7 @@ view.addEventListener("click",function(e){
   if(t.closest("#addTopics")){
     var ta=document.getElementById("topicInput"), lines=ta.value.split(/\n+/).map(function(x){return x.trim();}).filter(Boolean);
     var o=maxOrd(S.topics); lines.forEach(function(x){ S.topics.push({id:uid(),text:x,speaker:"",used:false,usedAt:null,rowId:null,ord:++o,u:now()}); });
-    ta.value=""; commit(); return;
+    ta.value=""; clearDeviceDraft("topicInput"); commit(); return;
   }
   if(t.closest("#randBtn")){ randomTopic(); return; }
   if(t.closest("#callBtn")){ callSpeaker(); return; }
@@ -2939,13 +3058,13 @@ view.addEventListener("click",function(e){
   var mn=t.closest("[data-minus]"); if(mn){ var s1=selRow("ah"), w=mn.dataset.minus; if(s1&&s1.c[w]>0){ s1.c[w]--; tick(s1); commit(); } return; }
   var tp2=t.closest("[data-word]"); if(tp2){ var s2=selRow("ah"), w2=tp2.dataset.word; if(s2){ s2.c[w2]=(s2.c[w2]||0)+1; tick(s2); commit(); var nt=document.querySelector('#view [data-word="'+CSS.escape(w2)+'"]'); if(nt) nt.classList.add("bump"); } return; }
   var wd=t.closest("[data-wdel]"); if(wd){ var wsnap=S.fill.words.slice(); offerUndo("“"+wd.dataset.wdel+"” removed",function(){ S.fill.words=wsnap; tick(S.fill); }); S.fill.words=S.fill.words.filter(function(x){return x!==wd.dataset.wdel;}); tick(S.fill); commit(); return; }
-  if(t.closest("#wordAdd")){ var wi=document.getElementById("wordInput"), nw=wi.value.trim(); if(nw&&S.fill.words.indexOf(nw)<0){ S.fill.words.push(nw); tick(S.fill); commit(); } return; }
+  if(t.closest("#wordAdd")){ var wi=document.getElementById("wordInput"), nw=wi.value.trim(); if(nw&&S.fill.words.indexOf(nw)<0){ S.fill.words.push(nw); clearDeviceDraft("wordInput"); tick(S.fill); commit(); } return; }
   if(t.closest("#wotdReveal")){ revealWordOfDay(); return; }
   if(t.closest("#wPlus")){ var g=selRow("gram"); if(g){ g.w=(g.w||0)+1; tick(g); commit(); } return; }
   if(t.closest("#wMinus")){ var g2=selRow("gram"); if(g2&&g2.w>0){ g2.w--; tick(g2); commit(); } return; }
   if(t.closest("#goodAdd")||t.closest("#slipAdd")){
     var isGood=!!t.closest("#goodAdd"), inp=document.getElementById(isGood?"goodInput":"slipInput"), g3=selRow("gram"), v=inp.value.trim();
-    if(g3&&v){ g3[isGood?"good":"slips"].push(v); tick(g3); commit(); var again=document.getElementById(isGood?"goodInput":"slipInput"); if(again) again.focus(); } return;
+    if(g3&&v){ g3[isGood?"good":"slips"].push(v); clearDeviceDraft(inp.id); tick(g3); commit(); var again=document.getElementById(isGood?"goodInput":"slipInput"); if(again) again.focus(); } return;
   }
   var nd=t.closest("[data-ndel]"); if(nd){ var g4=selRow("gram"); if(g4){ var nk=nd.dataset.ndel, nsnap=clone(g4[nk]); g4[nk].splice(+nd.dataset.i,1); tick(g4); commit(); offerUndo("Note removed",function(){ g4[nk]=nsnap; tick(g4); }); } return; }
 });
@@ -3025,7 +3144,7 @@ document.addEventListener("fullscreenchange",function(){ if(!document.fullscreen
       var inp=document.getElementById("memIn"), names=inp.value.split(/[,;\n]+/).map(function(x){return x.trim();}).filter(Boolean), added=0;
       var mk=(document.getElementById("memKind")||{}).value||"auto";
       names.forEach(function(n){ if(!S.members.list.some(function(m){return m.name.toLowerCase()===n.toLowerCase();})){ S.members.list.push(Object.assign({id:uid(),name:n,kind:mk==="auto"?guessKind(n):mk},S.meta.test?{test:true}:{})); added++; } });
-      if(added){ tick(S.members); commit(); } var again=document.getElementById("memIn"); if(again){ again.value=""; again.focus(); } return;
+      if(names.length) clearDeviceDraft("memIn"); if(added){ tick(S.members); commit(); } var again=document.getElementById("memIn"); if(again){ again.value=""; again.focus(); } return;
     }
     var kr=t.closest("[data-keyreset]"); if(kr){ var nm=kr.dataset.keyreset; if(!confirm("Reset "+nm+"'s feedback PIN?\n\nThey can set a new one, but feedback encrypted for the old PIN can't be read any more.")) return; var rec=S.keys.find(function(k){return k.id==="k|"+nkey(nm);}); if(rec){ rec.pub=null; rec.wrapped=""; tick(rec); commit(); } return; }
     var md=t.closest("[data-mdel]"); if(md){ removeMember(md.dataset.mdel); return; }
@@ -3863,7 +3982,7 @@ function saaHTML(){
     var t=e.target;
     if(t.closest("#gAdd")){ var n=document.getElementById("gName"), f=document.getElementById("gFrom"), nm=(n.value||"").trim(); if(!nm){ n.focus(); return; }
       if(S.guests.some(function(g){return nkey(g.name)===nkey(nm);})){ showToastMsg(nm+" is already on the guest list"); return; }
-      S.guests.push({id:uid(),name:nm,from:(f.value||"").trim(),welcomed:false,ord:maxOrd(S.guests)+1,u:now()}); addName(S,nm); commit(); var n2=document.getElementById("gName"); if(n2) n2.focus(); return; }
+      S.guests.push({id:uid(),name:nm,from:(f.value||"").trim(),welcomed:false,ord:maxOrd(S.guests)+1,u:now()}); addName(S,nm); clearDeviceDraft("gName","gFrom"); commit(); var n2=document.getElementById("gName"); if(n2) n2.focus(); return; }
     var w=t.closest("[data-gwel]"); if(w){ var g=S.guests.find(function(x){return x.id===w.dataset.gwel;}); if(g){ g.welcomed=!g.welcomed; tick(g); commit(); } return; }
     var d=t.closest("[data-gdel]"); if(d){ var i=S.guests.findIndex(function(x){return x.id===d.dataset.gdel;}); if(i>=0) removeItem(["guests"],S.guests[i].id,S.guests[i].name||"Guest"); return; }
   });
@@ -3902,7 +4021,7 @@ function finChecks(r){
     if(S.vote.state!=="shown") w.push("Voting results haven't been revealed yet.");
   } else if(r==="seval"||r==="tteval"){
     var kind=r==="tteval"?"tt":"ps", open=[];
-    Object.keys(L.evDrafts||{}).forEach(function(id){ var d=L.evDrafts[id]; if(d.kind===kind && !d.submitted && (d.c1||d.r||d.c2)) open.push(d.speaker); });
+    Object.keys(meetingEvalDrafts()).forEach(function(id){ var d=meetingEvalDrafts()[id]; if(d.kind===kind && !d.submitted && (d.c1||d.r||d.c2)) open.push(d.speaker); });
     if(r==="tteval") S.ttassign.forEach(function(a){ if(nkey(a.evaluator)===me && me && evStatusOf("tt",a.speaker,finNameFor(r))!=="done" && open.indexOf(a.speaker)<0) open.push(a.speaker); });
     if(r==="seval") S.assigns.forEach(function(a){ if(nkey(a.evaluator)===me && me){ var sub=S.evals.some(function(e){ return e.kind==="ps" && nkey(e.speaker)===nkey(a.speaker) && e.done && nkey(e.by)===me; }); if(!sub && open.indexOf(a.speaker)<0) open.push(a.speaker); } });
     open.forEach(function(sp){ w.push("Evaluation for "+sp+" not submitted."); });
@@ -5036,6 +5155,71 @@ ROLE_GUIDE.ge.app.push('Record observations against specific agenda items; creat
   var ar=t.closest('[data-action-archive]');if(ar){var a=S.actions.find(function(x){return x.id===ar.dataset.actionArchive;});if(a){a.archived=!a.archived;tick(a);commit();}}
  });
 })();
+/* Named form fields can follow the author between devices. */
+var DEVICE_DRAFT_FIELDS={
+  timer:["qname"], rrm:["rrQ","rrGuest"], ttm:["topicInput","callName"],
+  ah:["spkInput","wordInput"], gram:["spkInput","goodInput","slipInput"],
+  seval:["evAddIn"], tteval:["evAddIn"], member:["guestIn","noteTo","noteText"],
+  president:["gName","gFrom"], saa:["gName","gFrom"], coord:["memIn","memKind","coName"]
+};
+var DEVICE_SETTINGS=["theme","big","rrHere","rep"];
+function deviceDraftKey(id){
+  var context="";
+  if(id==="callName") context=S.cur.id||"";
+  if(id==="qname") context=L.tab;
+  if(id==="goodInput"||id==="slipInput") context=L.gramSel||"";
+  return "form|"+JSON.stringify([L.role,context,id]);
+}
+function deviceDraftValues(){
+  var id=JSON.stringify([S.mid,nkey(draftOwner())]);
+  L.deviceDraftValues=L.deviceDraftValues||{};
+  return L.deviceDraftValues[id]||(L.deviceDraftValues[id]={});
+}
+function setDeviceDraft(key,value){
+  deviceDraftValues()[key]=clone(value);
+  saveL();
+  queuePrivateDraft(draftOwner(),key,value);
+}
+function clearDeviceDraft(){
+  Array.from(arguments).forEach(function(id){
+    var key=deviceDraftKey(id);
+    if(Object.hasOwn(deviceDraftValues(),key)) setDeviceDraft(key,null);
+  });
+}
+function restoreDeviceForms(){
+  var values=deviceDraftValues();
+  (DEVICE_DRAFT_FIELDS[L.role]||[]).forEach(function(id){
+    var key=deviceDraftKey(id), input=document.querySelector("#view #"+id);
+    if(input&&document.activeElement!==input&&Object.hasOwn(values,key)){
+      if(values[key]===null){
+        input.value=input.tagName==="SELECT"?(input.options[0]||{}).value||"":input.defaultValue;
+      } else input.value=values[key];
+    }
+  });
+  var start=document.querySelector("#view #qstart");
+  if(start) start.innerHTML=startLabel(L.tab);
+}
+function captureDeviceForm(event){
+  var input=event.target, id=input.id;
+  if((DEVICE_DRAFT_FIELDS[L.role]||[]).includes(id)) setDeviceDraft(deviceDraftKey(id),input.value);
+}
+function syncDeviceSettings(){
+  Object.keys(deviceDraftValues()).filter(function(key){return key.startsWith("form|")||key.startsWith("setting|");}).forEach(function(key){
+    var owner=draftOwner();
+    if(!S.roleFields.some(function(r){return r.enc&&r.person===nkey(owner)&&r.key===key;})){
+      queuePrivateDraft(owner,key,deviceDraftValues()[key]);
+    }
+  });
+}
+document.getElementById("view").addEventListener("input",captureDeviceForm,true);
+document.addEventListener("change",function(e){
+  if(e.target.id==="bigText") setDeviceDraft("setting|big",!!L.big);
+  if(e.target.id==="rrHere") setDeviceDraft("setting|rrHere",!!L.rrHere);
+  if(e.target.dataset.rep) setDeviceDraft("setting|rep|"+e.target.dataset.rep,!!e.target.checked);
+});
+document.addEventListener("click",function(e){
+  if(e.target.closest("[data-theme-set]")) setDeviceDraft("setting|theme",L.theme);
+});
 /* ---------- start ---------- */
 if(!sessionOf(L.tab)) L.tab="tt";
 if(!ROLES.some(function(r){return r.id===L.role;})) L.role="timer";

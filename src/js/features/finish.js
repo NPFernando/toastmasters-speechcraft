@@ -30,7 +30,7 @@ function finChecks(r){
     if(S.vote.state!=="shown") w.push("Voting results haven't been revealed yet.");
   } else if(r==="seval"||r==="tteval"){
     var kind=r==="tteval"?"tt":"ps", open=[];
-    Object.keys(L.evDrafts||{}).forEach(function(id){ var d=L.evDrafts[id]; if(d.kind===kind && !d.submitted && (d.c1||d.r||d.c2)) open.push(d.speaker); });
+    Object.keys(meetingEvalDrafts()).forEach(function(id){ var d=meetingEvalDrafts()[id]; if(d.kind===kind && !d.submitted && (d.c1||d.r||d.c2)) open.push(d.speaker); });
     if(r==="tteval") S.ttassign.forEach(function(a){ if(nkey(a.evaluator)===me && me && evStatusOf("tt",a.speaker,finNameFor(r))!=="done" && open.indexOf(a.speaker)<0) open.push(a.speaker); });
     if(r==="seval") S.assigns.forEach(function(a){ if(nkey(a.evaluator)===me && me){ var sub=S.evals.some(function(e){ return e.kind==="ps" && nkey(e.speaker)===nkey(a.speaker) && e.done && nkey(e.by)===me; }); if(!sub && open.indexOf(a.speaker)<0) open.push(a.speaker); } });
     open.forEach(function(sp){ w.push("Evaluation for "+sp+" not submitted."); });

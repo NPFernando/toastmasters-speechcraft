@@ -9,9 +9,11 @@
       if(!/^\d{4,8}$/.test(pin)){ alert("Use 4 to 8 digits."); return; }
       access.disabled=true;
       (exists?unlockSpeaker(name,pin):createSpeakerKey(name,pin)).then(function(){
+        syncDeviceSettings();
+        syncPendingNotes();
         if(L.role==="gram"){
           if(!exists||!S.roleFields.some(function(r){return r.person===nkey(name)&&r.enc&&r.key==="word";})) syncWordDraft();
-        } else {
+        } else if(["seval","tteval"].includes(L.role)){
           var draft=evDraft();
           if(draft&&!S.roleFields.some(function(r){return r.person===nkey(name)&&r.enc&&r.key===draft.id;})) syncEvaluationDraft(draft.id,draft.d);
         }
@@ -27,7 +29,7 @@
     var ck=t.closest("[data-checkin]"); if(ck){ var n=ck.dataset.checkin; setPresent(n,!present(n)); if(L.role==="member"&&!myName()) setMyName(n); return; }
     if(L.role==="seval"||L.role==="tteval"){
       var es=t.closest("[data-evsel]"); if(es){ L.evSel=L.evSel||{}; L.evSel[evKind()]=es.dataset.evsel; if(selectPerson(es.dataset.evsel,L.role)) commit(); else { saveL(); renderAll(); } return; }
-      if(t.closest("#evAdd")){ var v=(document.getElementById("evAddIn").value||"").trim(); if(v){ L.evSel=L.evSel||{}; L.evSel[evKind()]=v; if(selectPerson(v,L.role)) commit(); else { saveL(); renderAll(); } } return; }
+      if(t.closest("#evAdd")){ var v=(document.getElementById("evAddIn").value||"").trim(); if(v){ clearDeviceDraft("evAddIn"); L.evSel=L.evSel||{}; L.evSel[evKind()]=v; if(selectPerson(v,L.role)) commit(); else { saveL(); renderAll(); } } return; }
       var rb=t.closest("[data-rate]"); if(rb){ var dr=evDraft(); if(!dr) return; dr.d.rate=dr.d.rate||{}; dr.d.rate[rb.dataset.rate]=(dr.d.rate[rb.dataset.rate]===+rb.dataset.v)?0:+rb.dataset.v; if(dr.d.submitted) dr.d.changed=true; else markWriting(dr.id); saveL(); syncEvaluationDraft(dr.id,dr.d); renderAll(); return; }
       if(t.closest("#assignMe")){ var sa=(L.evSel||{})[evKind()]; if(!myName()){ alert("Type your name in Your name at the top first."); return; } var cur=anyEvaluatorOf(evKind(),sa); if(cur&&nkey(cur)!==nkey(myName())&&!confirm(sa+" is assigned to "+cur+". Assign to you instead?")) return; if(evKind()==="tt") setTTAssign(sa,myName()); else setAssign(sa,myName()); return; }
       if(t.closest("#unassignMe")){ var us=(L.evSel||{})[evKind()]; if(evKind()==="tt") setTTAssign(us,""); else setAssign(us,""); return; }
@@ -41,18 +43,18 @@
       var rf=t.closest("[data-rrforget]"); if(rf){ rrForget(rf.dataset.rrforget); return; }
       if(t.closest("#rrShow")){ L.stageMode="rr"; openStage(); return; }
       var rc=t.closest("[data-rrcall]"); if(rc){ rrCall(rc.dataset.rrcall); return; }
-      if(t.closest("#rrGuestAdd")){ var gi=document.getElementById("rrGuest"); rrCall((gi.value||"").trim()); return; }
+      if(t.closest("#rrGuestAdd")){ var gi=document.getElementById("rrGuest"); var guest=gi.value.trim(); if(guest){ clearDeviceDraft("rrGuest"); rrCall(guest); } return; }
     }
     if(L.role==="speaker"){
       var me2=t.closest("[data-spme]"); if(me2){ setMyName(me2.dataset.spme); var s0=mySpeech(); applySpeech(s0); commit(); return; }
     }
     if(L.role==="member"||L.role==="speaker"){
       if(L.role==="speaker") L.cardName=myName();
-      if(t.closest("#guestAdd")){ var gn=(document.getElementById("guestIn").value||"").trim(); if(gn){ setPresent(gn,true); if(!myName()) setMyName(gn); } return; }
+      if(t.closest("#guestAdd")){ var gn=(document.getElementById("guestIn").value||"").trim(); if(gn){ clearDeviceDraft("guestIn"); setPresent(gn,true); if(!myName()) setMyName(gn); } return; }
       if(t.closest("#noteSend")){
         var to=document.getElementById("noteTo").value, tx=(document.getElementById("noteText").value||"").trim();
         if(!to||!tx){ alert("Choose a speaker and write a note."); return; }
-        sendNote(to,tx.slice(0,500)).then(function(sent){ var m=document.getElementById("noteMsg"), ta=document.getElementById("noteText"); if(ta) ta.value=""; if(m) m.textContent=sent?"Sent ✓ (anonymous, encrypted)":"Saved ✓ — it will be delivered, encrypted, when "+to+" sets up their feedback PIN"; });
+        sendNote(to,tx.slice(0,500)).then(function(sent){ clearDeviceDraft("noteText"); var m=document.getElementById("noteMsg"), ta=document.getElementById("noteText"); if(ta) ta.value=""; if(m) m.textContent=sent?"Sent ✓ (anonymous, encrypted)":"Saved ✓ — it will be delivered, encrypted, when "+to+" sets up their feedback PIN"; }).catch(function(){ showToastMsg("Could not send the note. Your draft is still here."); });
         return;
       }
       if(t.closest("#cardOpen")){ if(L.cardName) buildCard(L.cardName); return; }

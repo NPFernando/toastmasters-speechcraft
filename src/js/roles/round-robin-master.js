@@ -50,5 +50,5 @@ function rrCall(name,quiet){
 }
 
 (function(){ document.getElementById("view").addEventListener("change",function(e){ if(e.target.id==="rrHere"&&L.role==="rrm"){ L.rrHere=e.target.checked; saveL(); renderAll(); } }); })();
-function rrStart(text){ text=String(text||"").trim(); if(!text){ var el=document.getElementById("rrQ"); if(el) el.focus(); return; } var q={id:uid(),text:text,used:true,ord:maxOrd(S.rrq)+1,u:now()}; S.rrq.push(q); S.rrcur.id=q.id; S.rrcur.last=""; tick(S.rrcur); commit(); }
+function rrStart(text){ text=String(text||"").trim(); if(!text){ var el=document.getElementById("rrQ"); if(el) el.focus(); return; } var q={id:uid(),text:text,used:true,ord:maxOrd(S.rrq)+1,u:now()}; clearDeviceDraft("rrQ"); S.rrq.push(q); S.rrcur.id=q.id; S.rrcur.last=""; tick(S.rrcur); commit(); }
 function rrForget(name){ var hid=(S.rrcur.hide||[]).slice(); if(hid.indexOf(nkey(name))<0) hid.push(nkey(name)); S.rrcur.hide=hid; tick(S.rrcur); commit(); offerUndo("“"+name+"” removed from the list",function(){ S.rrcur.hide=(S.rrcur.hide||[]).filter(function(k){return k!==nkey(name);}); tick(S.rrcur); }); }

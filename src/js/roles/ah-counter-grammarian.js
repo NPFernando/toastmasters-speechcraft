@@ -81,6 +81,7 @@ function gramHTML(){
 }
 function addCounterSpeaker(kind,name){
   name=String(name||"").trim(); if(!name) return;
+  clearDeviceDraft("spkInput");
   var ex=counterRow(kind,name);
   if(kind==="ah") L.ahSel=ex.id; else L.gramSel=ex.id; selectPerson(name,kind); saveL(); remember(name); commit();
 }

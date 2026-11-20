@@ -149,6 +149,13 @@ feedback PIN. Unlock with the same PIN on your other devices to read and edit
 them. Reveal publishes the Word of the Day to the room. Submit sends the
 evaluation encrypted to its speaker.
 
+Supported role input drafts include Round Robin questions, Table Topics
+preparation, Timer speaker names, counter and Grammarian inputs, roster and guest
+inputs, and private audience notes. Report section choices, theme, text size and
+the Round Robin attendance filter sync between unlocked devices during the
+meeting. Pending private notes can resume delivery on an unlocked device if
+the recipient sets a feedback PIN during that meeting.
+
 ## Application license and logos
 
 The project's original application code and documentation are available under the
