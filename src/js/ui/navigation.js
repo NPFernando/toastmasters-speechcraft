@@ -4,11 +4,18 @@ function setView(v){ L.view=v; saveL(); renderAll(); window.scrollTo(0,0); }
 function renderNav(){
   var el=document.getElementById("bnav"); if(!el) return;
   var r=roleObj(L.role)||{icon:"👤",name:"Role"}, v=curView();
-  el.innerHTML='<button data-nav="role" class="'+(v==="role"?"on":"")+'"><span>'+r.icon+'</span>My role</button>'+
-    '<button data-nav="now" class="'+(v==="now"?"on":"")+'"><span>📡</span>Now</button>'+
-    '<button data-nav="agenda" class="'+(v==="agenda"?"on":"")+'"><span>📋</span>Agenda</button>'+
-    '<button data-nav="report" class="mob"><span>📄</span>Report</button>'+
-    '<button data-nav="more" class="mob"><span>⋯</span>More</button>';
+  var html=[["role",r.icon,"My role"],["now","📡","Now"],["agenda","📋","Agenda"],["report","📄","Report"],["more","⋯","More"]].map(function(item){
+    var id=item[0], selected=v===id;
+    return '<button data-nav="'+id+'" class="'+(selected?'on':id==="report"||id==="more"?'mob':'')+'"'+
+      (selected?' aria-current="page"':'')+(id==="report"?' aria-haspopup="dialog" aria-controls="reportWrap"':'')+
+      (id==="more"?' aria-expanded="false" aria-controls="moreMenu"':'')+'><span aria-hidden="true">'+item[1]+'</span>'+item[2]+'</button>';
+  }).join("");
+  if(el.navHTML!==html){
+    var focused=document.activeElement?.dataset.nav;
+    el.navHTML=html;
+    el.innerHTML=html;
+    if(focused) el.querySelector('[data-nav="'+focused+'"]')?.focus({preventScroll:true});
+  }
   document.body.classList.toggle("v-now",v==="now"); document.body.classList.toggle("v-agenda",v==="agenda");
 }
 document.getElementById("bnav").addEventListener("click",function(e){

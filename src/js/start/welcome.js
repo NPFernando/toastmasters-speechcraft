@@ -116,7 +116,11 @@ function renderWelcome(){
   if(!who) h+='<div class="wlinks"><button class="linkbtn" id="wReport">💬 Report a problem or idea</button><a class="linkbtn" href="'+REPO_URL+'" target="_blank" rel="noopener">Open on GitHub ↗</a><a class="linkbtn" href="'+REPO_URL+'/issues" target="_blank" rel="noopener">Known issues &amp; ideas ↗</a></div>';
   document.getElementById("wbox").innerHTML=h;
 }
-function wRefreshWho(){ var t=uniq(agendaRolesFor(wName().trim()).concat(selectedRoles(wName()))), g=document.getElementById("wGrid"); if(g) g.innerHTML=roleGridHTML(t); var tt=document.getElementById("wToday"); if(tt) tt.innerHTML=wTodayText(t); var nb=document.getElementById("wNext"); if(nb){ nb.textContent=wStartLabel(); nb.disabled=!(W.sel||[]).length; } document.querySelectorAll("[data-wname]").forEach(function(c){ c.classList.toggle("active",nkey(c.dataset.wname)===nkey(wName())); }); }
+function wRefreshWho(){ var t=uniq(agendaRolesFor(wName().trim()).concat(selectedRoles(wName()))), g=document.getElementById("wGrid"); if(g){
+  var focused=document.activeElement?.dataset.wrole;
+  g.innerHTML=roleGridHTML(t);
+  if(focused) g.querySelector('[data-wrole="'+focused+'"]')?.focus({preventScroll:true});
+} var tt=document.getElementById("wToday"); if(tt) tt.innerHTML=wTodayText(t); var nb=document.getElementById("wNext"); if(nb){ nb.textContent=wStartLabel(); nb.disabled=!(W.sel||[]).length; } document.querySelectorAll("[data-wname]").forEach(function(c){ c.classList.toggle("active",nkey(c.dataset.wname)===nkey(wName())); }); }
 function wFinish(){
   var sel=(W.sel||[]).slice(); if(!sel.length) return;
   var nmEl=document.getElementById("wName"), nm=W.name!=null?String(W.name).trim():(nmEl?nmEl.value.trim():"");

@@ -27,5 +27,34 @@ module.exports = async (b) => {
     }
     await p.close();
   }
+  const phone = await T.device(b, { phone: true, url: T.FILE + "?as=practice" });
+  await phone.click("#wSolo");
+  await phone.fill("#wName", "Dilini Jayasinghe");
+  await phone.focus("[data-wrole=timer]");
+  await phone.keyboard.press("Space");
+  T.assert.strictEqual(await phone.evaluate(() => document.activeElement.dataset.wrole), "timer");
+  await phone.click("#wNext");
+  await phone.waitForSelector("#welcome", { state: "hidden" });
+
+  await phone.focus("[data-nav=more]");
+  await phone.keyboard.press("Enter");
+  await phone.waitForSelector("#moreMenu.on");
+  T.assert.strictEqual(await phone.getAttribute("[data-nav=more]", "aria-expanded"), "true");
+  await phone.keyboard.press("Escape");
+  T.assert.strictEqual(await phone.evaluate(() => document.activeElement.dataset.nav), "more");
+
+  await phone.focus("[data-nav=report]");
+  await phone.keyboard.press("Enter");
+  await phone.waitForSelector("#reportWrap.on");
+  T.assert.strictEqual(await phone.evaluate(() => document.getElementById("app").inert), true);
+  await phone.focus("#printReport");
+  await phone.keyboard.press("Tab");
+  T.assert.strictEqual(await phone.evaluate(() => document.activeElement.closest("[role=dialog]").id), "reportWrap");
+  await phone.keyboard.press("Escape");
+  T.assert.strictEqual(await phone.evaluate(() => document.activeElement.dataset.nav), "report");
+  T.assert.strictEqual(await phone.evaluate(() => document.getElementById("app").inert), false);
+  T.noErrors(phone);
+  await phone.close();
+
   T.assert.deepStrictEqual(fails, [], "accessibility violations");
 };
