@@ -51,7 +51,7 @@ function dashHTML(){
 /* the agenda for everyone, with where the meeting is up to */
 function agendaViewHTML(){
   var A=S.agenda, c=curItem(), h='<section class="card"><div class="row" style="justify-content:space-between"><h2 class="sec" style="margin:0">📋 Agenda'+(A.no?' · No '+esc(A.no):'')+'</h2><button class="btn" id="agPrint">📄 Print / PDF</button></div>';
-  h+='<div class="saved" style="margin:4px 0 10px">'+esc(fmtDate(S.meta.date)||"")+(A.venue?' · '+esc(A.venue):'')+'</div><div class="agv2">';
+  h+='<div class="saved" style="margin:4px 0 10px">'+esc(fmtDate(S.meta.date)||"")+(A.venue?' · '+esc(A.venue):'')+'</div>'+(A.theme?'<p><b>Meeting theme</b> · '+esc(A.theme)+'</p>':'')+'<div class="agv2">';
   runItems().forEach(function(it){
     var who=whoFor(it.role), st=isSkipped(it.id)?"skip":(c.cur&&c.cur.id===it.id)?"cur":(S.run.started&&S.run.started[it.id]!=null)?"done":"";
     var x=agExtraHTML(it.x,it);

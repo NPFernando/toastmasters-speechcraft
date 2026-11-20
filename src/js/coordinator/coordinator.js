@@ -141,7 +141,9 @@ function coordHTML(){
      '<label class="f">Program title<input class="t" data-ag="title" value="'+esc(A.title)+'"></label>'+
      '<label class="f">Meeting no<input class="t" data-ag="no" value="'+esc(A.no)+'" placeholder="e.g. 05"></label>'+
      '<label class="f">Venue<input class="t" data-ag="venue" value="'+esc(A.venue)+'" placeholder="e.g. Level 12 East Tower WTC"></label>'+
-     '<label class="f">Next meeting date<input class="t" type="date" data-ag="next" value="'+esc(A.next)+'"></label></div>';
+     '<label class="f">Next meeting date<input class="t" type="date" data-ag="next" value="'+esc(A.next)+'"></label></div>'+
+     '<label class="f">Meeting theme<input class="t" data-ag="theme" maxlength="160" value="'+esc(A.theme||"")+'" placeholder="Optional session theme"></label>'+
+     '<button class="linkbtn" id="useWelcomingTheme">Use “Welcoming 2027: New Voices, New Possibilities”</button>';
   /* members */
   var ms=memberNames();
   if(CT==="people") h+='<h2 class="sec">👥 Members <span class="cnt">('+ms.length+') · remembered for every meeting · tap a name to set Speechcrafter / Toastmaster / Guest</span></h2>'+membersEditorHTML();

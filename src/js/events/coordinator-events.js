@@ -38,6 +38,10 @@
       if(!replaceRolePlayer(replace.dataset.replaceRole,replace.dataset.oldName,name)) showToastMsg("Choose an available replacement for this assignment.");
       return;
     }
+    if(t.closest("#useWelcomingTheme")){
+      S.agenda.theme="Welcoming 2027: New Voices, New Possibilities";
+      agChanged(); commit(); return;
+    }
     var fit=t.closest("[data-fit-speeches]");
     if(fit){
       var needed=preparedBlockRequirement(), items=itemsSorted(), index=items.findIndex(function(it){return it.id===fit.dataset.fitSpeeches;});
