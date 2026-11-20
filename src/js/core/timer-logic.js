@@ -1,6 +1,7 @@
 /* ---------- timer logic ---------- */
 function sessionOf(id){ for(var i=0;i<SESSIONS.length;i++) if(SESSIONS[i].id===id) return SESSIONS[i]; }
-function elapsed(row,t){ if(row.manual!=null) return row.manual; if(row.start==null) return null; var e=(row.end!=null?row.end:t); return Math.max(0,Math.round((e-row.start-(row.pz||0)-(row.paused?Math.max(0,e-row.paused):0))/1000)); }
+function elapsed(row,t,round){ if(row.manual!=null) return row.manual; if(row.start==null) return null; var e=(row.end!=null?row.end:t); return Math.max(0,(round||Math.round)((e-row.start-(row.pz||0)-(row.paused?Math.max(0,e-row.paused):0))/1000)); }
+function timerElapsed(sid,row,t){ return elapsed(row,t,sid==="rr"?Math.floor:Math.round); }
 function pauseRow(sid,id){ var r=findRow(sid,id); if(!r||rowState(r)!=="running"||r.paused) return; r.paused=now(); tick(r); commit(); }
 function resumeRow(sid,id){ var r=findRow(sid,id); if(!r||!r.paused) return; r.pz=(r.pz||0)+Math.max(0,now()-r.paused); r.paused=null; tick(r); commit(); }
 /* Round Robin has a single bell, not green/amber/red */
@@ -9,7 +10,7 @@ function sigLabel(sg,r){ if(r&&r.paused) return "⏸ Paused"; if(isRR(r)&&sg) re
 function pauseNote(r){ return r&&r.pz>=1000?' (paused '+fmt(Math.round(r.pz/1000))+')':''; }
 function rowState(row){ if(row.start!=null&&row.end==null&&row.manual==null) return "running"; if(row.manual!=null||row.end!=null) return "done"; return "idle"; }
 function limOf(sid,row){ return (row&&row.lim)||S.limits[sid]; }
-function signal(sid,sec,row){ if(sec==null) return ""; var L2=limOf(sid,row); if(sid==="rr") return sec<=L2.b?"sg":"sr"; if(sec>=L2.r) return "sr"; if(sec>=L2.a) return "sa"; if(sec>=L2.g) return "sg"; return ""; }
+function signal(sid,sec,row){ if(sec==null) return ""; var L2=limOf(sid,row); if(sid==="rr") return sec<L2.b?"sg":"sr"; if(sec>=L2.r) return "sr"; if(sec>=L2.a) return "sa"; if(sec>=L2.g) return "sg"; return ""; }
 /* each signal has its own shape as well as its colour (● green, ▲ amber, ■ red), so it reads without colour */
 function signalName(c){ return c==="sg"?"● Green":c==="sa"?"▲ Amber":c==="sr"?"■ Red":"No signal yet"; }
 function status(sid,row,t){
@@ -27,8 +28,21 @@ function findRow(sid,id){ return S.rows[sid].find(function(x){return x.id===id;}
 function newRow(sid,name){ var r={id:uid(),name:name||"",start:null,end:null,manual:null,ord:maxOrd(S.rows[sid])+1,u:now()}; if(sid==="rr"&&S.rrcur&&S.rrcur.id) r.qid=S.rrcur.id; return r; }
 function runningList(){ var out=[]; SESSIONS.forEach(function(s){ S.rows[s.id].forEach(function(r,i){ if(rowState(r)==="running") out.push({sid:s.id,s:s,r:r,i:i}); }); }); return out; }
 function anyRunning(){ return runningList().length>0; }
-function firstQueued(sid){ return S.rows[sid].find(function(r){return rowState(r)==="idle";}); }
-function startRow(sid,id){ var r=findRow(sid,id); if(!r||rowState(r)!=="idle") return; if(S.timerDemo.until){ S.timerDemo.until=0; tick(S.timerDemo); } r.start=now(); r.end=null; r.manual=null; r.pz=0; r.paused=null; tick(r); commit(); wake(); }
+function timerRows(sid){
+  var rows=S.rows[sid];
+  if(sid!=="rr") return rows;
+  var seen=new Set(rows.filter(function(row){return row.qid&&rowState(row)!=="idle";}).map(roundRobinTurnKey));
+  return rows.filter(function(row){
+    if(!row.qid||rowState(row)!=="idle") return true;
+    if(row.qid!==S.rrcur.id) return false;
+    var key=roundRobinTurnKey(row);
+    if(seen.has(key)) return false;
+    seen.add(key); return true;
+  });
+}
+function roundRobinTurnKey(row){ return JSON.stringify([row.qid,nkey(row.name)]); }
+function firstQueued(sid){ return timerRows(sid).find(function(r){return rowState(r)==="idle";}); }
+function startRow(sid,id){ var r=findRow(sid,id); if(!r||rowState(r)!=="idle"||(sid==="rr"&&!timerRows(sid).includes(r))) return; if(S.timerDemo.until){ S.timerDemo.until=0; tick(S.timerDemo); } r.start=now(); r.end=null; r.manual=null; r.pz=0; r.paused=null; tick(r); commit(); wake(); }
 function stopRow(sid,id){ var r=findRow(sid,id); if(!r||r.start==null||r.end!=null) return; r.end=now(); if(r.paused){ r.pz=(r.pz||0)+Math.max(0,r.end-r.paused); r.paused=null; } tick(r); commit(); wake(); }
 function okToStart(){
   var run=runningList(); if(!run.length) return true;
@@ -38,7 +52,7 @@ function okToStart(){
   return true;
 }
 function nextSignalText(sid,sec,row){ var L2=limOf(sid,row);
-  if(sid==="rr") return sec<=L2.b?"bell in "+fmt(L2.b-sec):"over by "+fmt(sec-L2.b);
+  if(sid==="rr") return sec<L2.b?"bell in "+fmt(L2.b-sec):sec===L2.b?"bell · time’s up":"over by "+fmt(sec-L2.b);
   if(sec<L2.g) return "green in "+fmt(L2.g-sec); if(sec<L2.a) return "amber in "+fmt(L2.a-sec); if(sec<L2.r) return "red in "+fmt(L2.r-sec); return "over by "+fmt(sec-L2.r); }
 function bannerText(sid,sg){ if(sid==="rr") return sg==="sr"?"🔔 TIME UP":""; return sg==="sg"?"● SHOW GREEN":sg==="sa"?"▲ SHOW AMBER":sg==="sr"?"■ SHOW RED":""; }
 

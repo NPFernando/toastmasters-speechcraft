@@ -120,7 +120,7 @@ function renderNow(){
   var fs=document.fullscreenElement; if(fs && el.contains(fs) && run.some(function(x){return x.r.id===fs.dataset.id;})) return;
   var mine=myNameKeys();
   run.forEach(function(x){
-    var sec=elapsed(x.r,t), sg=signal(x.sid,sec,x.r);
+    var sec=timerElapsed(x.sid,x.r,t), sg=signal(x.sid,sec,x.r);
     if(mine.indexOf(nkey(baseName(x.r.name)))>=0){ h+=meCardHTML(x,sec,sg); return; }
     var add = (L.role==="ah"||L.role==="gram"||L.role==="seval"||L.role==="tteval") ? '<button class="btn sm" data-now-add="'+esc(displayName(x.r,x.i))+'">+ Add / select</button>' : '';
     h+='<div class="nowitem '+sg+'" data-sid="'+x.sid+'" data-id="'+x.r.id+'"><div class="clock" data-live="clock">'+fmt(sec)+'</div>'+

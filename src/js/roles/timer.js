@@ -23,8 +23,8 @@ function timeStats(sids,t){
 }
 function statsText(ts,label){ if(!ts.n) return ""; var s="Speaking time "+fmtLong(ts.speak); if(ts.span!=null) s+=" · "+label+" "+clock(ts.from)+" – "+clock(ts.to)+" ("+fmtLong(ts.span)+")"; return s; }
 function timerHTML(){
-  var s=sessionOf(L.tab)||SESSIONS[0], rows=S.rows[s.id], t=now();
-  var h='<nav class="tabs">'+SESSIONS.map(function(x){ var rs=S.rows[x.id], run=rs.some(function(r){return rowState(r)==="running";});
+  var s=sessionOf(L.tab)||SESSIONS[0], rows=timerRows(s.id), t=now();
+  var h='<nav class="tabs">'+SESSIONS.map(function(x){ var rs=timerRows(x.id), run=rs.some(function(r){return rowState(r)==="running";});
       return '<button class="tab'+(x.id===s.id?' active':'')+'" data-tab="'+x.id+'">'+x.name+'<span class="cnt">('+rs.length+')</span>'+(run?'<span class="dot"></span>':'')+'</button>'; }).join("")+'</nav>';
   h+=timerDemoControls(s.id);
   h+='<section class="card panel">'+limitsHTML(s)+
@@ -36,7 +36,7 @@ function timerHTML(){
   if(!rows.length) h+='<tr><td colspan="6" class="empty">No speakers yet. Plan ahead with <b>+ Add to list</b> (e.g. <i>Nimal, Kasun, Amali</i>), or press <b>Start speaker</b> when someone begins.</td></tr>';
   var nx=firstQueued(s.id);
   rows.forEach(function(r,i){
-    var st=rowState(r), sec=elapsed(r,t), sg=signal(s.id,sec,r), stx=status(s.id,r,t), isNext=st==="idle"&&r===nx;
+    var st=rowState(r), sec=timerElapsed(s.id,r,t), sg=signal(s.id,sec,r), stx=status(s.id,r,t), isNext=st==="idle"&&r===nx;
     if(st==="idle"&&r.manual==null) stx={text:isNext?"Next up":"Waiting",cls:"st-queue"};
     var ctl= st==="running"?'<button class="btn sm" data-act="'+(r.paused?'resume':'pause')+'">'+(r.paused?'▶':'⏸')+'</button><button class="btn stop sm" data-act="stop">■ Stop</button>': st==="done"?'<span class="donetag">✓ Done</span>':'<button class="btn go sm" data-act="start">▶ Start</button>';
     var timeCell= st==="running"?'<div class="timebox '+sg+'" data-live="time">'+fmt(sec)+'</div>'
@@ -60,7 +60,7 @@ function renderLive(){
   var t=now(), h="", focusedId=null, a=document.activeElement;
   if(a&&a.dataset&&a.dataset.edit==="livename"){ focusedId=a.closest(".liveitem").dataset.id; }
   runningList().forEach(function(x){
-    var sec=elapsed(x.r,t), sg=signal(x.sid,sec,x.r);
+    var sec=timerElapsed(x.sid,x.r,t), sg=signal(x.sid,sec,x.r);
     h+='<div class="liveitem '+sg+'" data-sid="'+x.sid+'" data-id="'+x.r.id+'"><div class="clock" data-live="clock">'+fmt(sec)+'</div>'+
       '<div class="who"><input class="livename" data-edit="livename" list="roster" autocomplete="off" value="'+esc(x.r.name)+'" placeholder="Speaker '+(x.i+1)+' – type name"><span>'+x.s.name+' · <span data-live="next">'+nextSignalText(x.sid,sec,x.r)+'</span></span></div>'+
       '<span class="sigbanner" data-live="banner">'+bannerText(x.sid,sg)+'</span><span class="pill '+(sg||"sn")+'" data-live="pill">'+sigLabel(sg,x.r)+'</span>'+
@@ -68,7 +68,7 @@ function renderLive(){
   });
   if(focusedId && el.querySelector('.liveitem[data-id="'+focusedId+'"]') && h.indexOf('data-id="'+focusedId+'"')>=0) return; // don't disturb typing
   el.innerHTML=h; el.classList.toggle("on",!!h);
-  el.querySelectorAll(".liveitem").forEach(function(it){ var r=findRow(it.dataset.sid,it.dataset.id); if(r&&lastSig[r.id]===undefined) lastSig[r.id]=signal(it.dataset.sid,elapsed(r,t),r); });
+  el.querySelectorAll(".liveitem").forEach(function(it){ var r=findRow(it.dataset.sid,it.dataset.id); if(r&&lastSig[r.id]===undefined) lastSig[r.id]=signal(it.dataset.sid,timerElapsed(it.dataset.sid,r,t),r); });
 }
 function flashItem(it){ it.classList.remove("flash"); void it.offsetWidth; it.classList.add("flash"); clearTimeout(it._ft); it._ft=setTimeout(function(){ it.classList.remove("flash"); },3200); }
 

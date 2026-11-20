@@ -4,14 +4,14 @@ function rrById(id){ return S.rrq.find(function(q){return q.id===id;}); }
    (tap a name or 🎲 pick at random); a queued person can be taken off the queue again. */
 function rrHidden(n){ return (S.rrcur.hide||[]).indexOf(nkey(n))>=0; }
 function rrHTML(){
-  var cur=rrById(S.rrcur.id), h='<section class="card">';
+  var cur=rrById(S.rrcur.id), h='<section class="card"><p class="saved">Bell at <b>'+fmt(limOf("rr").b)+'</b> per speaker</p>';
   if(!cur){
     h+='<div class="curtopic empty"><div class="lbl">Round Robin question</div><div style="margin:6px 0 10px">Everyone answers the same question.</div>'+
        '<textarea class="t" id="rrQ" rows="2" aria-label="Round Robin question" placeholder="e.g. What is one thing that made you smile this week?">'+esc((S.rrq.filter(function(q){return !q.used;})[0]||{}).text||"")+'</textarea>'+
        '<div class="row" style="margin-top:8px"><button class="btn go big1" id="rrStart">▶ Start the Round Robin</button></div></div>';
     return h+'</section>';
   }
-  var mine=S.rows.rr.filter(function(r){return r.qid===cur.id;}), stOf={};
+  var mine=timerRows("rr").filter(function(r){return r.qid===cur.id;}), stOf={};
   mine.forEach(function(r){ var k=nkey(r.name), st=rowState(r); if(!stOf[k]||st==="running"||(st==="done"&&stOf[k].st!=="running")) stOf[k]={st:st,r:r}; });
   var answered=Object.keys(stOf), nDone=answered.filter(function(k){return stOf[k].st==="done";}).length, live=mine.find(function(r){return rowState(r)==="running";});
   var nQ=answered.filter(function(k){return stOf[k].st==="idle";}).length;
@@ -20,7 +20,8 @@ function rrHTML(){
      (S.rrcur.last?'<div class="rrpick" aria-live="polite">🎲 <b>'+esc(S.rrcur.last)+'</b></div>':'')+
      '<div class="row"><button class="btn go big1" id="rrRandom"'+(left.length?'':' disabled')+'>🎲 Pick next at random</button><button class="btn" id="rrShow">📺 Show on screen</button><button class="linkbtn" id="rrEdit">Edit question</button></div>'+
      '<div class="saved" style="margin-top:6px">'+(pool.length?(left.length?(pool.length-left.length)+' of '+pool.length+' have had a turn or are queued · '+left.length+' to go':'🎉 Everyone has had a turn'):'No one '+(rrHereOnly()?'checked in or connected yet — untick “Only people here”':'on the agenda or member list yet'))+'</div></div>';
-  h+='<div class="rrstat" aria-live="polite">'+(live?'🎙 <b>'+esc(live.name)+'</b> is speaking':'Waiting for the Timer')+' · ✓ '+nDone+' done'+(nQ?' · ⏳ '+nQ+' queued':'')+'</div>';
+  h+='<div class="rrstat" aria-live="polite">'+(live?'🎙 <b>'+esc(live.name)+'</b> is speaking':'Waiting for the Timer')+' · ✓ '+nDone+' done'+(nQ?' · ⏳ '+nQ+' queued':'')+'</div>'+
+    (live?'<p id="rrLiveClock" data-row="'+esc(live.id)+'">'+esc(roundRobinClockText(live,now()))+'</p>':'');
   var people=uniq(pool.concat(mine.map(function(r){return r.name;})));
   var memberK={}; memberNames().forEach(function(n){ memberK[nkey(n)]=1; });
   h+='<h2 class="sec">Participants <span class="cnt">tap a name to add them to the Timer’s queue · tap ⏳ again to take them off</span></h2><div class="chips">'+
@@ -35,6 +36,15 @@ function rrHTML(){
   return h+'</section>';
 }
 /* who can be picked: the member list (and names used before), optionally only people here today */
+function roundRobinClockText(row,at){
+  var sec=timerElapsed("rr",row,at);
+  return (row.paused?"Paused at ":"Elapsed ")+fmt(sec)+" · "+nextSignalText("rr",sec,row);
+}
+function refreshRoundRobinClock(at){
+  var el=document.getElementById("rrLiveClock");
+  var row=el&&findRow("rr",el.dataset.row);
+  if(row&&rowState(row)==="running") el.textContent=roundRobinClockText(row,at);
+}
 function rrHereOnly(){ if(L.rrHere!=null) return !!L.rrHere; return uniq(meetingNames().concat(S.names)).some(function(n){ return present(n)||isOnlineName(n); }); }
 function rrPool(){ var all=uniq(meetingNames().concat(S.names)).filter(function(n){return !rrHidden(n);}); return rrHereOnly()?all.filter(function(n){ return present(n)||isOnlineName(n); }):all; }
 function rrLeft(){ var cur=rrById(S.rrcur.id); if(!cur) return []; var done=S.rows.rr.filter(function(r){return r.qid===cur.id;}).map(function(r){return nkey(r.name);}); return rrPool().filter(function(n){ return done.indexOf(nkey(n))<0; }); }
@@ -46,7 +56,10 @@ function rrCall(name,quiet){
   var ak="rr:"+cur.id+":"+nkey(name);
   if(rrHidden(name)){ S.rrcur.hide=S.rrcur.hide.filter(function(k){return k!==nkey(name);}); tick(S.rrcur); }
   if(!quiet){ S.rrcur.last=name; tick(S.rrcur); }
-  var r=newRow("rr",name); r.ak=ak; r.qid=cur.id; S.rows.rr.push(r); addName(S,name); commit();
+  var r=newRow("rr",name); r.ak=ak; r.qid=cur.id;
+  r.id="live|rr|"+encodeURIComponent(roundRobinTurnKey(r));
+  r.u=Math.max(r.u,(S.dead[r.id]||0)+1);
+  S.rows.rr.push(r); addName(S,name); commit();
 }
 
 (function(){ document.getElementById("view").addEventListener("change",function(e){ if(e.target.id==="rrHere"&&L.role==="rrm"){ L.rrHere=e.target.checked; saveL(); renderAll(); } }); })();
