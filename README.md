@@ -144,7 +144,10 @@ Join the same meeting and use the same participant name, or use **Open on anothe
 device** to carry the name and open role across. Roles you select are shared for
 that meeting, and connected devices can view and edit meeting data. General
 Evaluator observation and follow-up drafts sync within the room. Unpublished
-Word of the Day and private speech evaluation drafts stay on the editing device.
+Word of the Day and evaluation drafts sync encrypted after you set up your
+feedback PIN. Unlock with the same PIN on your other devices to read and edit
+them. Reveal publishes the Word of the Day to the room. Submit sends the
+evaluation encrypted to its speaker.
 
 ## Application license and logos
 

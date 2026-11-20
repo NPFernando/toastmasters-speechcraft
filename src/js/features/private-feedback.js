@@ -58,7 +58,7 @@ function decryptFor(name,enc){
     .then(function(pt){ return JSON.parse(new TextDecoder().decode(pt)); });
 }
 
-/* evaluator drafts live only on the evaluator's device until they can be sent encrypted */
+/* Evaluation drafts are editable locally and can sync encrypted to the author. */
 function evDraft(){ var kind=evKind(), sel=(L.evSel||{})[kind]; if(!sel) return null; var id=evId(kind,sel,myName()); L.evDrafts=L.evDrafts||{}; if(!L.evDrafts[id]) L.evDrafts[id]={kind:kind,speaker:sel,c1:"",r:"",c2:"",rate:{}}; return {id:id,d:L.evDrafts[id]}; }
 var markTimers={};
 /* while an evaluator is writing, only a "writing" marker is shared: never the content */
@@ -101,7 +101,7 @@ function flushPending(){
 setInterval(flushPending,5000);
 function evStateText(speaker,d){
   d=d||{};
-  if(!d.submitted) return '✍ <b>Draft</b> — saved on this device only. Nobody sees it until you tap <b>Submit</b>; then only <b>'+esc(speaker)+'</b> can read it.';
+  if(!d.submitted) return '✍ <b>Draft</b> — unlock your feedback PIN on each device to sync it privately. Tap <b>Submit</b>; then only <b>'+esc(speaker)+'</b> can read it.';
   if(d.changed) return '✏️ You changed this after submitting. Tap <b>Update submission</b> to send the new version.';
   if(!keyRec(speaker)) return '⏳ <b>Submitted</b> — waiting for '+esc(speaker)+' to set up their feedback PIN. It will be delivered automatically, encrypted.';
   return '✅ <b>Submitted</b> '+(d.submittedAt?'at '+new Date(d.submittedAt).toLocaleTimeString("en-AU",{hour:"numeric",minute:"2-digit"})+' ':'')+'— only '+esc(speaker)+' can read it (encrypted).';
@@ -120,3 +120,65 @@ function refreshEvState(){
 function evalStatusLabel(e){ return e.state==="writing"?"✍ writing":e.state==="queued"?"⏳ submitted, waiting for the speaker's PIN":"✅ submitted"; }
 function submittedEvals(name){ return S.evals.filter(function(e){ return nkey(e.speaker)===nkey(name) && e.enc && e.done && (e.state==="submitted"||!e.state); }); }
 
+
+/* Drafts use the author's feedback key. The meeting only receives ciphertext. */
+var draftReads=new Set(), draftWrites=new Map();
+function draftOwner(){ return L.role==="gram"?L.me||myName():myName(); }
+function draftAccessHTML(){
+  var name=draftOwner();
+  if(!name||!cryptoOK()) return "";
+  if(hasPriv(name)) return '<p class="saved">Private draft sync is unlocked on this device.</p>';
+  return '<details><summary>Sync private drafts across my devices</summary>'+
+    '<p class="saved">Use the same feedback PIN on each device to read and edit your drafts.</p>'+
+    '<input class="t" id="draftPin" type="password" inputmode="numeric" maxlength="8" aria-label="Feedback PIN">'+
+    '<button class="btn sm" id="draftAccess">'+(keyRec(name)?'Unlock draft sync':'Set feedback PIN')+'</button></details>';
+}
+function queuePrivateDraft(name,key,value){
+  if(!name||!hasPriv(name)) return;
+  var mid=S.mid, person=nkey(name), id="field|private|"+JSON.stringify([person,key]);
+  var writeKey=JSON.stringify([mid,id]);
+  var previous=S.roleFields.find(function(r){return r.id===id;});
+  var rev=Math.max(now(),(previous&&previous.u||0)+1,(draftWrites.get(writeKey)||0)+1);
+  draftWrites.set(writeKey,rev);
+  encryptFor(name,clone(value)).then(function(enc){
+    if(S.mid!==mid||draftWrites.get(writeKey)!==rev) return;
+    var current=S.roleFields.find(function(r){return r.id===id;});
+    if(current&&current.u>rev) return;
+    var rec=upsert(["roleFields"],id,{person:person,key:key});
+    rec.enc=enc; rec.u=rev;
+    commitQuiet();
+  }).catch(function(){ showToastMsg("Draft saved here. Private sync failed."); });
+}
+function syncPrivateDrafts(){
+  if(!["gram","seval","tteval"].includes(L.role)) return;
+  var name=draftOwner(), person=nkey(name), mid=S.mid, role=L.role;
+  if(!hasPriv(name)) return;
+  S.roleFields.filter(function(r){
+    return r.enc&&r.person===person&&(role==="gram"?r.key==="word":r.key.startsWith("e|"+evKind()+"|"));
+  }).forEach(function(r){
+    var read=JSON.stringify([mid,r.id,r.u,r.enc.ct,r.enc.kx]), writeKey=JSON.stringify([mid,r.id]);
+    if(draftReads.has(read)||(draftWrites.get(writeKey)||0)>=r.u) return;
+    draftReads.add(read);
+    decryptFor(name,r.enc).then(function(value){
+      if(S.mid!==mid||L.role!==role||nkey(draftOwner())!==person){ draftReads.delete(read); return; }
+      var latest=S.roleFields.find(function(x){return x.id===r.id;});
+      if(!latest||latest.enc.ct!==r.enc.ct||(draftWrites.get(writeKey)||0)>=r.u) return;
+      if(role==="gram"){
+        if(value.epoch!==(S.gram.u||0)) return;
+        var draft=workflowDraft();
+        Object.keys(WORD_FIELDS).forEach(function(id){ delete draft[id]; });
+        Object.assign(draft,value.fields);
+      } else {
+        L.evDrafts=L.evDrafts||{};
+        L.evDrafts[r.key]=value;
+      }
+      saveL(); softRender();
+    }).catch(function(){ draftReads.delete(read); });
+  });
+}
+function syncWordDraft(){
+  var draft=workflowDraft(), fields={};
+  Object.keys(WORD_FIELDS).forEach(function(id){ if(Object.hasOwn(draft,id)) fields[id]=draft[id]; });
+  queuePrivateDraft(draftOwner(),"word",{epoch:S.gram.u||0,fields:fields});
+}
+function syncEvaluationDraft(id,draft){ queuePrivateDraft(myName(),id,draft); }
