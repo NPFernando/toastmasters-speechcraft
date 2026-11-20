@@ -117,15 +117,18 @@ view.addEventListener("change",function(e){
   var t=e.target, sid=L.tab;
   if(t.dataset.edit==="time"){
     var r=findRow(sid,t.closest("tr").dataset.id), v=parseTime(t.value);
-    if(v===null){ if(r.manual!=null){ r.manual=null; tick(r); } commit(); return; }
+    if(v===null){ if(r.manual!=null){ r.manual=null; if(r.start==null) delete r.timedLim; tick(r); } commit(); return; }
     if(isNaN(v)){ t.classList.add("bad"); t.title="Check time: use m:ss with seconds 0–59"; return; }
-    if(elapsed(r,now())!==v){ r.manual=v; tick(r); }
+    if(elapsed(r,now())!==v){ r.timedLim=clone(limOf(sid,r)); r.manual=v; tick(r); }
     commit(); return;
   }
   if(t.dataset.lim){
     var v2=parseTime(t.value), L2=S.limits[sid];
     if(v2==null||isNaN(v2)){ t.value=fmt(L2[t.dataset.lim]); return; }
     if(t.value.indexOf(":")<0&&t.value.indexOf(".")<0&&sid==="rr") v2=+t.value;
+    S.rows[sid].forEach(function(row){
+      if(rowState(row)!=="idle"&&!row.timedLim){ row.timedLim=clone(limOf(sid,row)); tick(row); }
+    });
     L2[t.dataset.lim]=v2; tick(S.limits);
     if(sid!=="rr"&&!(L2.g<=L2.a&&L2.a<=L2.r)) setSaved("Check limits: green ≤ amber ≤ red");
     commit(); return;

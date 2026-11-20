@@ -1,6 +1,7 @@
 /* ---------- state ---------- */
 function blank(){
   return { v:2, mid:uid(), midU:now(),
+    timerTurn:{sid:"",id:null,u:0},
     timerDemo:{sid:"",step:0,until:0,u:0},
     meta:{week:"",date:todayISO(),u:0},
     people:{coord:"",president:"",saa:"",tmod:"",ge:"",rrm:"",timer:"",ttm:"",ah:"",gram:"",keynote:""}, peopleU:{coord:0,president:0,saa:0,tmod:0,ge:0,rrm:0,timer:0,ttm:0,ah:0,gram:0,keynote:0},
@@ -15,6 +16,7 @@ function blank(){
 function normalize(st){
   var b=blank(); st=st&&typeof st==="object"?st:{};
   var o={ v:2, mid:String(st.mid||b.mid), midU:+st.midU||0,
+    timerTurn:Object.assign(b.timerTurn,st.timerTurn||{}),
     timerDemo:Object.assign(b.timerDemo,st.timerDemo||{}),
     meta:Object.assign(b.meta, st.meta||{}), people:Object.assign(b.people, st.people||{}), peopleU:Object.assign(b.peopleU, st.peopleU||{}),
     limits:Object.assign(b.limits, st.limits||{}), rows:{}, topics:[], cur:Object.assign(b.cur, st.cur||{}),
@@ -67,7 +69,7 @@ var resetting=false;
 function saveL(){ if(resetting) return; lsSet(LKEY,JSON.stringify(L)); }
 function save(){ if(resetting) return; setSaved(lsSet(KEY,JSON.stringify(S))?"Saved on this device":"Auto-save unavailable in this browser"); }
 function setSaved(t){ var el=document.getElementById("saved"); if(el) el.textContent=t; }
-function commit(){ stampFields(); save(); NET.push(); renderAll(); }
+function commit(){ stampFields(); save(); NET.push(); renderAll(); refreshOpenMeetingReport(); }
 function commitQuiet(){ stampFields(); save(); NET.push(); }
 
 function addName(st,name){

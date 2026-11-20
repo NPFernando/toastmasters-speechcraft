@@ -11,7 +11,7 @@ function focusWhoPicker(who){
 function focusHTML(){
   var r=L.role, h='<div class="fbar"><b>🎯 Focus · '+esc(roleObj(r).name)+'</b><button class="btn sm" data-focus="off">Show everything</button></div>';
   if(r==="timer"){
-    var sid=L.tab||"tt", s=sessionOf(sid)||SESSIONS[0], idle=S.rows[sid].filter(function(x){return rowState(x)==="idle";}).slice(0,4);
+    var sid=L.tab||"tt", s=sessionOf(sid)||SESSIONS[0], idle=timerRows(sid).filter(function(x){return rowState(x)==="idle";}).slice(0,4);
     h+='<section class="card fcard"><div class="flbl">'+esc(s.name)+' · '+esc(limitsLine(sid,null))+'</div>'+
        '<div class="seg fseg">'+SESSIONS.map(function(x){ return '<button data-ftab="'+x.id+'" class="'+(x.id===sid?'on':'')+'">'+esc(x.name)+'</button>'; }).join("")+'</div>'+
        (runningList().length?'<div class="note" style="text-align:center">Timing now — use <b>Stop</b> on the live bar above.</div>':'')+
@@ -49,8 +49,8 @@ var fUndo=null;
     if((b=t.closest("[data-focus]"))){ L.focus=b.dataset.focus==="on"; saveL(); renderAll(); window.scrollTo(0,0); return; }
     if(!inFocus()) return;
     if((b=t.closest("[data-ftab]"))){ L.tab=b.dataset.ftab; saveL(); renderAll(); return; }
-    if((b=t.closest("[data-fstart]"))){ startRow(L.tab||"tt",b.dataset.fstart); return; }
-    if(t.closest("[data-fstartnew]")){ var sid=L.tab||"tt", nm=(document.getElementById("fNewName").value||"").trim(), r=newRow(sid,nm); S.rows[sid].push(r); if(nm) remember(nm); startRow(sid,r.id); return; }
+    if((b=t.closest("[data-fstart]"))){ if(okToStart()) startRow(L.tab||"tt",b.dataset.fstart); return; }
+    if(t.closest("[data-fstartnew]")){ if(!okToStart()) return; var sid=L.tab||"tt", nm=(document.getElementById("fNewName").value||"").trim(), r=newRow(sid,nm); S.rows[sid].push(r); if(nm) remember(nm); startRow(sid,r.id); return; }
     if((b=t.closest("[data-fsel]"))){ L.fsel=b.dataset.fsel; if(selectPerson(b.dataset.fsel,L.role)) commit(); else { saveL(); renderAll(); } return; }
     if((b=t.closest("[data-fah]"))){ var who=focusWho(); if(!who) return; var rec=fRec("ah",who), w=b.dataset.fah; rec.c[w]=(rec.c[w]||0)+1; tick(rec); fUndo={id:rec.id,w:w}; commit(); return; }
     if(t.closest("[data-fundo]")){ if(!fUndo) return; var r2=S.ahRows.find(function(x){return x.id===fUndo.id;}); if(r2&&r2.c[fUndo.w]>0){ r2.c[fUndo.w]--; tick(r2); commit(); } fUndo=null; return; }

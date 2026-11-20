@@ -20,7 +20,7 @@ function renderKeepFocus(){
 }
 setInterval(function(){ if(pendingRender && Date.now()-lastTyped>3000){ pendingRender=false; renderKeepFocus(); } },1000);
 function laterRender(){ pendingRender=true; setTimeout(function(){ if(pendingRender && !editingInApp()){ pendingRender=false; renderAll(); } },300); }
-function softRender(){ if(editingInApp()){ pendingRender=true; renderLiveOnly(); return; } renderAll(); }
+function softRender(){ refreshOpenMeetingReport(); if(editingInApp()){ pendingRender=true; renderLiveOnly(); return; } renderAll(); }
 document.addEventListener("focusout",function(){ if(!pendingRender) return; setTimeout(function(){ if(pendingRender && !editingInApp()){ pendingRender=false; renderAll(); } },250); });
 
 function renderAll(){
@@ -112,7 +112,26 @@ function meCardHTML(x,sec,sg){
 }
 document.getElementById("nowStrip").addEventListener("click",function(e){ var b=e.target.closest("[data-mefull]"); if(!b) return; var c=b.closest(".mecard"); try{ if(document.fullscreenElement) document.exitFullscreen(); else if(c.requestFullscreen) c.requestFullscreen(); }catch(err){} });
 /* who is speaking now (from the Timer) — shown on the other roles */
+function renderTimerHandoff(){
+  var el=document.getElementById("timerHandoff"), html="";
+  if(["tmod","ge","timer"].includes(L.role)){
+    var active=runningList()[0], sid=active?.sid||S.timerTurn.sid||(L.role==="timer"?L.tab:"");
+    var session=sessionOf(sid), next=session&&firstQueued(sid);
+    if(!next&&!active){
+      session=SESSIONS.find(function(format){return firstQueued(format.id);});
+      if(session){ sid=session.id; next=firstQueued(sid); }
+    }
+    if(active||next||(L.role==="timer"&&timerConflictMessage)){
+      html='<section class="card" aria-label="Timing now and next"><div><b>Now timing</b> · '+
+        (active?esc(displayName(active.r,active.i))+' · '+esc(active.s.name)+(active.r.paused?' · Paused':''):'—')+
+        '</div><div><b>Next queued</b> · '+(next?esc(displayName(next,S.rows[sid].indexOf(next)))+' · '+esc(session.name):'—')+'</div>'+
+        (L.role==="timer"&&timerConflictMessage?'<p class="note" role="status">'+esc(timerConflictMessage)+'</p>':'')+'</section>';
+    }
+  }
+  if(el.timerHandoffHTML!==html){ el.timerHandoffHTML=html; el.innerHTML=html; }
+}
 function renderNow(){
+  renderTimerHandoff();
   renderTimerDemo();
   var el=document.getElementById("nowStrip");
   if(myRoles().indexOf("timer")>=0){ el.classList.remove("on"); el.innerHTML=""; return; }

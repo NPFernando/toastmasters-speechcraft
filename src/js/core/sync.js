@@ -117,6 +117,8 @@ function onMsg(pid,m){
     if(NET.synced&&(NET.mode==="host"||!m.host)) return;
     if(!PRACTICE) autoSaveRecord("Before joining "+fmtCode(NET.code),true);
     S=remote;
+    timerConflictMessage="";
+    reconcileTimerTurns(S);
     selectRolesForNewMeeting();
     shadowSync();
     changed=true;
