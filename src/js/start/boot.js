@@ -9,16 +9,17 @@ function openMeetingInvite(){
   var person=params.get("person"), role=params.get("role"), co=params.get("co");
   if(co){ L.pendingCo=cleanCode(co); saveL(); }
   try{ history.replaceState(null,"",location.pathname+location.search); }catch(e){}
-  W.code=code; W.auto=false; W.advance=false; W.add=false;
+  W.code=code; W.auto=false; W.advance=false; W.add=false; W.inviteRole=null;
   if(params.get("guest")==="1"){ startJoin(code); openWelcome("guest"); return true; }
   if(roleObj(role)){
+    W.inviteRole=role;
     if(!L.setup||person){
       L.roles=[role];
       if(person){ L.me=person; L.myNames={}; }
     }
     L.role=role; L.setup=true; saveL();
     W.auto=true;
-  } else W.advance=true;
+  } else { W.auto=!!(L.setup&&L.me); W.advance=!W.auto; }
   startJoin(code);
   openWelcome("connect");
   return true;
