@@ -2,7 +2,10 @@ const T = require("./lib");
 
 module.exports = async (browser) => {
   const host = await T.device(browser);
-  const code = await T.host(host, "Host", ["ttm"]);
+  const code = await T.host(host, "Host", ["coord","ttm"]);
+  await T.setCoordPin(host);
+  await T.setRole(host, "timer", "Returning");
+  await host.click('[data-rtab="ttm"]');
   await host.fill("#topicInput", "Question from the hosted meeting");
   await host.click("#addTopics");
 
@@ -17,7 +20,11 @@ module.exports = async (browser) => {
     localStorage.setItem(key, JSON.stringify(saved));
   }, code);
   await returning.goto(T.URL + "#join=" + code);
-  await returning.locator("#wGrid").waitFor();
+  await returning.locator('[data-rtab="timer"].on').waitFor();
+  T.assert.equal(await returning.locator('[data-rtab="ttm"]').count(), 0);
+  await returning.reload();
+  await returning.locator('[data-rtab="timer"].on').waitFor();
+  await T.eventually(async () => /Synced/.test(await returning.innerText("#connTxt")), "same meeting syncs after reload");
   const hosted = JSON.parse(await T.stored(host));
   const joined = JSON.parse(await T.stored(returning));
   T.assert.equal(joined.mid, hosted.mid);

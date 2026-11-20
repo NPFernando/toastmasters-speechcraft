@@ -3657,11 +3657,13 @@ function onMsg(pid,m){
   if(!m.state||typeof m.state.mid!=="string"||!m.state.mid||!(m.host||m.synced)) return;
   var remote; try{ remote=normalize(clone(m.state)); }catch(e){ return; }
   var changed=false;
-  if(remote.mid!==S.mid){
+  var newMeeting=remote.mid!==S.mid;
+  if(newMeeting){
     /* Only an already synced peer can provide the first copy. After that, the host can switch meetings. */
     if(NET.synced&&(NET.mode==="host"||!m.host)) return;
     if(!PRACTICE) autoSaveRecord("Before joining "+fmtCode(NET.code),true);
     S=remote;
+    selectRolesForNewMeeting();
     shadowSync();
     changed=true;
   } else {
@@ -3671,7 +3673,8 @@ function onMsg(pid,m){
   NET.synced=true; NET.awaitingSnapshot=false; NET.reconnecting=false; NET.lastSync=now();
   if(L.syncedMid!==S.mid){ L.syncedMid=S.mid; saveL(); }
   if(changed){ save(); softRender(); wake(); }
-  if(first){ refreshPeers(); NET.hello(); }
+  if(first||newMeeting){ refreshPeers(); NET.hello(); }
+  W.inviteRole=null;
   if(stable(S)!==stable(remote)) sendTo(pid,{t:"state",state:S});
 }
 /* Retry the initial snapshot separately from transport liveness. */
@@ -3959,6 +3962,24 @@ function agendaRolesFor(name){
   return ROLES.filter(function(role){
     return agendaRoleNames(role.id).some(function(assignedName){ return nkey(assignedName)===key; });
   }).map(function(role){ return role.id; });
+}
+/* Reconcile the local role tabs once when a different meeting is adopted. */
+function selectRolesForNewMeeting(){
+  if(!L.setup||!L.me||W.step==="guest") return;
+  var person=nkey(L.me);
+  var removed=S.roleChoices.filter(function(choice){return choice.person===person&&!choice.on;}).map(function(choice){return choice.role;});
+  var roles=uniq(agendaRolesFor(L.me).concat(selectedRoles(L.me))).filter(function(role){return !removed.includes(role);});
+  var inviteRole=W.inviteRole;
+  if(!roles.length) roles=[inviteRole||"member"];
+  L.roles=roles;
+  L.role=roles.includes(L.role)?L.role:roles[0];
+  L.rolesMid=S.mid;
+  L.myNames={};
+  L.ahSel=null;
+  L.gramSel=null;
+  L.evSel={};
+  L.view="role";
+  saveL();
 }
 function roleTabsHTML(){
   var rs=myRoles(), h='<div class="rtabs">';
@@ -5527,16 +5548,17 @@ function openMeetingInvite(){
   var person=params.get("person"), role=params.get("role"), co=params.get("co");
   if(co){ L.pendingCo=cleanCode(co); saveL(); }
   try{ history.replaceState(null,"",location.pathname+location.search); }catch(e){}
-  W.code=code; W.auto=false; W.advance=false; W.add=false;
+  W.code=code; W.auto=false; W.advance=false; W.add=false; W.inviteRole=null;
   if(params.get("guest")==="1"){ startJoin(code); openWelcome("guest"); return true; }
   if(roleObj(role)){
+    W.inviteRole=role;
     if(!L.setup||person){
       L.roles=[role];
       if(person){ L.me=person; L.myNames={}; }
     }
     L.role=role; L.setup=true; saveL();
     W.auto=true;
-  } else W.advance=true;
+  } else { W.auto=!!(L.setup&&L.me); W.advance=!W.auto; }
   startJoin(code);
   openWelcome("connect");
   return true;

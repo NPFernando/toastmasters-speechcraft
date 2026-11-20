@@ -111,11 +111,13 @@ function onMsg(pid,m){
   if(!m.state||typeof m.state.mid!=="string"||!m.state.mid||!(m.host||m.synced)) return;
   var remote; try{ remote=normalize(clone(m.state)); }catch(e){ return; }
   var changed=false;
-  if(remote.mid!==S.mid){
+  var newMeeting=remote.mid!==S.mid;
+  if(newMeeting){
     /* Only an already synced peer can provide the first copy. After that, the host can switch meetings. */
     if(NET.synced&&(NET.mode==="host"||!m.host)) return;
     if(!PRACTICE) autoSaveRecord("Before joining "+fmtCode(NET.code),true);
     S=remote;
+    selectRolesForNewMeeting();
     shadowSync();
     changed=true;
   } else {
@@ -125,7 +127,8 @@ function onMsg(pid,m){
   NET.synced=true; NET.awaitingSnapshot=false; NET.reconnecting=false; NET.lastSync=now();
   if(L.syncedMid!==S.mid){ L.syncedMid=S.mid; saveL(); }
   if(changed){ save(); softRender(); wake(); }
-  if(first){ refreshPeers(); NET.hello(); }
+  if(first||newMeeting){ refreshPeers(); NET.hello(); }
+  W.inviteRole=null;
   if(stable(S)!==stable(remote)) sendTo(pid,{t:"state",state:S});
 }
 /* Retry the initial snapshot separately from transport liveness. */

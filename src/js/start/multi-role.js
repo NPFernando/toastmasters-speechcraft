@@ -56,6 +56,24 @@ function agendaRolesFor(name){
     return agendaRoleNames(role.id).some(function(assignedName){ return nkey(assignedName)===key; });
   }).map(function(role){ return role.id; });
 }
+/* Reconcile the local role tabs once when a different meeting is adopted. */
+function selectRolesForNewMeeting(){
+  if(!L.setup||!L.me||W.step==="guest") return;
+  var person=nkey(L.me);
+  var removed=S.roleChoices.filter(function(choice){return choice.person===person&&!choice.on;}).map(function(choice){return choice.role;});
+  var roles=uniq(agendaRolesFor(L.me).concat(selectedRoles(L.me))).filter(function(role){return !removed.includes(role);});
+  var inviteRole=W.inviteRole;
+  if(!roles.length) roles=[inviteRole||"member"];
+  L.roles=roles;
+  L.role=roles.includes(L.role)?L.role:roles[0];
+  L.rolesMid=S.mid;
+  L.myNames={};
+  L.ahSel=null;
+  L.gramSel=null;
+  L.evSel={};
+  L.view="role";
+  saveL();
+}
 function roleTabsHTML(){
   var rs=myRoles(), h='<div class="rtabs">';
   rs.forEach(function(id){ var r=roleObj(id); h+='<button class="rtab'+(id===L.role?' on':'')+'" data-rtab="'+id+'">'+r.icon+' '+esc(r.name)+(rs.length>1&&id!==L.role?'<span class="rx" data-rdrop="'+id+'" title="Remove this role from your devices">✕</span>':'')+'</button>'; });
