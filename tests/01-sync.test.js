@@ -7,6 +7,8 @@ module.exports = async (b) => {
   await T.setCoordPin(C);
   await T.addMembers(C, ["Afraa", "Rashmi", "Laurel"]);
   await T.setRole(C, "ah", "Afraa");
+  await C.click("[data-nav=now]");
+  await T.eventually(async () => /Online 1/.test(await C.innerText("#dashboardOnline")), "host is online before others join");
   const A = await T.device(b, { phone: true });
   await A.fill("#wCode", code); await A.click("#wJoin");
   await A.waitForSelector("[data-wname]", { timeout: 20000 });
@@ -17,7 +19,11 @@ module.exports = async (b) => {
   const A2 = await T.device(b, { phone: true });
   await T.join(A2, code, "Afraa", ["ah"]);
   await T.eventually(async () => /2 online/.test(await C.innerText("#connTxt")), "two people online (Afraa's two devices count once)");
-  await T.eventually(async () => /2 devices/.test(await C.innerText("#roles")), "Afraa shown with 2 devices");
+  await T.eventually(async () => /Online 2[\s\S]*Afraa.*2 devices/.test(await C.innerText("#dashboardOnline")), "dashboard updates without switching views");
+  await A2.click("#connBtn");
+  await A2.click("#leaveBtn");
+  await T.eventually(async () => /Afraa/.test(await C.innerText("#dashboardOnline")) && !/2 devices/.test(await C.innerText("#dashboardOnline")), "dashboard updates when a device disconnects");
+  await C.click("[data-nav=role]");
   for (const page of [C, A]) {
     await page.click("#connBtn");
     T.assert.strictEqual(await page.locator("#connBox .qr").count(), 1);
