@@ -6,7 +6,8 @@ module.exports = async (b) => {
   const code = await T.host(C, "Naveen", ["coord"]);
   await T.setCoordPin(C);
   await T.addMembers(C, ["SC Laurel Senanayake", "SC Rashmi Maneesha", "SC Nimega Dilshara"]);
-  await C.fill("#mDate", "2026-11-06"); await C.press("#mDate", "Tab");
+  const meetingDate = await C.evaluate(() => new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString().slice(0, 10));
+  await C.fill("#mDate", meetingDate); await C.press("#mDate", "Tab");
   await T.setRole(C, "tmod", "SC Nimega Dilshara"); await T.setRole(C, "keynote", "TM Nalin De Abrew");
   await C.fill("[data-rpadd-in=speakers]", "SC Laurel Senanayake"); await C.click("[data-rpadd=speakers]");
   await C.fill("[data-rpadd-in=sevals]", "SC Rashmi Maneesha"); await C.click("[data-rpadd=sevals]");
@@ -27,7 +28,7 @@ module.exports = async (b) => {
   await T.eventually(async () => /Prepared speech — “My first job”[\s\S]*Evaluator: SC Rashmi Maneesha/.test(await L.innerText("#view .upc")), "speaker reminder with title and evaluator");
   const [dl] = await Promise.all([L.waitForEvent("download"), L.click("[data-ics]")]);
   const ics = fs.readFileSync(await dl.path(), "utf8");
-  T.assert.match(ics, /DTSTART:20261106T173000/); T.assert.match(ics, /SUMMARY:Speechcraft – Prepared speech/); T.assert.match(ics, /TRIGGER:-P1D/);
+  T.assert.ok(ics.includes("DTSTART:" + meetingDate.replaceAll("-", "") + "T173000")); T.assert.match(ics, /SUMMARY:Speechcraft – Prepared speech/); T.assert.match(ics, /TRIGGER:-P1D/);
   // guests check themselves in by QR link; a guest who is on the agenda becomes a Speaker
   const G = await T.device(b, { phone: true, url: T.URL + "#join=" + code + "&guest=1" });
   await T.eventually(async () => !(await G.isDisabled("#gCheck")), "guest form enabled once connected", 20000);
@@ -46,7 +47,7 @@ module.exports = async (b) => {
   // "you're up next": the Toastmaster moves through the agenda; the speaker is nudged before their session
   const M = await T.device(b); await T.join(M, code, "SC Nimega Dilshara", ["tmod"]);
   await M.click("#runStart");
-  for (let i = 0; i < 5; i++) { await M.click("#runNext"); await T.sleep(250); }
+  for (let i = 0; i < 5; i++) { await M.click("#runNext"); await T.sleep(550); }
   await T.eventually(async () => /You.re up next: Toastmaster of the Day/.test(await L.innerText("#nudge")), "speaker nudged before the Prepared Speech session");
   await T.eventually(async () => /You.re on now: Educational Presenter/.test(await K.innerText("#nudge")), "keynote guest nudged when it's their turn");
   T.noErrors(C, L, G, K, M);
