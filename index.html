@@ -126,7 +126,7 @@ label.f,.f{display:flex;flex-direction:column;font-size:12px;color:var(--muted);
 .mecard .meclock{font-variant-numeric:tabular-nums;font-size:clamp(64px,18vw,140px);font-weight:900;line-height:1.05;margin-top:6px}
 .mecard .mesig{font-size:24px;font-weight:900;text-transform:uppercase;letter-spacing:.06em}
 .mecard .mestat{font-size:18px;font-weight:700;margin-top:4px} .mecard .melim{font-size:13px;opacity:.75;margin-top:6px}
-#nowStrip .mecard.sg{background:var(--g);border-color:var(--g);color:var(--g-ink)} #nowStrip .mecard.sa{background:var(--a);border-color:var(--a);color:#1d2330} #nowStrip .mecard.sr{background:var(--r);border-color:var(--r);color:#fff} #nowStrip .mecard.sn{background:var(--card);color:var(--ink)} #nowStrip .mecard .btn{background:transparent;color:inherit;border:1px solid currentColor}
+#timerDemoDisplay .mecard.sg,#nowStrip .mecard.sg{background:var(--g);border-color:var(--g);color:var(--g-ink)} #timerDemoDisplay .mecard.sa,#nowStrip .mecard.sa{background:var(--a);border-color:var(--a);color:#1d2330} #timerDemoDisplay .mecard.sr,#nowStrip .mecard.sr{background:var(--r);border-color:var(--r);color:#fff} #nowStrip .mecard.sn{background:var(--card);color:var(--ink)} #nowStrip .mecard .btn{background:transparent;color:inherit;border:1px solid currentColor}
 .mecard:fullscreen{display:flex;flex-direction:column;justify-content:center;border-radius:0} .mecard:fullscreen .meclock{font-size:30vw} .mecard:fullscreen .mesig{font-size:7vw} .mecard:fullscreen .mestat{font-size:4vw}
 .nowitem{display:flex;align-items:center;gap:12px;flex-wrap:wrap;border:2px solid var(--line);background:var(--card);border-radius:12px;padding:8px 12px;margin-bottom:6px}
 .nowitem .clock{font-variant-numeric:tabular-nums;font-size:28px;font-weight:800;min-width:84px}
@@ -687,6 +687,7 @@ div.timebox::before{font-size:.75em;vertical-align:1px}
   <div id="agendaLine" class="agline"></div>
   <div id="live"></div>
   <div id="nowStrip"></div>
+  <div id="timerDemoDisplay" role="status"></div>
   <div id="nudge" role="status" aria-live="polite"></div>
   <div id="companion" class="companion"></div>
   <main id="view"></main>
@@ -785,7 +786,7 @@ var SESSIONS=[{id:"tt",name:"Table Topics",type:"std"},{id:"ps",name:"Prepared S
 var ROLES=[{id:"keynote",name:"Educational Presenter / Keynote",icon:"🌟"},{id:"coord",name:"Speechcraft Coordinator",icon:"🗂"},{id:"president",name:"President",icon:"🔔"},{id:"tmod",name:"Toastmaster of the Day",icon:"🎩"},{id:"ge",name:"General Evaluator",icon:"🧭"},{id:"timer",name:"Timer",icon:"⏱"},{id:"ttm",name:"Table Topics Master",icon:"🎤"},{id:"rrm",name:"Round Robin Master",icon:"🔁"},{id:"ah",name:"Ah-Counter",icon:"🔢"},{id:"gram",name:"Grammarian",icon:"📝"},{id:"saa",name:"Sergeant at Arms",icon:"🛎"},{id:"speaker",name:"Speaker",icon:"🎙"},{id:"seval",name:"Speech Evaluator",icon:"🗣"},{id:"tteval",name:"Table Topics Evaluator",icon:"💬"},{id:"member",name:"Participant",icon:"🙋"}];
 var FILLERS=["Um","Ah","Er","So","Like","And","You know","Repeat"];
 var COLLS=[["roleChoices"],["roleFields"],["presentations"],["geobs"],["handovers"],["rows","tt"],["rows","ps"],["rows","rr"],["rows","ev"],["rows","rep"],["topics"],["ahRows"],["gramRows"],["evals"],["notes"],["votes"],["rrq"],["speeches"],["assigns"],["rsvp"],["fin"],["guests"],["ttassign"]];
-var MEETING_LWW=["meta","cur","gram","agenda","run","vote","genotes","rrcur","wrap","pres","saa"], KEEP_LWW=["limits","fill","members","pin"];
+var MEETING_LWW=["timerDemo","meta","cur","gram","agenda","run","vote","genotes","rrcur","wrap","pres","saa"], KEEP_LWW=["limits","fill","members","pin"];
 
 /* ---------- helpers ---------- */
 function now(){ return Date.now(); }
@@ -818,6 +819,7 @@ function lsSet(k,v){ try{ localStorage.setItem(k,v); return true; }catch(e){ ret
 /* ---------- state ---------- */
 function blank(){
   return { v:2, mid:uid(), midU:now(),
+    timerDemo:{sid:"",step:0,until:0,u:0},
     meta:{week:"",date:todayISO(),u:0},
     people:{coord:"",president:"",saa:"",tmod:"",ge:"",rrm:"",timer:"",ttm:"",ah:"",gram:"",keynote:""}, peopleU:{coord:0,president:0,saa:0,tmod:0,ge:0,rrm:0,timer:0,ttm:0,ah:0,gram:0,keynote:0},
     limits:{tt:{g:60,a:90,r:120},ps:{g:240,a:300,r:360},rr:{b:20},ev:{g:90,a:105,r:120},rep:{g:30,a:45,r:60},u:0},
@@ -831,6 +833,7 @@ function blank(){
 function normalize(st){
   var b=blank(); st=st&&typeof st==="object"?st:{};
   var o={ v:2, mid:String(st.mid||b.mid), midU:+st.midU||0,
+    timerDemo:Object.assign(b.timerDemo,st.timerDemo||{}),
     meta:Object.assign(b.meta, st.meta||{}), people:Object.assign(b.people, st.people||{}), peopleU:Object.assign(b.peopleU, st.peopleU||{}),
     limits:Object.assign(b.limits, st.limits||{}), rows:{}, topics:[], cur:Object.assign(b.cur, st.cur||{}),
     fill:Object.assign(b.fill, st.fill||{}), ahRows:[], gram:Object.assign(b.gram, st.gram||{}), gramRows:[],
@@ -1061,7 +1064,7 @@ function newRow(sid,name){ var r={id:uid(),name:name||"",start:null,end:null,man
 function runningList(){ var out=[]; SESSIONS.forEach(function(s){ S.rows[s.id].forEach(function(r,i){ if(rowState(r)==="running") out.push({sid:s.id,s:s,r:r,i:i}); }); }); return out; }
 function anyRunning(){ return runningList().length>0; }
 function firstQueued(sid){ return S.rows[sid].find(function(r){return rowState(r)==="idle";}); }
-function startRow(sid,id){ var r=findRow(sid,id); if(!r||rowState(r)!=="idle") return; r.start=now(); r.end=null; r.manual=null; r.pz=0; r.paused=null; tick(r); commit(); wake(); }
+function startRow(sid,id){ var r=findRow(sid,id); if(!r||rowState(r)!=="idle") return; if(S.timerDemo.until){ S.timerDemo.until=0; tick(S.timerDemo); } r.start=now(); r.end=null; r.manual=null; r.pz=0; r.paused=null; tick(r); commit(); wake(); }
 function stopRow(sid,id){ var r=findRow(sid,id); if(!r||r.start==null||r.end!=null) return; r.end=now(); if(r.paused){ r.pz=(r.pz||0)+Math.max(0,r.end-r.paused); r.paused=null; } tick(r); commit(); wake(); }
 function okToStart(){
   var run=runningList(); if(!run.length) return true;
@@ -1264,6 +1267,7 @@ function meCardHTML(x,sec,sg){
 document.getElementById("nowStrip").addEventListener("click",function(e){ var b=e.target.closest("[data-mefull]"); if(!b) return; var c=b.closest(".mecard"); try{ if(document.fullscreenElement) document.exitFullscreen(); else if(c.requestFullscreen) c.requestFullscreen(); }catch(err){} });
 /* who is speaking now (from the Timer) — shown on the other roles */
 function renderNow(){
+  renderTimerDemo();
   var el=document.getElementById("nowStrip");
   if(myRoles().indexOf("timer")>=0){ el.classList.remove("on"); el.innerHTML=""; return; }
   var run=runningList(), t=now(), h="";
@@ -1307,6 +1311,7 @@ function timerHTML(){
   var s=sessionOf(L.tab)||SESSIONS[0], rows=S.rows[s.id], t=now();
   var h='<nav class="tabs">'+SESSIONS.map(function(x){ var rs=S.rows[x.id], run=rs.some(function(r){return rowState(r)==="running";});
       return '<button class="tab'+(x.id===s.id?' active':'')+'" data-tab="'+x.id+'">'+x.name+'<span class="cnt">('+rs.length+')</span>'+(run?'<span class="dot"></span>':'')+'</button>'; }).join("")+'</nav>';
+  h+=timerDemoControls(s.id);
   h+='<section class="card panel">'+limitsHTML(s)+
     '<div class="quick"><input class="t" id="qname" list="roster" autocomplete="off" placeholder="Speaker name (optional, you can add it later)">'+
     '<button class="btn go" id="qstart">'+startLabel(s.id)+'</button>'+
@@ -1352,6 +1357,60 @@ function renderLive(){
 }
 function flashItem(it){ it.classList.remove("flash"); void it.offsetWidth; it.classList.add("flash"); clearTimeout(it._ft); it._ft=setTimeout(function(){ it.classList.remove("flash"); },3200); }
 
+/* Demo signals use the meeting's limits and never create a Timer entry. */
+var TIMER_DEMO_MS=90000;
+function timerDemoSteps(sid){
+  var limits=limOf(sid);
+  if(sid==="rr") return [{name:"Within time",sec:Math.max(0,limits.b-1),signal:"sg"},{name:"Time’s up · Bell",sec:limits.b,signal:"sr"}];
+  return [{name:"Before green",sec:Math.max(0,limits.g-1),signal:""},{name:"Green",sec:limits.g,signal:"sg"},
+    {name:"Amber",sec:limits.a,signal:"sa"},{name:"Red",sec:limits.r,signal:"sr"}];
+}
+function currentTimerDemo(){
+  var demo=S.timerDemo, session=sessionOf(demo.sid);
+  if(!session||!demo.until||now()>=demo.until||anyRunning()) return null;
+  var step=timerDemoSteps(session.id)[demo.step];
+  return step?{session:session,step:step,index:demo.step}:null;
+}
+function timerDemoControls(sid){
+  var demo=currentTimerDemo(), active=demo&&demo.session.id===sid;
+  return '<section class="card"><div class="row">'+
+    '<button class="btn" id="timerDemoStart"'+(anyRunning()?' disabled':'')+'>'+(active?'Restart live demo':'Start live demo')+'</button>'+
+    (demo?'<button class="btn" id="timerDemoEnd">End demo</button>':'')+'</div>'+
+    (active?'<div class="row" role="group" aria-label="Demo signals">'+timerDemoSteps(sid).map(function(step,index){
+      return '<button class="btn sm" data-demo-step="'+index+'" aria-pressed="'+(demo.index===index)+'">'+esc(step.name)+'</button>';
+    }).join("")+'</div>':'')+
+    '<p class="saved">Demo for '+esc(sessionOf(sid).name)+'. Everyone connected sees the selected signal.</p></section>';
+}
+function setTimerDemo(sid,step){
+  if(L.role!=="timer"||anyRunning()||!sessionOf(sid)||!timerDemoSteps(sid)[step]) return;
+  S.timerDemo.sid=sid;
+  S.timerDemo.step=step;
+  S.timerDemo.until=now()+TIMER_DEMO_MS;
+  tick(S.timerDemo);
+  commit();
+}
+function renderTimerDemo(){
+  var el=document.getElementById("timerDemoDisplay"), demo=currentTimerDemo();
+  var html="";
+  if(demo){
+    var step=demo.step, session=demo.session;
+    html='<div class="card mecard '+(step.signal||"sn")+'"><div class="mehead">Timer demo · '+esc(session.name)+'</div>'+
+      '<div class="meclock">'+fmt(step.sec)+'</div><div class="mesig">'+esc(step.name)+'</div>'+
+      '<div class="melim">'+esc(limitsLine(session.id))+'</div>'+
+      (session.id==="rr"&&step.signal==="sr"?'<button class="btn sm" id="timerDemoBell">Hear demo bell</button>':'')+'</div>';
+  }
+  if(el.demoMarkup!==html){ el.demoMarkup=html; el.innerHTML=html; renderProj(); }
+}
+document.getElementById("timerDemoDisplay").addEventListener("click",function(e){
+  if(e.target.closest("#timerDemoBell")) ringBell();
+});
+document.getElementById("view").addEventListener("click",function(e){
+  if(L.role!=="timer") return;
+  if(e.target.closest("#timerDemoStart")) setTimerDemo(L.tab,0);
+  var step=e.target.closest("[data-demo-step]");
+  if(step) setTimerDemo(L.tab,Number(step.dataset.demoStep));
+  if(e.target.closest("#timerDemoEnd")){ S.timerDemo.until=0; tick(S.timerDemo); commit(); }
+});
 /* ---------- Table Topics Master view ---------- */
 function topicById(id){ return S.topics.find(function(x){return x.id===id;}); }
 function remaining(){ return S.topics.filter(function(x){return !x.used;}); }
@@ -3061,6 +3120,7 @@ setInterval(function(){
       if(st) st.textContent=status(sid,r,t).text;
     });
   }
+  renderTimerDemo();
 },250);
 
 /* ---------- events ---------- */
@@ -5137,6 +5197,12 @@ function projHTML(){
   var t=now(), run=runningList(), ss=scheduleStatus(), tm=document.querySelector(".logo img").src, co=document.querySelector(".logo.co img").src, main="", cls="";
   if(run.length){ var x=run[0], sec=elapsed(x.r,t), sg=signal(x.sid,sec,x.r); cls=sg||"sn";
     main='<div class="pj-lbl">'+esc(x.s.name)+'</div><div class="pj-name">'+esc(displayName(x.r,x.i))+'</div><div class="pj-clock">'+fmt(sec)+'</div><div class="pj-sig">'+(x.r.paused?"⏸ Paused":sg?sigLabel(sg,x.r):"&nbsp;")+'</div><div class="pj-sub">'+esc(limitsLine(x.sid,x.r))+'</div>';
+  } else if(currentTimerDemo()){
+    var demo=currentTimerDemo(), step=demo.step;
+    cls=step.signal||"sn";
+    main='<div class="pj-lbl">Timer demo</div><div class="pj-name">'+esc(demo.session.name)+'</div>'+
+      '<div class="pj-clock">'+fmt(step.sec)+'</div><div class="pj-sig">'+esc(step.name)+'</div>'+
+      '<div class="pj-sub">'+esc(limitsLine(demo.session.id))+'</div>';
   } else if(S.vote.state==="shown"){
     main='<div class="pj-lbl">🏆 Award winners</div>'+VCATS.map(function(c){ var w=tally(c.k).winners; return w.length?'<div class="pj-win"><span>'+esc(c.n)+'</span><b>'+esc(w.map(function(z){return z.name;}).join(" & "))+'</b></div>':''; }).join("");
   } else if(S.cur&&S.cur.id&&topicById(S.cur.id)&&!topicById(S.cur.id).used){ var tp=topicById(S.cur.id);

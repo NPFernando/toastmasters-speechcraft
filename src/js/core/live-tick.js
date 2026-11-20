@@ -31,5 +31,6 @@ setInterval(function(){
       if(st) st.textContent=status(sid,r,t).text;
     });
   }
+  renderTimerDemo();
 },250);
 

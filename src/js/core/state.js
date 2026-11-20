@@ -1,6 +1,7 @@
 /* ---------- state ---------- */
 function blank(){
   return { v:2, mid:uid(), midU:now(),
+    timerDemo:{sid:"",step:0,until:0,u:0},
     meta:{week:"",date:todayISO(),u:0},
     people:{coord:"",president:"",saa:"",tmod:"",ge:"",rrm:"",timer:"",ttm:"",ah:"",gram:"",keynote:""}, peopleU:{coord:0,president:0,saa:0,tmod:0,ge:0,rrm:0,timer:0,ttm:0,ah:0,gram:0,keynote:0},
     limits:{tt:{g:60,a:90,r:120},ps:{g:240,a:300,r:360},rr:{b:20},ev:{g:90,a:105,r:120},rep:{g:30,a:45,r:60},u:0},
@@ -14,6 +15,7 @@ function blank(){
 function normalize(st){
   var b=blank(); st=st&&typeof st==="object"?st:{};
   var o={ v:2, mid:String(st.mid||b.mid), midU:+st.midU||0,
+    timerDemo:Object.assign(b.timerDemo,st.timerDemo||{}),
     meta:Object.assign(b.meta, st.meta||{}), people:Object.assign(b.people, st.people||{}), peopleU:Object.assign(b.peopleU, st.peopleU||{}),
     limits:Object.assign(b.limits, st.limits||{}), rows:{}, topics:[], cur:Object.assign(b.cur, st.cur||{}),
     fill:Object.assign(b.fill, st.fill||{}), ahRows:[], gram:Object.assign(b.gram, st.gram||{}), gramRows:[],
