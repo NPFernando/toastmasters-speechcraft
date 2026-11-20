@@ -32,6 +32,7 @@ function tmodHTML(){
     h+='<div class="row"><button class="btn" id="runPrev">◀ Back</button><button class="btn go big1" id="runNext"'+(c.next?'':' disabled')+'>Next ▶</button>'+(c.next?'':'<button class="btn" id="runEnd">Finish</button>')+'</div>';
     h+=adjCtlHTML();
   }
+  h+=preparedRunHTML(true);
   h+='<h2 class="sec">Full agenda</h2><ul class="tlist runlist">';
   c.its.forEach(function(it,i){
     var cls=c.i>=0&&i<c.i?"done":i===c.i?"cur":"";

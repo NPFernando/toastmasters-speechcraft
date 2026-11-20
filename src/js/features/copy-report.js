@@ -33,7 +33,7 @@ function copyBtn(role){ return '<button class="btn sm" data-copyrep="'+role+'">ð
     var dr=t.closest("[data-rdrop]"); if(dr){ e.stopPropagation(); dropRole(dr.dataset.rdrop); return; }
     var rt=t.closest("[data-rtab]"); if(rt){ switchRole(rt.dataset.rtab); return; }
     if(t.closest("[data-radd]")){ W.add=true; openWelcome("role"); return; }
-    var ra=t.closest("[data-raddall]"); if(ra){ ra.dataset.raddall.split(",").forEach(function(r){ if(L.roles.indexOf(r)<0) L.roles.push(r); }); saveL(); NET.hello(); renderAll(); return; }
+    var ra=t.closest("[data-raddall]"); if(ra){ var added=ra.dataset.raddall.split(","); L.roles=uniq(myRoles().concat(added)); L.rolesMid=S.mid; saveRoleChoices(added,true); saveL(); NET.hello(); renderAll(); return; }
   });
   document.getElementById("companion").addEventListener("click",function(e){
     var a=e.target.closest("[data-cmpah]");
@@ -51,6 +51,7 @@ function copyBtn(role){ return '<button class="btn sm" data-copyrep="'+role+'">ð
     var cp=t.closest("[data-copyrep]"); if(cp){ copyText(reportText(cp.dataset.copyrep)); return; }
     var rv=t.closest("[data-rsvp]"); if(rv){ var nm=rv.dataset.rname, cur=rsvpOf(nm); setRsvp(nm,(cur&&cur.status===rv.dataset.rsvp)?"":rv.dataset.rsvp,null); commit(); return; }
     if(L.role==="tmod"){
+      var speaker=t.closest("[data-speech-order]"); if(speaker){ movePreparedSpeaker(speaker.dataset.speechOrder,speaker.dataset.destination); return; }
       var me=t.closest("[data-runend]"); if(me){ e.stopPropagation(); runMoveEnd(me.dataset.runend); return; }
       var sk=t.closest("[data-runskip]"); if(sk){ e.stopPropagation(); runToggleSkip(sk.dataset.runskip); return; }
     }

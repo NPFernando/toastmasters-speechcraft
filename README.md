@@ -69,7 +69,7 @@ One **Meeting report** combines every role and can be saved as a PDF.
 - **Timer phone:** the screen stays on while a speaker is timed and the phone vibrates at green, amber and red (no sound).
 - **End of meeting:** the Coordinator taps **🏁 Finish meeting**. Every role player gets a prompt with a quick check of their role (e.g. a timer still running, evaluations not submitted, Word of the Day missing, votes not revealed) and taps **Yes, done**. The Coordinator sees each role live as waiting, in progress or complete, with any notes. Then **⤓ Save meeting record** downloads the final member list, role players, agenda, times, reports and votes (feedback stays encrypted). If a browser loses its data, **⤒ Import meeting record** brings it all back on every connected device; unlock with the same Coordinator PIN or recovery code.
 - **Who's coming:** members reply In person / Online / Can't make it, with a note such as "leaving at 8 pm". The Coordinator sees clashes ("can't make it — reassign") and reassigns role players and evaluators.
-- **Running order:** the Toastmaster can move an item to the end (e.g. a late keynote) or skip it; everyone's "Now" line follows.
+- **Running order:** the Toastmaster can move an item to the end (e.g. a late keynote) or skip it; everyone's "Now" line follows. Under **Upcoming prepared speakers**, **Move up** advances a waiting speaker by one slot and **Speak next** puts them first among waiting prepared speakers. The Timer sees the updated queue and evaluator assignments stay with their speakers.
 - **Hand-over:** role data is shared, so whoever takes over a role carries on. **📋 Copy report text** gives a text summary to paste anywhere for the Timer, Ah-Counter, Grammarian and General Evaluator.
 
 ### Voting
@@ -137,3 +137,22 @@ Everything is saved in the browser on each device. The Coordinator saves the **m
 ## Meeting workflow update (3.10.0)
 
 Educational Presenter, agenda-linked GE observations, persistent follow-up actions, participant-ID voting across devices, per-field GE sync, explicit accepted handovers, and a downloadable offline role pack are described in [Meeting workflows](docs/MEETING-WORKFLOWS.md).
+
+### Use your roles on another device
+
+Join the same meeting and use the same participant name, or use **Open on another
+device** to carry the name and open role across. Roles you select are shared for
+that meeting, and connected devices can view and edit meeting data. General
+Evaluator observation and follow-up drafts sync within the room. Unpublished
+Word of the Day and private speech evaluation drafts stay on the editing device.
+
+## Application license and logos
+
+The project's original application code and documentation are available under the
+[MIT License](LICENSE). Preserve the copyright and license notice when distributing
+copies or substantial portions. Bundled third-party libraries retain their own licenses.
+
+The Toastmasters International and Dijital Team logos are excluded from the MIT
+grant, including copies embedded in generated HTML. Each logo remains subject to
+its owner's terms. Remove or replace the logos in redistributed versions unless
+you have permission to use them.

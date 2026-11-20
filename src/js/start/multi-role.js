@@ -1,8 +1,29 @@
 /* ---------- one person, several roles on the same device ---------- */
 function roleObj(id){ return ROLES.find(function(x){return x.id===id;}); }
-function myRoles(){ if(!Array.isArray(L.roles)||!L.roles.length) L.roles=[L.role]; if(L.roles.indexOf(L.role)<0) L.roles.push(L.role); return L.roles; }
-function switchRole(id){ L.view="role"; myRoles(); if(L.roles.indexOf(id)<0) L.roles.push(id); L.role=id; saveL(); NET.hello(); renderAll(); window.scrollTo(0,0); }
-function dropRole(id){ myRoles(); if(L.roles.length<2) return; L.roles=L.roles.filter(function(r){return r!==id;}); if(L.role===id) L.role=L.roles[0]; saveL(); NET.hello(); renderAll(); }
+function selectedRoles(name){
+  var key=nkey(name);
+  return key?S.roleChoices.filter(function(c){return c.person===key&&c.on&&roleObj(c.role);}).map(function(c){return c.role;}):[];
+}
+function saveRoleChoices(roles,on){
+  var person=nkey(L.me);
+  if(!person) return;
+  roles.forEach(function(role){
+    var c=upsert(["roleChoices"],"role|"+JSON.stringify([person,role]),{person:person,role:role});
+    c.on=on; tick(c);
+  });
+  commitQuiet();
+}
+function myRoles(){
+  var person=nkey(L.me), roles=Array.isArray(L.roles)?L.roles:[L.role];
+  if(L.rolesMid && L.rolesMid!==S.mid) roles=[L.role];
+  var removed=S.roleChoices.filter(function(c){return person&&c.person===person&&!c.on;}).map(function(c){return c.role;});
+  var result=uniq(roles.concat(selectedRoles(L.me))).filter(function(r){return roleObj(r)&&!removed.includes(r);});
+  if(!result.length) return [L.role];
+  if(removed.includes(L.role)){ L.role=result[0]; saveL(); }
+  return result.includes(L.role)?result:result.concat(L.role);
+}
+function switchRole(id){ L.view="role"; L.roles=myRoles(); if(!L.roles.includes(id)) L.roles.push(id); L.rolesMid=S.mid; L.role=id; saveL(); NET.hello(); renderAll(); window.scrollTo(0,0); }
+function dropRole(id){ L.roles=myRoles(); if(L.roles.length<2) return; saveRoleChoices([id],false); L.roles=L.roles.filter(function(r){return r!==id;}); if(L.role===id) L.role=L.roles[0]; saveL(); NET.hello(); renderAll(); }
 /* roles the agenda gives this person today */
 function agendaRoleNames(role){
   switch(role){
@@ -27,8 +48,8 @@ function agendaRolesFor(name){
 }
 function roleTabsHTML(){
   var rs=myRoles(), h='<div class="rtabs">';
-  rs.forEach(function(id){ var r=roleObj(id); h+='<button class="rtab'+(id===L.role?' on':'')+'" data-rtab="'+id+'">'+r.icon+' '+esc(r.name)+(rs.length>1&&id!==L.role?'<span class="rx" data-rdrop="'+id+'" title="Remove this role from this device">✕</span>':'')+'</button>'; });
-  h+='<button class="rtab add" data-radd title="Add another role on this device">＋ Role</button></div>';
+  rs.forEach(function(id){ var r=roleObj(id); h+='<button class="rtab'+(id===L.role?' on':'')+'" data-rtab="'+id+'">'+r.icon+' '+esc(r.name)+(rs.length>1&&id!==L.role?'<span class="rx" data-rdrop="'+id+'" title="Remove this role from your devices">✕</span>':'')+'</button>'; });
+  h+='<button class="rtab add" data-radd title="Add another role">＋ Role</button></div>';
   var miss=agendaRolesFor(L.me||myName()).filter(function(r){ return rs.indexOf(r)<0; });
   if(miss.length) h+='<div class="rsuggest">📋 The agenda also has you as '+miss.map(function(r){var o=roleObj(r);return o.icon+' '+esc(o.name);}).join(", ")+' <button class="btn sm" data-raddall="'+miss.join(",")+'">Add '+(miss.length>1?'them':'it')+'</button></div>';
   return h;
