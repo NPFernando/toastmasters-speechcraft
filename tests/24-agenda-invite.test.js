@@ -15,10 +15,6 @@ module.exports = async (browser) => {
   await T.setRole(host, "keynote", "Visiting Presenter");
   await T.coTab(host, "people");
   T.assert.strictEqual(await host.getByRole("button", { name: "Remove Meeting Guest", exact: true }).count(), 1);
-  T.assert.match(await host.locator(".kgroup").last().innerText(), /Guests.*Visiting Presenter/s);
-  await host.getByRole("button", { name: "Remove Visiting Presenter", exact: true }).click();
-  await T.coTab(host, "setup");
-  await T.coTab(host, "people");
   T.assert.strictEqual(await host.getByRole("button", { name: "Remove Visiting Presenter", exact: true }).count(), 0);
   T.assert.strictEqual(await host.locator('[data-checkin="Visiting Presenter"]').count(), 1);
 

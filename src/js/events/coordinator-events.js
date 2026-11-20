@@ -27,6 +27,12 @@
     if(t.closest("#coordLock")){ L.coordOK=null; saveL(); renderAll(); return; }
     if(t.closest("#pinChange")){ if(!isMainCoord()) return; L.coordForcePin=true; saveL(); renderAll(); var p=document.getElementById("pin1"); if(p) p.focus(); return; }
     if(!coordUnlocked()) return;
+    var fit=t.closest("[data-fit-speeches]");
+    if(fit){
+      var needed=preparedBlockRequirement(), items=itemsSorted(), index=items.findIndex(function(it){return it.id===fit.dataset.fitSpeeches;});
+      if(index>=0&&items[index].x==="speakers"&&needed>agDur(items,index)&&agSetDur(items[index].id,needed)){ agChanged(); commit(); }
+      return;
+    }
     if(t.closest("#memAdd")){
       var inp=document.getElementById("memIn"), names=inp.value.split(/[,;\n]+/).map(function(x){return x.trim();}).filter(Boolean), added=0;
       var mk=(document.getElementById("memKind")||{}).value||"auto";

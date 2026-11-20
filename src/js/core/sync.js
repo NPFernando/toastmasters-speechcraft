@@ -173,7 +173,7 @@ document.getElementById("connBtn").addEventListener("click",function(){ renderCo
 document.getElementById("connBox").addEventListener("click",function(e){
   var t=e.target;
   if(t.closest("#hostBtn")){ startHost(makeCode()); renderConnBox(); }
-  else if(t.closest("#joinBtn")){ var c=cleanCode(document.getElementById("joinCode").value); if(c.length!==6){ alert("The code has 6 letters/numbers, e.g. K7Q-M4P."); return; } startJoin(c); renderConnBox(); }
+  else if(t.closest("#joinBtn")){ var c=cleanCode(document.getElementById("joinCode").value); if(c.length!==6){ alert("The code has 6 letters/numbers, e.g. K7Q-M4P."); return; } document.getElementById("connModal").classList.remove("on"); W.code=c; W.advance=!L.setup; W.auto=!!L.setup; startJoin(c); openWelcome("connect"); }
   else if(t.closest("#leaveBtn")){ if(confirm("Leave this meeting on this device? The others stay connected, and you keep your data.")){ stopNet(false); renderConnBox(); } }
   else if(t.closest("#copyCode")){ try{ navigator.clipboard.writeText(fmtCode(NET.code)); t.textContent="Copied"; }catch(err){} }
   else if(t.closest("#copyLink")){ try{ navigator.clipboard.writeText(inviteLink(NET.code)); t.textContent="Link copied"; }catch(err){} }

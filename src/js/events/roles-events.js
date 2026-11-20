@@ -12,10 +12,10 @@
         syncDeviceSettings();
         syncPendingNotes();
         if(L.role==="gram"){
-          if(!exists||!S.roleFields.some(function(r){return r.person===nkey(name)&&r.enc&&r.key==="word";})) syncWordDraft();
+          if(!exists||!S.roleFields.some(function(r){return r.person===nkey(name)&&r.enc&&(r.key==="word"||r.key.startsWith("word|"));})) syncWordDraft();
         } else if(["seval","tteval"].includes(L.role)){
           var draft=evDraft();
-          if(draft&&!S.roleFields.some(function(r){return r.person===nkey(name)&&r.enc&&r.key===draft.id;})) syncEvaluationDraft(draft.id,draft.d);
+          if(draft&&!S.roleFields.some(function(r){return r.person===nkey(name)&&r.enc&&(r.key===draft.id||r.key.startsWith(draft.id+"|draft|"));})) syncEvaluationDraft(draft.id,draft.d);
         }
         renderAll();
       }).catch(function(err){ alert(err.message||err); renderAll(); });
@@ -30,7 +30,7 @@
     if(L.role==="seval"||L.role==="tteval"){
       var es=t.closest("[data-evsel]"); if(es){ L.evSel=L.evSel||{}; L.evSel[evKind()]=es.dataset.evsel; if(selectPerson(es.dataset.evsel,L.role)) commit(); else { saveL(); renderAll(); } return; }
       if(t.closest("#evAdd")){ var v=(document.getElementById("evAddIn").value||"").trim(); if(v){ clearDeviceDraft("evAddIn"); L.evSel=L.evSel||{}; L.evSel[evKind()]=v; if(selectPerson(v,L.role)) commit(); else { saveL(); renderAll(); } } return; }
-      var rb=t.closest("[data-rate]"); if(rb){ var dr=evDraft(); if(!dr) return; dr.d.rate=dr.d.rate||{}; dr.d.rate[rb.dataset.rate]=(dr.d.rate[rb.dataset.rate]===+rb.dataset.v)?0:+rb.dataset.v; if(dr.d.submitted) dr.d.changed=true; else markWriting(dr.id); saveL(); syncEvaluationDraft(dr.id,dr.d); renderAll(); return; }
+      var rb=t.closest("[data-rate]"); if(rb){ var dr=evDraft(); if(!dr) return; dr.d.rate=dr.d.rate||{}; dr.d.rate[rb.dataset.rate]=(dr.d.rate[rb.dataset.rate]===+rb.dataset.v)?0:+rb.dataset.v; if(dr.d.submitted) dr.d.changed=true; else markWriting(dr.id); saveL(); syncEvaluationDraft(dr.id,dr.d,"rate."+rb.dataset.rate); renderAll(); return; }
       if(t.closest("#assignMe")){ var sa=(L.evSel||{})[evKind()]; if(!myName()){ alert("Type your name in Your name at the top first."); return; } var cur=anyEvaluatorOf(evKind(),sa); if(cur&&nkey(cur)!==nkey(myName())&&!confirm(sa+" is assigned to "+cur+". Assign to you instead?")) return; if(evKind()==="tt") setTTAssign(sa,myName()); else setAssign(sa,myName()); return; }
       if(t.closest("#unassignMe")){ var us=(L.evSel||{})[evKind()]; if(evKind()==="tt") setTTAssign(us,""); else setAssign(us,""); return; }
       if(t.closest("#evSubmit")){ var ds=evDraft(); if(!ds) return; var dd2=ds.d; if(!(dd2.c1||dd2.r||dd2.c2)){ alert("Write at least one Commend or Recommend before submitting."); return; } if(!myName()){ alert("Type your name in Your name at the top first, so the speaker knows who evaluated them."); return; } t.disabled=true; submitDraft(ds.id).then(function(){ syncEvaluationDraft(ds.id,ds.d); renderAll(); }); return; }
@@ -65,7 +65,7 @@
   });
   V.addEventListener("input",function(e){
     var t=e.target;
-    if(t.dataset.evf){ var dr=evDraft(); if(!dr) return; dr.d[t.dataset.evf]=t.value; if(dr.d.submitted) dr.d.changed=true; else markWriting(dr.id); saveL(); syncEvaluationDraft(dr.id,dr.d); refreshEvState(); refreshEvProg(); return; }
+    if(t.dataset.evf){ var dr=evDraft(); if(!dr) return; dr.d[t.dataset.evf]=t.value; if(dr.d.submitted) dr.d.changed=true; else markWriting(dr.id); saveL(); syncEvaluationDraft(dr.id,dr.d,t.dataset.evf); refreshEvState(); refreshEvProg(); return; }
     if(t.dataset.ge){ S.genotes[t.dataset.ge]=t.value; tick(S.genotes); commitQuiet(); return; }
     if(L.role==="speaker"&&(t.dataset.sp==="title"||t.dataset.sp==="obj")){ var s=mySpeech(); if(!s) return; s[t.dataset.sp]=t.value; tick(s); commitQuiet(); return; }
   });

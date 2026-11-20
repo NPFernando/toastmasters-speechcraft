@@ -21,6 +21,13 @@ module.exports = async (browser) => {
   await phone.fill("#wotdMeaning", "Very careful about details");
   await T.eventually(async () => await laptop.inputValue("#wotdMeaning") === "Very careful about details", "word edit returns to laptop");
 
+  await Promise.all([
+    laptop.fill("#wotdExample", "The team was meticulous."),
+    phone.fill("#wotdMeaning", "Careful about details")
+  ]);
+  await T.eventually(async () => await phone.inputValue("#wotdExample") === "The team was meticulous.", "independent example edit survives");
+  await T.eventually(async () => await laptop.inputValue("#wotdMeaning") === "Careful about details", "independent meaning edit survives");
+
   for (const page of [laptop, phone]) {
     await page.click('[data-rtab="seval"]');
     await page.fill("#evAddIn", "Taylor");
@@ -32,7 +39,7 @@ module.exports = async (browser) => {
   await T.eventually(async () => await laptop.inputValue('[data-evf="r"]') === "Pause longer before the ending.", "evaluation edit returns to laptop");
 
   const shared = await T.stored(guest);
-  T.assert.doesNotMatch(shared, /Meticulous|Very careful about details|Your opening made the story clear|Pause longer before the ending/);
+  T.assert.doesNotMatch(shared, /Meticulous|Careful about details|Your opening made the story clear|Pause longer before the ending/);
   T.assert.strictEqual(await guest.locator("#publishedWord").count(), 0);
   T.noErrors(laptop, phone, guest);
 };

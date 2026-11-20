@@ -10,7 +10,8 @@ function populateAgendaMembers(){
     var id=agendaMemberId(name);
     if(memberRec(name) || S.members.fu["m."+id] || guests.has(nkey(name))) return;
     var roles=agendaRolesFor(name);
-    S.members.list.push({id:id,name:name,kind:roles.length===1&&roles[0]==="keynote"?"guest":guessKind(name)});
+    if(roles.length===1&&roles[0]==="keynote") return;
+    S.members.list.push({id:id,name:name,kind:guessKind(name)});
     added=true;
   });
   if(added) commitQuiet();
@@ -28,7 +29,7 @@ function removeMember(id){
   tick(S.members);
   commit();
 }
-function memberKind(name){ var m=memberRec(name); if(m) return m.kind||guessKind(m.name); if(/^tm[\s.-]/i.test(String(name||""))) return "tm"; return S.guests.some(function(g){return nkey(g.name)===nkey(name);})?"guest":"sc"; }
+function memberKind(name){ var m=memberRec(name); if(m) return m.kind||guessKind(m.name); if(/^tm[\s.-]/i.test(String(name||""))) return "tm"; var roles=agendaRolesFor(name); return (roles.length===1&&roles[0]==="keynote")||S.guests.some(function(g){return nkey(g.name)===nkey(name);})?"guest":"sc"; }
 function kindBadge(name,long){ var k=memberKind(name); if(k==="sc") return ""; var m=memberRec(name); return ' <span class="kbadge k-'+k+'" title="'+KINDS[k].n+(m&&m.club?' · '+esc(m.club):'')+'">'+(k==="tm"?"⭐ TM":"👋 Guest")+(long&&m&&m.club?' · '+esc(m.club):'')+'</span>'; }
 function awardEligible(name){ return memberKind(name)!=="tm" || !!S.members.tmAwards; }
 function membersEditorHTML(){

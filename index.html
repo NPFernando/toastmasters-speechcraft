@@ -1453,14 +1453,14 @@ function revealWordOfDay(){
   }
   Object.assign(S.gram,word);
   tick(S.gram);
-  var draft=workflowDraft();
+  var draft=wordDraft();
   Object.keys(WORD_FIELDS).forEach(function(id){ delete draft[id]; });
   saveL(); syncWordDraft();
   commit();
 }
 function gramHTML(){
   var sel=selRow("gram");
-  var draft=workflowDraft(), labels={wotd:"Word",wotdMeaning:"Meaning",wotdExample:"Example sentence"};
+  var draft=wordDraft(), labels={wotd:"Word",wotdMeaning:"Meaning",wotdExample:"Example sentence"};
   var h='<section class="card"><h2 class="sec" style="margin-top:0">Word of the Day</h2>'+
     '<div class="saved">'+(S.gram.wotd?'Published: '+esc(S.gram.wotd)+'. Changes stay private until you publish again.':'Only you can read the draft on devices with your feedback PIN unlocked.')+'</div>'+
     draftAccessHTML()+Object.keys(WORD_FIELDS).map(function(id){
@@ -1581,6 +1581,18 @@ function runAdjust(delta){
   tick(S.run); commit();
 }
 function runRetimeNow(){ var c=curItem(), n=c.cur?c.next:nextLive(c.its,0); if(!n) return; var target=Math.ceil(minutesNow()), m=hm2min(rt(n)); if(m==null) return; runAdjust(target-m); }
+
+
+function preparedBlockRequirement(){
+  var names=preparedSpeakers();
+  return Math.ceil(names.reduce(function(seconds,name){
+    var row=S.rows.ps.find(function(entry){
+      return !String(entry.ak||"").startsWith("keynote:")&&nkey(baseName(entry.name))===nkey(name);
+    });
+    var limits=presetLim((speechRec(name)||{}).lim)||limOf("ps",row);
+    return seconds+limits.r+60;
+  },0)/60);
+}
 /* ---------- how the agenda ran: planned vs actual length of each item ---------- */
 function runSummary(){
   var st=(S.run&&S.run.started)||{}, plan=itemsSorted(), done=plan.filter(function(it){return st[it.id]!=null;}).sort(function(a,b){return st[a.id]-st[b.id];});
@@ -1798,7 +1810,8 @@ function populateAgendaMembers(){
     var id=agendaMemberId(name);
     if(memberRec(name) || S.members.fu["m."+id] || guests.has(nkey(name))) return;
     var roles=agendaRolesFor(name);
-    S.members.list.push({id:id,name:name,kind:roles.length===1&&roles[0]==="keynote"?"guest":guessKind(name)});
+    if(roles.length===1&&roles[0]==="keynote") return;
+    S.members.list.push({id:id,name:name,kind:guessKind(name)});
     added=true;
   });
   if(added) commitQuiet();
@@ -1816,7 +1829,7 @@ function removeMember(id){
   tick(S.members);
   commit();
 }
-function memberKind(name){ var m=memberRec(name); if(m) return m.kind||guessKind(m.name); if(/^tm[\s.-]/i.test(String(name||""))) return "tm"; return S.guests.some(function(g){return nkey(g.name)===nkey(name);})?"guest":"sc"; }
+function memberKind(name){ var m=memberRec(name); if(m) return m.kind||guessKind(m.name); if(/^tm[\s.-]/i.test(String(name||""))) return "tm"; var roles=agendaRolesFor(name); return (roles.length===1&&roles[0]==="keynote")||S.guests.some(function(g){return nkey(g.name)===nkey(name);})?"guest":"sc"; }
 function kindBadge(name,long){ var k=memberKind(name); if(k==="sc") return ""; var m=memberRec(name); return ' <span class="kbadge k-'+k+'" title="'+KINDS[k].n+(m&&m.club?' · '+esc(m.club):'')+'">'+(k==="tm"?"⭐ TM":"👋 Guest")+(long&&m&&m.club?' · '+esc(m.club):'')+'</span>'; }
 function awardEligible(name){ return memberKind(name)!=="tm" || !!S.members.tmAwards; }
 function membersEditorHTML(){
@@ -2019,8 +2032,12 @@ function coordHTML(){
     '<span class="seg" role="group" aria-label="Move the whole agenda"><button data-agshift="-5" title="Move every item 5 minutes earlier">−5 min</button><button data-agshift="5" title="Move every item 5 minutes later">+5 min</button></span>'+
     '<span class="saved" id="agSpan">'+esc(agSpanText())+'</span></div>'+
     '<div class="note" style="margin-top:4px">▲▼ (or drag ▲▼ on a laptop) moves an item and keeps how long it runs. Changing the <b>min</b> of an item moves everything after it. <b>＋</b> inserts a 5-minute item below and <b>✕</b> removes one; the items after it move to suit.</div><div class="agedit">';
+  var preparedMinutes=preparedBlockRequirement();
   AGL.forEach(function(it,i){
     var du=agDur(AGL,i);
+    if(it.x==="speakers"&&du!==null&&preparedMinutes>du){
+      h+='<div class="note">Prepared speeches need '+preparedMinutes+' min including introductions and transitions. <button class="btn sm" data-fit-speeches="'+esc(it.id)+'">Fit prepared speeches</button></div>';
+    }
     h+='<div class="agrow" data-iid="'+it.id+'"><span class="agmv" draggable="true" title="Drag to move (or use ▲▼)"><button data-agmv="-1" title="Move up" aria-label="Move up"'+(i?'':' disabled')+'>▲</button><button data-agmv="1" title="Move down" aria-label="Move down"'+(i<AGL.length-1?'':' disabled')+'>▼</button></span>'+
        '<input class="t agtime" type="time" data-it="time" aria-label="Time" value="'+esc(it.time)+'">'+
        (du==null?'<span class="agdurw agend">end</span>':'<label class="agdurw"><input class="t agdur" type="number" inputmode="numeric" min="0" max="240" data-agdur value="'+du+'" aria-label="Length in minutes"><span>min</span></label>')+
@@ -2741,7 +2758,7 @@ function syncPrivateDrafts(){
   if(!hasPriv(name)) return;
   S.roleFields.filter(function(r){
     return r.enc&&r.person===person&&(r.key.startsWith("form|")||r.key.startsWith("setting|")||r.key.startsWith("pending|")||
-      (role==="gram"&&r.key==="word")||
+      (role==="gram"&&(r.key==="word"||r.key.startsWith("word|")))||
       (["seval","tteval"].includes(role)&&r.key.startsWith("e|"+evKind()+"|")));
   }).forEach(function(r){
     var read=JSON.stringify([mid,r.id,r.u,r.enc.ct,r.enc.kx]), writeKey=JSON.stringify([mid,r.id]);
@@ -2767,23 +2784,80 @@ function syncPrivateDrafts(){
           applyDisplay();
         }
       } else if(role==="gram"){
-        if(value.epoch!==(S.gram.u||0)) return;
-        var draft=workflowDraft();
-        Object.keys(WORD_FIELDS).forEach(function(id){ delete draft[id]; });
-        Object.assign(draft,value.fields);
+        if(!value||value.epoch!==(S.gram.u||0)) return;
+        var draft=wordDraft();
+        if(r.key==="word"){
+          Object.keys(WORD_FIELDS).forEach(function(id){
+            if(!hasDraftPatch(person,"word|"+id,r.u)&&Object.hasOwn(value.fields||{},id)) draft[id]=value.fields[id];
+          });
+        } else {
+          var wordField=r.key.slice(5);
+          if(Object.hasOwn(WORD_FIELDS,wordField)){
+            if(value.text===null) delete draft[wordField]; else draft[wordField]=value.text;
+          }
+        }
       } else {
-        meetingEvalDrafts()[r.key]=value;
+        applyEvaluationDraft(person,r,value);
       }
       saveL(); softRender();
     }).catch(function(){ draftReads.delete(read); });
   });
 }
-function syncWordDraft(){
-  var draft=workflowDraft(), fields={};
-  Object.keys(WORD_FIELDS).forEach(function(id){ if(Object.hasOwn(draft,id)) fields[id]=draft[id]; });
-  queuePrivateDraft(draftOwner(),"word",{epoch:S.gram.u||0,fields:fields});
+function hasDraftPatch(person,key,revision){
+  var id="field|private|"+JSON.stringify([person,key]);
+  return (draftWrites.get(JSON.stringify([S.mid,id]))||0)>=revision||
+    S.roleFields.some(function(r){ return r.id===id&&r.u>=revision; });
 }
-function syncEvaluationDraft(id,draft){ queuePrivateDraft(draftOwner(),id,draft); }
+function wordDraft(){
+  var draft=workflowDraft(), epoch=S.gram.u||0;
+  if(draft.wordEpoch!==undefined&&draft.wordEpoch!==epoch){
+    Object.keys(WORD_FIELDS).forEach(function(id){delete draft[id];});
+  }
+  draft.wordEpoch=epoch;
+  return draft;
+}
+function syncWordDraft(field){
+  var draft=wordDraft();
+  (field?[field]:Object.keys(WORD_FIELDS)).forEach(function(id){
+    queuePrivateDraft(draftOwner(),"word|"+id,{epoch:draft.wordEpoch,text:draft[id]??null});
+  });
+}
+var EVAL_DRAFT_FIELDS=["c1","r","c2","rate.content","rate.delivery","rate.confidence"];
+function evaluationField(draft,field){
+  return field.startsWith("rate.")?(draft.rate||{})[field.slice(5)]||0:draft[field]||"";
+}
+function setEvaluationField(draft,field,value){
+  if(field.startsWith("rate.")){ draft.rate=draft.rate||{}; draft.rate[field.slice(5)]=value; }
+  else draft[field]=value;
+}
+function syncEvaluationDraft(id,draft,field){
+  if(!field){
+    queuePrivateDraft(draftOwner(),id,draft);
+    return;
+  }
+  queuePrivateDraft(draftOwner(),id+"|draft|"+field,{
+    value:evaluationField(draft,field),speaker:draft.speaker,kind:draft.kind
+  });
+}
+function applyEvaluationDraft(person,record,value){
+  if(!value||typeof value.speaker!=="string") return;
+  var suffix="|draft|", index=record.key.lastIndexOf(suffix);
+  var id=index<0?record.key:record.key.slice(0,index), field=index<0?"":record.key.slice(index+suffix.length);
+  var drafts=meetingEvalDrafts(), draft=drafts[id]||(drafts[id]={kind:value.kind,speaker:value.speaker,c1:"",r:"",c2:"",rate:{}});
+  if(field){
+    if(!EVAL_DRAFT_FIELDS.includes(field)) return;
+    setEvaluationField(draft,field,value.value);
+    if(draft.submitted) draft.changed=true;
+    return;
+  }
+  ["submitted","submittedAt","sentKx","by","changed"].forEach(function(key){
+    if(Object.hasOwn(value,key)) draft[key]=value[key];
+  });
+  EVAL_DRAFT_FIELDS.forEach(function(key){
+    if(!hasDraftPatch(person,id+suffix+key,record.u)) setEvaluationField(draft,key,evaluationField(value,key));
+    else if(draft.submitted&&evaluationField(draft,key)!==evaluationField(value,key)) draft.changed=true;
+  });
+}
 /* ---------- Speaker role: my speech, my timing, my result, my private feedback ---------- */
 var LIMIT_PRESETS=[["","Standard for the session"],["2-3","2–3 min"],["3-5","3–5 min"],["4-6","4–6 min"],["5-7","5–7 min"],["6-8","6–8 min"]];
 function presetLim(p){ var m=String(p||"").match(/^(\d+)-(\d+)$/); if(!m) return null; var g=+m[1]*60, r=+m[2]*60; return {g:g,a:Math.round((g+r)/2),r:r}; }
@@ -2860,10 +2934,10 @@ function feedbackPinsHTML(){
         syncDeviceSettings();
         syncPendingNotes();
         if(L.role==="gram"){
-          if(!exists||!S.roleFields.some(function(r){return r.person===nkey(name)&&r.enc&&r.key==="word";})) syncWordDraft();
+          if(!exists||!S.roleFields.some(function(r){return r.person===nkey(name)&&r.enc&&(r.key==="word"||r.key.startsWith("word|"));})) syncWordDraft();
         } else if(["seval","tteval"].includes(L.role)){
           var draft=evDraft();
-          if(draft&&!S.roleFields.some(function(r){return r.person===nkey(name)&&r.enc&&r.key===draft.id;})) syncEvaluationDraft(draft.id,draft.d);
+          if(draft&&!S.roleFields.some(function(r){return r.person===nkey(name)&&r.enc&&(r.key===draft.id||r.key.startsWith(draft.id+"|draft|"));})) syncEvaluationDraft(draft.id,draft.d);
         }
         renderAll();
       }).catch(function(err){ alert(err.message||err); renderAll(); });
@@ -2878,7 +2952,7 @@ function feedbackPinsHTML(){
     if(L.role==="seval"||L.role==="tteval"){
       var es=t.closest("[data-evsel]"); if(es){ L.evSel=L.evSel||{}; L.evSel[evKind()]=es.dataset.evsel; if(selectPerson(es.dataset.evsel,L.role)) commit(); else { saveL(); renderAll(); } return; }
       if(t.closest("#evAdd")){ var v=(document.getElementById("evAddIn").value||"").trim(); if(v){ clearDeviceDraft("evAddIn"); L.evSel=L.evSel||{}; L.evSel[evKind()]=v; if(selectPerson(v,L.role)) commit(); else { saveL(); renderAll(); } } return; }
-      var rb=t.closest("[data-rate]"); if(rb){ var dr=evDraft(); if(!dr) return; dr.d.rate=dr.d.rate||{}; dr.d.rate[rb.dataset.rate]=(dr.d.rate[rb.dataset.rate]===+rb.dataset.v)?0:+rb.dataset.v; if(dr.d.submitted) dr.d.changed=true; else markWriting(dr.id); saveL(); syncEvaluationDraft(dr.id,dr.d); renderAll(); return; }
+      var rb=t.closest("[data-rate]"); if(rb){ var dr=evDraft(); if(!dr) return; dr.d.rate=dr.d.rate||{}; dr.d.rate[rb.dataset.rate]=(dr.d.rate[rb.dataset.rate]===+rb.dataset.v)?0:+rb.dataset.v; if(dr.d.submitted) dr.d.changed=true; else markWriting(dr.id); saveL(); syncEvaluationDraft(dr.id,dr.d,"rate."+rb.dataset.rate); renderAll(); return; }
       if(t.closest("#assignMe")){ var sa=(L.evSel||{})[evKind()]; if(!myName()){ alert("Type your name in Your name at the top first."); return; } var cur=anyEvaluatorOf(evKind(),sa); if(cur&&nkey(cur)!==nkey(myName())&&!confirm(sa+" is assigned to "+cur+". Assign to you instead?")) return; if(evKind()==="tt") setTTAssign(sa,myName()); else setAssign(sa,myName()); return; }
       if(t.closest("#unassignMe")){ var us=(L.evSel||{})[evKind()]; if(evKind()==="tt") setTTAssign(us,""); else setAssign(us,""); return; }
       if(t.closest("#evSubmit")){ var ds=evDraft(); if(!ds) return; var dd2=ds.d; if(!(dd2.c1||dd2.r||dd2.c2)){ alert("Write at least one Commend or Recommend before submitting."); return; } if(!myName()){ alert("Type your name in Your name at the top first, so the speaker knows who evaluated them."); return; } t.disabled=true; submitDraft(ds.id).then(function(){ syncEvaluationDraft(ds.id,ds.d); renderAll(); }); return; }
@@ -2913,7 +2987,7 @@ function feedbackPinsHTML(){
   });
   V.addEventListener("input",function(e){
     var t=e.target;
-    if(t.dataset.evf){ var dr=evDraft(); if(!dr) return; dr.d[t.dataset.evf]=t.value; if(dr.d.submitted) dr.d.changed=true; else markWriting(dr.id); saveL(); syncEvaluationDraft(dr.id,dr.d); refreshEvState(); refreshEvProg(); return; }
+    if(t.dataset.evf){ var dr=evDraft(); if(!dr) return; dr.d[t.dataset.evf]=t.value; if(dr.d.submitted) dr.d.changed=true; else markWriting(dr.id); saveL(); syncEvaluationDraft(dr.id,dr.d,t.dataset.evf); refreshEvState(); refreshEvProg(); return; }
     if(t.dataset.ge){ S.genotes[t.dataset.ge]=t.value; tick(S.genotes); commitQuiet(); return; }
     if(L.role==="speaker"&&(t.dataset.sp==="title"||t.dataset.sp==="obj")){ var s=mySpeech(); if(!s) return; s[t.dataset.sp]=t.value; tick(s); commitQuiet(); return; }
   });
@@ -3083,7 +3157,7 @@ view.addEventListener("input",function(e){
   if(t.dataset.edit==="topic"){ var tp=topicById(t.closest("[data-tid]").dataset.tid); tp.text=t.value; tick(tp); commitQuiet(); return; }
   if(t.dataset.ttev!=null){ setTTAssign(t.dataset.ttev,t.value); return; }
   if(t.dataset.edit==="tspeaker"){ var tp2=topicById(t.closest("[data-tid]").dataset.tid); tp2.speaker=t.value; tick(tp2); commitQuiet(); return; }
-  if(L.role==="gram" && Object.hasOwn(WORD_FIELDS,t.id)){ workflowDraft()[t.id]=t.value; saveL(); syncWordDraft(); }
+  if(L.role==="gram" && Object.hasOwn(WORD_FIELDS,t.id)){ wordDraft()[t.id]=t.value; saveL(); syncWordDraft(t.id); }
 });
 view.addEventListener("change",function(e){
   var t=e.target, sid=L.tab;
@@ -3140,6 +3214,12 @@ document.addEventListener("fullscreenchange",function(){ if(!document.fullscreen
     if(t.closest("#coordLock")){ L.coordOK=null; saveL(); renderAll(); return; }
     if(t.closest("#pinChange")){ if(!isMainCoord()) return; L.coordForcePin=true; saveL(); renderAll(); var p=document.getElementById("pin1"); if(p) p.focus(); return; }
     if(!coordUnlocked()) return;
+    var fit=t.closest("[data-fit-speeches]");
+    if(fit){
+      var needed=preparedBlockRequirement(), items=itemsSorted(), index=items.findIndex(function(it){return it.id===fit.dataset.fitSpeeches;});
+      if(index>=0&&items[index].x==="speakers"&&needed>agDur(items,index)&&agSetDur(items[index].id,needed)){ agChanged(); commit(); }
+      return;
+    }
     if(t.closest("#memAdd")){
       var inp=document.getElementById("memIn"), names=inp.value.split(/[,;\n]+/).map(function(x){return x.trim();}).filter(Boolean), added=0;
       var mk=(document.getElementById("memKind")||{}).value||"auto";
@@ -3531,7 +3611,7 @@ document.getElementById("connBtn").addEventListener("click",function(){ renderCo
 document.getElementById("connBox").addEventListener("click",function(e){
   var t=e.target;
   if(t.closest("#hostBtn")){ startHost(makeCode()); renderConnBox(); }
-  else if(t.closest("#joinBtn")){ var c=cleanCode(document.getElementById("joinCode").value); if(c.length!==6){ alert("The code has 6 letters/numbers, e.g. K7Q-M4P."); return; } startJoin(c); renderConnBox(); }
+  else if(t.closest("#joinBtn")){ var c=cleanCode(document.getElementById("joinCode").value); if(c.length!==6){ alert("The code has 6 letters/numbers, e.g. K7Q-M4P."); return; } document.getElementById("connModal").classList.remove("on"); W.code=c; W.advance=!L.setup; W.auto=!!L.setup; startJoin(c); openWelcome("connect"); }
   else if(t.closest("#leaveBtn")){ if(confirm("Leave this meeting on this device? The others stay connected, and you keep your data.")){ stopNet(false); renderConnBox(); } }
   else if(t.closest("#copyCode")){ try{ navigator.clipboard.writeText(fmtCode(NET.code)); t.textContent="Copied"; }catch(err){} }
   else if(t.closest("#copyLink")){ try{ navigator.clipboard.writeText(inviteLink(NET.code)); t.textContent="Link copied"; }catch(err){} }
@@ -5242,22 +5322,35 @@ if(!sessionOf(L.tab)) L.tab="tt";
 if(!ROLES.some(function(r){return r.id===L.role;})) L.role="timer";
 if(!Array.isArray(L.roles)||!L.roles.length) L.roles=[L.role]; L.roles=L.roles.filter(function(r){return ROLES.some(function(x){return x.id===r;});}); if(L.roles.indexOf(L.role)<0) L.roles.push(L.role);
 seedPractice(); shadowSync(); try{ cleanSampleLeak(); }catch(e){} renderAll(); wake(); save();
-var hashCode=""; try{ var hm=location.hash.match(/join=([A-Za-z0-9-]+)/); if(hm) hashCode=cleanCode(hm[1]); }catch(e){}
-var hashPerson=new URLSearchParams(location.hash.slice(1)).get("person");
-var hashGuest=/[#&]guest=1/.test(location.hash);
-try{ var hc=location.hash.match(/co=([A-Za-z0-9-]+)/); if(hc){ L.pendingCo=cleanCode(hc[1]); saveL(); } }catch(e){}
-var hashRole=""; try{ var hr=location.hash.match(/role=([a-z]+)/); if(hr&&ROLES.some(function(r){return r.id===hr[1];})) hashRole=hr[1]; }catch(e){}
-if(hashCode.length===6){ try{ history.replaceState(null,"",location.pathname+location.search); }catch(e){} }
-var resumeCode = L.conn&&L.conn.code;
-if(hashCode.length===6 && hashGuest){ W.code=hashCode; startJoin(hashCode); openWelcome("guest"); }
-else if(hashCode.length===6 && hashRole){
-  /* scanned "my role on my phone": take that role, join the meeting and continue once connected */
-  if(!L.setup||hashPerson){ L.roles=[hashRole]; if(hashPerson){ L.me=hashPerson; L.myNames={}; } } L.role=hashRole; L.setup=true; saveL(); renderAll();
-  W.code=hashCode; W.auto=true; startJoin(hashCode); openWelcome("connect");
+function openMeetingInvite(){
+  var params=new URLSearchParams(location.hash.slice(1)), code=cleanCode(params.get("join"));
+  if(code.length!==6) return false;
+  var person=params.get("person"), role=params.get("role"), co=params.get("co");
+  if(co){ L.pendingCo=cleanCode(co); saveL(); }
+  try{ history.replaceState(null,"",location.pathname+location.search); }catch(e){}
+  W.code=code; W.auto=false; W.advance=false; W.add=false;
+  if(params.get("guest")==="1"){ startJoin(code); openWelcome("guest"); return true; }
+  if(roleObj(role)){
+    if(!L.setup||person){
+      L.roles=[role];
+      if(person){ L.me=person; L.myNames={}; }
+    }
+    L.role=role; L.setup=true; saveL();
+    W.auto=true;
+  } else W.advance=true;
+  startJoin(code);
+  openWelcome("connect");
+  return true;
 }
-else if(hashCode.length===6){ W.code=hashCode; startJoin(hashCode); W.advance=true; openWelcome("connect"); }
-else if(resumeCode){ if(L.conn.mode==="host") startHost(L.conn.code); else { W.auto=!!L.setup; W.advance=!L.setup; startJoin(L.conn.code); } if(!L.setup||L.conn.mode==="join") openWelcome("connect"); }
-else if(!L.setup) openWelcome("connect");
+if(!openMeetingInvite()){
+  var resumeCode=L.conn&&L.conn.code;
+  if(resumeCode){
+    if(L.conn.mode==="host") startHost(resumeCode);
+    else { W.auto=!!L.setup; W.advance=!L.setup; startJoin(resumeCode); }
+    if(!L.setup||L.conn.mode==="join") openWelcome("connect");
+  } else if(!L.setup) openWelcome("connect");
+}
+window.addEventListener("hashchange",openMeetingInvite);
 window.addEventListener("pagehide",sayBye);
 window.addEventListener("beforeunload",sayBye);
 })();

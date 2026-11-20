@@ -17,7 +17,6 @@ module.exports = async (browser) => {
     localStorage.setItem(key, JSON.stringify(saved));
   }, code);
   await returning.goto(T.URL + "#join=" + code);
-  await returning.reload();
   await returning.locator("#wGrid").waitFor();
   const hosted = JSON.parse(await T.stored(host));
   const joined = JSON.parse(await T.stored(returning));

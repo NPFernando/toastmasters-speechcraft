@@ -53,3 +53,15 @@ function runAdjust(delta){
   tick(S.run); commit();
 }
 function runRetimeNow(){ var c=curItem(), n=c.cur?c.next:nextLive(c.its,0); if(!n) return; var target=Math.ceil(minutesNow()), m=hm2min(rt(n)); if(m==null) return; runAdjust(target-m); }
+
+
+function preparedBlockRequirement(){
+  var names=preparedSpeakers();
+  return Math.ceil(names.reduce(function(seconds,name){
+    var row=S.rows.ps.find(function(entry){
+      return !String(entry.ak||"").startsWith("keynote:")&&nkey(baseName(entry.name))===nkey(name);
+    });
+    var limits=presetLim((speechRec(name)||{}).lim)||limOf("ps",row);
+    return seconds+limits.r+60;
+  },0)/60);
+}

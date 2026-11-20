@@ -207,7 +207,7 @@ function syncPrivateDrafts(){
   if(!hasPriv(name)) return;
   S.roleFields.filter(function(r){
     return r.enc&&r.person===person&&(r.key.startsWith("form|")||r.key.startsWith("setting|")||r.key.startsWith("pending|")||
-      (role==="gram"&&r.key==="word")||
+      (role==="gram"&&(r.key==="word"||r.key.startsWith("word|")))||
       (["seval","tteval"].includes(role)&&r.key.startsWith("e|"+evKind()+"|")));
   }).forEach(function(r){
     var read=JSON.stringify([mid,r.id,r.u,r.enc.ct,r.enc.kx]), writeKey=JSON.stringify([mid,r.id]);
@@ -233,20 +233,77 @@ function syncPrivateDrafts(){
           applyDisplay();
         }
       } else if(role==="gram"){
-        if(value.epoch!==(S.gram.u||0)) return;
-        var draft=workflowDraft();
-        Object.keys(WORD_FIELDS).forEach(function(id){ delete draft[id]; });
-        Object.assign(draft,value.fields);
+        if(!value||value.epoch!==(S.gram.u||0)) return;
+        var draft=wordDraft();
+        if(r.key==="word"){
+          Object.keys(WORD_FIELDS).forEach(function(id){
+            if(!hasDraftPatch(person,"word|"+id,r.u)&&Object.hasOwn(value.fields||{},id)) draft[id]=value.fields[id];
+          });
+        } else {
+          var wordField=r.key.slice(5);
+          if(Object.hasOwn(WORD_FIELDS,wordField)){
+            if(value.text===null) delete draft[wordField]; else draft[wordField]=value.text;
+          }
+        }
       } else {
-        meetingEvalDrafts()[r.key]=value;
+        applyEvaluationDraft(person,r,value);
       }
       saveL(); softRender();
     }).catch(function(){ draftReads.delete(read); });
   });
 }
-function syncWordDraft(){
-  var draft=workflowDraft(), fields={};
-  Object.keys(WORD_FIELDS).forEach(function(id){ if(Object.hasOwn(draft,id)) fields[id]=draft[id]; });
-  queuePrivateDraft(draftOwner(),"word",{epoch:S.gram.u||0,fields:fields});
+function hasDraftPatch(person,key,revision){
+  var id="field|private|"+JSON.stringify([person,key]);
+  return (draftWrites.get(JSON.stringify([S.mid,id]))||0)>=revision||
+    S.roleFields.some(function(r){ return r.id===id&&r.u>=revision; });
 }
-function syncEvaluationDraft(id,draft){ queuePrivateDraft(draftOwner(),id,draft); }
+function wordDraft(){
+  var draft=workflowDraft(), epoch=S.gram.u||0;
+  if(draft.wordEpoch!==undefined&&draft.wordEpoch!==epoch){
+    Object.keys(WORD_FIELDS).forEach(function(id){delete draft[id];});
+  }
+  draft.wordEpoch=epoch;
+  return draft;
+}
+function syncWordDraft(field){
+  var draft=wordDraft();
+  (field?[field]:Object.keys(WORD_FIELDS)).forEach(function(id){
+    queuePrivateDraft(draftOwner(),"word|"+id,{epoch:draft.wordEpoch,text:draft[id]??null});
+  });
+}
+var EVAL_DRAFT_FIELDS=["c1","r","c2","rate.content","rate.delivery","rate.confidence"];
+function evaluationField(draft,field){
+  return field.startsWith("rate.")?(draft.rate||{})[field.slice(5)]||0:draft[field]||"";
+}
+function setEvaluationField(draft,field,value){
+  if(field.startsWith("rate.")){ draft.rate=draft.rate||{}; draft.rate[field.slice(5)]=value; }
+  else draft[field]=value;
+}
+function syncEvaluationDraft(id,draft,field){
+  if(!field){
+    queuePrivateDraft(draftOwner(),id,draft);
+    return;
+  }
+  queuePrivateDraft(draftOwner(),id+"|draft|"+field,{
+    value:evaluationField(draft,field),speaker:draft.speaker,kind:draft.kind
+  });
+}
+function applyEvaluationDraft(person,record,value){
+  if(!value||typeof value.speaker!=="string") return;
+  var suffix="|draft|", index=record.key.lastIndexOf(suffix);
+  var id=index<0?record.key:record.key.slice(0,index), field=index<0?"":record.key.slice(index+suffix.length);
+  var drafts=meetingEvalDrafts(), draft=drafts[id]||(drafts[id]={kind:value.kind,speaker:value.speaker,c1:"",r:"",c2:"",rate:{}});
+  if(field){
+    if(!EVAL_DRAFT_FIELDS.includes(field)) return;
+    setEvaluationField(draft,field,value.value);
+    if(draft.submitted) draft.changed=true;
+    return;
+  }
+  ["submitted","submittedAt","sentKx","by","changed"].forEach(function(key){
+    if(Object.hasOwn(value,key)) draft[key]=value[key];
+  });
+  EVAL_DRAFT_FIELDS.forEach(function(key){
+    if(!hasDraftPatch(person,id+suffix+key,record.u)) setEvaluationField(draft,key,evaluationField(value,key));
+    else if(draft.submitted&&evaluationField(draft,key)!==evaluationField(value,key)) draft.changed=true;
+  });
+}

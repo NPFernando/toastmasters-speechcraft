@@ -165,8 +165,12 @@ function coordHTML(){
     '<span class="seg" role="group" aria-label="Move the whole agenda"><button data-agshift="-5" title="Move every item 5 minutes earlier">−5 min</button><button data-agshift="5" title="Move every item 5 minutes later">+5 min</button></span>'+
     '<span class="saved" id="agSpan">'+esc(agSpanText())+'</span></div>'+
     '<div class="note" style="margin-top:4px">▲▼ (or drag ▲▼ on a laptop) moves an item and keeps how long it runs. Changing the <b>min</b> of an item moves everything after it. <b>＋</b> inserts a 5-minute item below and <b>✕</b> removes one; the items after it move to suit.</div><div class="agedit">';
+  var preparedMinutes=preparedBlockRequirement();
   AGL.forEach(function(it,i){
     var du=agDur(AGL,i);
+    if(it.x==="speakers"&&du!==null&&preparedMinutes>du){
+      h+='<div class="note">Prepared speeches need '+preparedMinutes+' min including introductions and transitions. <button class="btn sm" data-fit-speeches="'+esc(it.id)+'">Fit prepared speeches</button></div>';
+    }
     h+='<div class="agrow" data-iid="'+it.id+'"><span class="agmv" draggable="true" title="Drag to move (or use ▲▼)"><button data-agmv="-1" title="Move up" aria-label="Move up"'+(i?'':' disabled')+'>▲</button><button data-agmv="1" title="Move down" aria-label="Move down"'+(i<AGL.length-1?'':' disabled')+'>▼</button></span>'+
        '<input class="t agtime" type="time" data-it="time" aria-label="Time" value="'+esc(it.time)+'">'+
        (du==null?'<span class="agdurw agend">end</span>':'<label class="agdurw"><input class="t agdur" type="number" inputmode="numeric" min="0" max="240" data-agdur value="'+du+'" aria-label="Length in minutes"><span>min</span></label>')+

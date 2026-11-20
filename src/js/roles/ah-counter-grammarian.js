@@ -48,14 +48,14 @@ function revealWordOfDay(){
   }
   Object.assign(S.gram,word);
   tick(S.gram);
-  var draft=workflowDraft();
+  var draft=wordDraft();
   Object.keys(WORD_FIELDS).forEach(function(id){ delete draft[id]; });
   saveL(); syncWordDraft();
   commit();
 }
 function gramHTML(){
   var sel=selRow("gram");
-  var draft=workflowDraft(), labels={wotd:"Word",wotdMeaning:"Meaning",wotdExample:"Example sentence"};
+  var draft=wordDraft(), labels={wotd:"Word",wotdMeaning:"Meaning",wotdExample:"Example sentence"};
   var h='<section class="card"><h2 class="sec" style="margin-top:0">Word of the Day</h2>'+
     '<div class="saved">'+(S.gram.wotd?'Published: '+esc(S.gram.wotd)+'. Changes stay private until you publish again.':'Only you can read the draft on devices with your feedback PIN unlocked.')+'</div>'+
     draftAccessHTML()+Object.keys(WORD_FIELDS).map(function(id){
