@@ -21,10 +21,15 @@ function projHTML(){
   }
   var foot=S.gram.wotd?'<div class="pj-wotd"><span>Word of the Day</span><b>'+esc(S.gram.wotd)+'</b>'+wordOfDayDetailsHTML()+'</div>':'';
   return '<div class="pj-head"><img src="'+tm+'" alt=""><div>'+esc(GROUP)+(S.meta.week?' · '+esc(S.meta.week):'')+'</div><img class="r" src="'+co+'" alt=""></div><div class="pj-main '+cls+'">'+main+'</div>'+foot+
-    '<div class="pj-ctl"><button class="btn" data-pjfull>⛶ Full screen</button><button class="btn" data-pjclose>✕ Close</button></div>';
+    '<div class="pj-ctl"><button class="btn" data-pjfull>⛶ Full screen</button><button class="btn" data-pjclose>✕ Exit projector</button></div>';
 }
 var projSig="";
-function renderProj(){ var el=document.getElementById("proj"); if(!el.classList.contains("on")) return; var h=projHTML(); if(h!==projSig){ el.innerHTML=h; projSig=h; } }
+function renderProj(){ var el=document.getElementById("proj"); if(!el.classList.contains("on")) return; var h=projHTML(); if(h!==projSig){
+  var active=document.activeElement;
+  var control=el.contains(active)?focusKey(active):null;
+  el.innerHTML=h; projSig=h;
+  if(control) el.querySelector(control)?.focus({preventScroll:true});
+} }
 function openProj(){ projSig=""; var el=document.getElementById("proj"); el.classList.add("on"); renderProj(); try{ if(el.requestFullscreen) el.requestFullscreen().catch(function(){}); }catch(e){} }
 function closeProj(){ document.getElementById("proj").classList.remove("on"); try{ if(document.fullscreenElement) document.exitFullscreen(); }catch(e){} }
 document.getElementById("proj").addEventListener("click",function(e){

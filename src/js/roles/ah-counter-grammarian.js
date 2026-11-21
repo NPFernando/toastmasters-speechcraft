@@ -37,7 +37,7 @@ function ahHTML(){
   var h='<section class="card">'+ahTabs()+speakerPicker("ah");
   if(sel){
     h+='<div class="selcard"><div class="hd"><label class="f">Speaker name<input class="t" id="ahSpeakerName" value="'+esc(sel.name)+'"></label><span class="pill">Total '+ahTotal(sel)+'</span><button class="iconbtn" data-rowdel="ah" title="Remove speaker">✕</button></div><div class="tapgrid">';
-    words.forEach(function(w){ h+='<div class="tap" data-word="'+esc(w)+'"><button class="minus" data-minus="'+esc(w)+'" title="Undo one">−</button><div class="k">'+(sel.c[w]||0)+'</div><div class="w">'+esc(w)+'</div></div>'; });
+    words.forEach(function(w){ var count=sel.c[w]||0; h+='<div class="tap"><button type="button" class="tap-add" data-word="'+esc(w)+'" aria-label="'+esc("Add one "+w+" ("+count+" counted)")+'"><span class="k">'+count+'</span><span class="w">'+esc(w)+'</span><span aria-hidden="true">+1</span></button><button type="button" class="minus" data-minus="'+esc(w)+'" aria-label="'+esc("Remove one "+w)+'" aria-disabled="'+(count===0)+'">−1</button></div>'; });
     h+='</div></div>';
   } else if(S.ahRows.length) h+='<div class="selcard muted">Select a speaker above to start counting.</div>';
   h+='<details style="margin-top:12px"><summary class="saved" style="cursor:pointer">Words to count ('+words.length+')</summary><div class="chips" style="margin:8px 0">'+

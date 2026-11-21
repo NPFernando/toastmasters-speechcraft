@@ -85,7 +85,7 @@ view.addEventListener("click",function(e){
   var ch=t.closest("[data-sel]"); if(ch){ if(kind==="ah") L.ahSel=ch.dataset.sel; else L.gramSel=ch.dataset.sel; var sr0=selRow(kind); if(sr0&&selectPerson(sr0.name,kind)) commit(); else { saveL(); renderAll(); } return; }
   var rd=t.closest("[data-rowdel]"); if(rd){ var sr=selRow(kind); if(sr) removeItem([kind==="ah"?"ahRows":"gramRows"],sr.id,sr.name); return; }
   var mn=t.closest("[data-minus]"); if(mn){ var s1=selRow("ah"), w=mn.dataset.minus; if(s1&&s1.c[w]>0){ s1.c[w]--; tick(s1); commit(); } return; }
-  var tp2=t.closest("[data-word]"); if(tp2){ var s2=selRow("ah"), w2=tp2.dataset.word; if(s2){ s2.c[w2]=(s2.c[w2]||0)+1; tick(s2); commit(); var nt=document.querySelector('#view [data-word="'+CSS.escape(w2)+'"]'); if(nt) nt.classList.add("bump"); } return; }
+  var tp2=t.closest("[data-word]"); if(tp2){ var s2=selRow("ah"), w2=tp2.dataset.word; if(s2){ s2.c[w2]=(s2.c[w2]||0)+1; tick(s2); commit(); var nt=document.querySelector('#view [data-word="'+CSS.escape(w2)+'"]'); if(nt) nt.closest(".tap").classList.add("bump"); } return; }
   var wd=t.closest("[data-wdel]"); if(wd){ var wsnap=S.fill.words.slice(); offerUndo("“"+wd.dataset.wdel+"” removed",function(){ S.fill.words=wsnap; tick(S.fill); }); S.fill.words=S.fill.words.filter(function(x){return x!==wd.dataset.wdel;}); tick(S.fill); commit(); return; }
   if(t.closest("#wordAdd")){ var wi=document.getElementById("wordInput"), nw=wi.value.trim(); if(nw&&S.fill.words.indexOf(nw)<0){ S.fill.words.push(nw); clearDeviceDraft("wordInput"); tick(S.fill); commit(); } return; }
   if(t.closest("#wotdReveal")){ revealWordOfDay(); return; }

@@ -68,7 +68,7 @@ header.top{display:flex;flex-wrap:wrap;align-items:center;gap:10px;justify-conte
 .hbtns{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-left:auto}
 .conn{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--card);border-radius:999px;padding:7px 14px;cursor:pointer;font-weight:600;font-size:13px}
 .conn i{width:9px;height:9px;border-radius:50%;background:var(--muted);display:inline-block}
-.conn.on i{background:var(--g)} .conn.wait i{background:var(--a);animation:blink 1s infinite} .conn.err i{background:var(--r)}
+.conn.on i{background:var(--g)} .conn.wait i{background:var(--a)} .conn.err i{background:var(--r)}
 
 /* meta & roles */
 .meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin-bottom:12px}
@@ -81,7 +81,7 @@ label.f,.f{display:flex;flex-direction:column;font-size:12px;color:var(--muted);
 .roles small b{color:var(--g)} .roles small i{font-style:normal}
 .roles small .onl{white-space:nowrap}
 .dotg,.doty{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:middle}
-.dotg{background:var(--g)} .doty{background:var(--a);animation:blink 1s infinite}
+.dotg{background:var(--g)} .doty{background:var(--a)}
 #welcome{position:fixed;inset:0;z-index:80;background:var(--bg);overflow:auto;display:none;padding:20px 14px}
 #welcome.on{display:block}
 .wbox{max-width:660px;margin:0 auto}
@@ -142,11 +142,8 @@ label.f,.f{display:flex;flex-direction:column;font-size:12px;color:var(--muted);
 .liveitem.sg{border-color:var(--g);background:var(--g-bg);--flash:var(--g)}
 .liveitem.sa{border-color:var(--a);background:var(--a-bg);--flash:var(--a)}
 .liveitem.sr{border-color:var(--r);background:var(--r-bg);--flash:var(--r)}
-.liveitem.flash{animation:sigflash .5s ease-in-out 6}
-.liveitem.flash .clock{animation:sigpop .5s ease-in-out 6}
-@keyframes sigflash{0%,100%{box-shadow:0 0 0 0 transparent}50%{box-shadow:0 0 0 8px var(--flash,#999);filter:brightness(1.12)}}
-@keyframes sigpop{50%{transform:scale(1.12)}}
-@keyframes blink{50%{opacity:.25}}
+.liveitem.flash,.mecard.flash,.nowitem.flash{animation:sigflash .3s ease-out}
+@keyframes sigflash{0%,100%{box-shadow:0 0 0 0 transparent}35%{box-shadow:0 0 0 4px var(--flash,var(--brand))}}
 .sigbanner{display:none;font-weight:800;font-size:15px;letter-spacing:.5px;padding:4px 10px;border-radius:6px;color:#fff}
 .liveitem.flash .sigbanner{display:inline-block}
 .liveitem.sg .sigbanner{background:var(--g)} .liveitem.sa .sigbanner{background:var(--a);color:#1d2330} .liveitem.sr .sigbanner{background:var(--r)}
@@ -160,7 +157,7 @@ label.f,.f{display:flex;flex-direction:column;font-size:12px;color:var(--muted);
 .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:-1px}
 .tab{border:1px solid var(--line);border-bottom:none;background:var(--bg);padding:9px 14px;border-radius:10px 10px 0 0;cursor:pointer;font-weight:600;color:var(--muted)}
 .tab.active{background:var(--card);color:var(--ink)}
-.tab .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--run);margin-left:6px;vertical-align:middle;animation:blink 1s infinite}
+.tab .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--run);margin-left:6px;vertical-align:middle}
 .tab .cnt{font-weight:400;font-size:12px;margin-left:4px}
 .panel{border-top-left-radius:0}
 .limits{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px}
@@ -222,11 +219,13 @@ tr.queued:not(.nextup) .btn.go{background:transparent;color:var(--g);border-colo
 .selcard .hd{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
 .selcard .hd b{font-size:20px;flex:1}
 .tapgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px}
-.tap{position:relative;border:1px solid var(--line);background:var(--chip);border-radius:12px;padding:14px 8px 10px;text-align:center;cursor:pointer;user-select:none;-webkit-user-select:none}
-.tap:active{transform:scale(.97)}
+.tap{position:relative;border:1px solid var(--line);background:var(--chip);border-radius:12px;padding:4px;text-align:center}
+.tap-add{display:grid;justify-items:center;width:100%;gap:4px;padding:8px;border:0;border-radius:8px;background:transparent;color:var(--ink);font:inherit;cursor:pointer}
+.tap-add:hover{background:var(--card)}
 .tap .w{font-weight:700;font-size:16px}
 .tap .k{font-size:30px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1}
-.tap .minus{position:absolute;top:4px;right:4px;border:none;background:transparent;color:var(--muted);font-size:14px;cursor:pointer;padding:2px 6px;border-radius:6px}
+.tap .minus{width:100%;min-height:44px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit;cursor:pointer;border-radius:8px}
+.tap .minus[aria-disabled="true"]{color:var(--muted);cursor:default}
 .tap .minus:hover{background:var(--card)}
 .tap.bump{animation:bump .25s}
 @keyframes bump{50%{background:var(--g-bg)}}
@@ -527,8 +526,8 @@ body.v-agenda .meta,body.v-agenda #roles,body.v-agenda #companion,body.v-agenda 
 .pj-win{display:flex;gap:2vw;align-items:baseline;font-size:clamp(22px,3.4vw,56px);margin-top:2vh} .pj-win span{opacity:.8} .pj-win b{color:#f2df74}
 .pj-wotd{display:flex;gap:2vw;align-items:baseline;justify-content:center;flex-wrap:wrap;background:#772432;border-radius:18px;padding:1.6vh 2vw;font-size:clamp(16px,2.2vw,34px)}
 .pj-wotd span{text-transform:uppercase;letter-spacing:.14em;font-size:.7em;opacity:.85} .pj-wotd>b{font-size:1.4em} .pj-wotd i{opacity:.85}
-.pj-ctl{position:absolute;right:18px;bottom:14px;display:flex;gap:8px;opacity:.35;transition:opacity .2s} .pj-ctl:hover,.pj-ctl:focus-within{opacity:1}
-.pj-ctl .btn{background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.4)}
+.pj-ctl{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:8px;margin-top:8px}
+.pj-ctl .btn{min-height:44px;background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.4)}
 
 /* focus mode */
 body.focus .meta,body.focus #roles,body.focus #agendaLine,body.focus #companion{display:none!important}
@@ -1298,9 +1297,13 @@ function editingInApp(){ var a=document.activeElement; return a && a.matches && 
 var lastTyped=0;
 document.addEventListener("input",function(){ lastTyped=Date.now(); },true);
 function focusKey(el){
-  if(!el||!el.matches||!el.matches("input,textarea,select")) return null;
+  if(!el?.matches("input,textarea,select,button,a[href]")) return null;
   if(el.id) return "#"+el.id;
   var sel=el.tagName.toLowerCase(); Array.prototype.forEach.call(el.attributes,function(a){ if(/^data-/.test(a.name)) sel+='['+a.name+'="'+CSS.escape(a.value)+'"]'; });
+  if(el.matches("button,a")&&sel===el.tagName.toLowerCase()){
+    if(el.matches("a[href]")) sel+='[href="'+CSS.escape(el.getAttribute("href"))+'"]';
+    else return null;
+  }
   var host=el.closest("[data-id],[data-iid],[data-tid],[data-rqid]");
   if(host){ var an=["data-id","data-iid","data-tid","data-rqid"].find(function(n){return host.hasAttribute(n);}); sel='['+an+'="'+CSS.escape(host.getAttribute(an))+'"] '+sel; }
   return sel;
@@ -1317,6 +1320,9 @@ function softRender(){ refreshOpenMeetingReport(); if(editingInApp()){ pendingRe
 document.addEventListener("focusout",function(){ if(!pendingRender) return; setTimeout(function(){ if(pendingRender && !editingInApp()){ pendingRender=false; renderAll(); } },250); });
 
 function renderAll(){
+  var focused=document.activeElement;
+  var focusArea=focused?.closest("#view,#roles,#live,#nowStrip,#companion");
+  var controlKey=focusArea&&focused.matches("button,a[href]")?focusKey(focused):null;
   populateAgendaMembers();
   pendingRender=false; renderNav(); renderProj();
   renderMeta(); renderRoles(); renderRoster();
@@ -1360,6 +1366,10 @@ function renderAll(){
   if(document.getElementById("voteModal").classList.contains("on")) renderVoteModal();
   renderConnBtn();
   if(document.getElementById("welcome").classList.contains("on")&&W.step==="role"){ var ae=document.activeElement; if(ae&&ae.id==="wName") wRefreshWho(); else renderWelcome(); }
+  if(controlKey&&!focused.isConnected&&document.activeElement===document.body){
+    var candidates=focusArea.querySelectorAll(controlKey);
+    if(candidates.length===1) candidates[0].focus({preventScroll:true});
+  }
 }
 function renderLiveOnly(){ renderFin(); renderNow(); renderCompanion(); renderAgendaLine(); renderVoteBar(); maybeShowWinners(false); renderConnBtn(); renderRoles(); if(document.getElementById("voteModal").classList.contains("on")) renderVoteModal(); }
 function renderMeta(){
@@ -1529,7 +1539,7 @@ function renderLive(){
   el.innerHTML=h; el.classList.toggle("on",!!h);
   el.querySelectorAll(".liveitem").forEach(function(it){ var r=findRow(it.dataset.sid,it.dataset.id); if(r&&lastSig[r.id]===undefined) lastSig[r.id]=signal(it.dataset.sid,timerElapsed(it.dataset.sid,r,t),r); });
 }
-function flashItem(it){ it.classList.remove("flash"); void it.offsetWidth; it.classList.add("flash"); clearTimeout(it._ft); it._ft=setTimeout(function(){ it.classList.remove("flash"); },3200); }
+function flashItem(it){ it.classList.remove("flash"); void it.offsetWidth; it.classList.add("flash"); clearTimeout(it._ft); it._ft=setTimeout(function(){ it.classList.remove("flash"); },320); }
 
 /* Demo signals use the meeting's limits and never create a Timer entry. */
 var TIMER_DEMO_MS=90000;
@@ -1690,7 +1700,7 @@ function ahHTML(){
   var h='<section class="card">'+ahTabs()+speakerPicker("ah");
   if(sel){
     h+='<div class="selcard"><div class="hd"><label class="f">Speaker name<input class="t" id="ahSpeakerName" value="'+esc(sel.name)+'"></label><span class="pill">Total '+ahTotal(sel)+'</span><button class="iconbtn" data-rowdel="ah" title="Remove speaker">✕</button></div><div class="tapgrid">';
-    words.forEach(function(w){ h+='<div class="tap" data-word="'+esc(w)+'"><button class="minus" data-minus="'+esc(w)+'" title="Undo one">−</button><div class="k">'+(sel.c[w]||0)+'</div><div class="w">'+esc(w)+'</div></div>'; });
+    words.forEach(function(w){ var count=sel.c[w]||0; h+='<div class="tap"><button type="button" class="tap-add" data-word="'+esc(w)+'" aria-label="'+esc("Add one "+w+" ("+count+" counted)")+'"><span class="k">'+count+'</span><span class="w">'+esc(w)+'</span><span aria-hidden="true">+1</span></button><button type="button" class="minus" data-minus="'+esc(w)+'" aria-label="'+esc("Remove one "+w)+'" aria-disabled="'+(count===0)+'">−1</button></div>'; });
     h+='</div></div>';
   } else if(S.ahRows.length) h+='<div class="selcard muted">Select a speaker above to start counting.</div>';
   h+='<details style="margin-top:12px"><summary class="saved" style="cursor:pointer">Words to count ('+words.length+')</summary><div class="chips" style="margin:8px 0">'+
@@ -3444,7 +3454,7 @@ view.addEventListener("click",function(e){
   var ch=t.closest("[data-sel]"); if(ch){ if(kind==="ah") L.ahSel=ch.dataset.sel; else L.gramSel=ch.dataset.sel; var sr0=selRow(kind); if(sr0&&selectPerson(sr0.name,kind)) commit(); else { saveL(); renderAll(); } return; }
   var rd=t.closest("[data-rowdel]"); if(rd){ var sr=selRow(kind); if(sr) removeItem([kind==="ah"?"ahRows":"gramRows"],sr.id,sr.name); return; }
   var mn=t.closest("[data-minus]"); if(mn){ var s1=selRow("ah"), w=mn.dataset.minus; if(s1&&s1.c[w]>0){ s1.c[w]--; tick(s1); commit(); } return; }
-  var tp2=t.closest("[data-word]"); if(tp2){ var s2=selRow("ah"), w2=tp2.dataset.word; if(s2){ s2.c[w2]=(s2.c[w2]||0)+1; tick(s2); commit(); var nt=document.querySelector('#view [data-word="'+CSS.escape(w2)+'"]'); if(nt) nt.classList.add("bump"); } return; }
+  var tp2=t.closest("[data-word]"); if(tp2){ var s2=selRow("ah"), w2=tp2.dataset.word; if(s2){ s2.c[w2]=(s2.c[w2]||0)+1; tick(s2); commit(); var nt=document.querySelector('#view [data-word="'+CSS.escape(w2)+'"]'); if(nt) nt.closest(".tap").classList.add("bump"); } return; }
   var wd=t.closest("[data-wdel]"); if(wd){ var wsnap=S.fill.words.slice(); offerUndo("“"+wd.dataset.wdel+"” removed",function(){ S.fill.words=wsnap; tick(S.fill); }); S.fill.words=S.fill.words.filter(function(x){return x!==wd.dataset.wdel;}); tick(S.fill); commit(); return; }
   if(t.closest("#wordAdd")){ var wi=document.getElementById("wordInput"), nw=wi.value.trim(); if(nw&&S.fill.words.indexOf(nw)<0){ S.fill.words.push(nw); clearDeviceDraft("wordInput"); tick(S.fill); commit(); } return; }
   if(t.closest("#wotdReveal")){ revealWordOfDay(); return; }
@@ -5653,10 +5663,15 @@ function projHTML(){
   }
   var foot=S.gram.wotd?'<div class="pj-wotd"><span>Word of the Day</span><b>'+esc(S.gram.wotd)+'</b>'+wordOfDayDetailsHTML()+'</div>':'';
   return '<div class="pj-head"><img src="'+tm+'" alt=""><div>'+esc(GROUP)+(S.meta.week?' · '+esc(S.meta.week):'')+'</div><img class="r" src="'+co+'" alt=""></div><div class="pj-main '+cls+'">'+main+'</div>'+foot+
-    '<div class="pj-ctl"><button class="btn" data-pjfull>⛶ Full screen</button><button class="btn" data-pjclose>✕ Close</button></div>';
+    '<div class="pj-ctl"><button class="btn" data-pjfull>⛶ Full screen</button><button class="btn" data-pjclose>✕ Exit projector</button></div>';
 }
 var projSig="";
-function renderProj(){ var el=document.getElementById("proj"); if(!el.classList.contains("on")) return; var h=projHTML(); if(h!==projSig){ el.innerHTML=h; projSig=h; } }
+function renderProj(){ var el=document.getElementById("proj"); if(!el.classList.contains("on")) return; var h=projHTML(); if(h!==projSig){
+  var active=document.activeElement;
+  var control=el.contains(active)?focusKey(active):null;
+  el.innerHTML=h; projSig=h;
+  if(control) el.querySelector(control)?.focus({preventScroll:true});
+} }
 function openProj(){ projSig=""; var el=document.getElementById("proj"); el.classList.add("on"); renderProj(); try{ if(el.requestFullscreen) el.requestFullscreen().catch(function(){}); }catch(e){} }
 function closeProj(){ document.getElementById("proj").classList.remove("on"); try{ if(document.fullscreenElement) document.exitFullscreen(); }catch(e){} }
 document.getElementById("proj").addEventListener("click",function(e){

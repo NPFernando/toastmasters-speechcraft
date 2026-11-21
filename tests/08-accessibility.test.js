@@ -59,6 +59,24 @@ module.exports = async (b) => {
   await phone.keyboard.press("Escape");
   T.assert.strictEqual(await phone.evaluate(() => document.activeElement.dataset.nav), "report");
   T.assert.strictEqual(await phone.evaluate(() => document.getElementById("app").inert), false);
+  const counter = await T.device(b, { phone: true, url: T.FILE });
+  await T.solo(counter, "Counter", ["ah"]);
+  await counter.fill("#spkInput", "Speaker");
+  await counter.click("#spkAdd");
+  const plus = counter.getByRole("button", { name: /^Add one Um/ });
+  await plus.focus();
+  await counter.keyboard.press("Enter");
+  await counter.keyboard.press("Space");
+  T.assert.strictEqual(await plus.getAttribute("aria-label"), "Add one Um (2 counted)");
+  const minus = counter.getByRole("button", { name: "Remove one Um", exact: true });
+  await minus.focus();
+  await counter.keyboard.press("Enter");
+  await counter.keyboard.press("Enter");
+  T.assert.strictEqual(await minus.getAttribute("aria-disabled"), "true");
+  T.assert.strictEqual(await counter.evaluate(() => document.activeElement.dataset.minus), "Um");
+  T.noErrors(counter);
+  await counter.close();
+
   T.noErrors(phone);
   await phone.close();
 
