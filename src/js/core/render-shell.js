@@ -5,9 +5,13 @@ function editingInApp(){ var a=document.activeElement; return a && a.matches && 
 var lastTyped=0;
 document.addEventListener("input",function(){ lastTyped=Date.now(); },true);
 function focusKey(el){
-  if(!el||!el.matches||!el.matches("input,textarea,select")) return null;
+  if(!el?.matches("input,textarea,select,button,a[href]")) return null;
   if(el.id) return "#"+el.id;
   var sel=el.tagName.toLowerCase(); Array.prototype.forEach.call(el.attributes,function(a){ if(/^data-/.test(a.name)) sel+='['+a.name+'="'+CSS.escape(a.value)+'"]'; });
+  if(el.matches("button,a")&&sel===el.tagName.toLowerCase()){
+    if(el.matches("a[href]")) sel+='[href="'+CSS.escape(el.getAttribute("href"))+'"]';
+    else return null;
+  }
   var host=el.closest("[data-id],[data-iid],[data-tid],[data-rqid]");
   if(host){ var an=["data-id","data-iid","data-tid","data-rqid"].find(function(n){return host.hasAttribute(n);}); sel='['+an+'="'+CSS.escape(host.getAttribute(an))+'"] '+sel; }
   return sel;
@@ -24,6 +28,9 @@ function softRender(){ refreshOpenMeetingReport(); if(editingInApp()){ pendingRe
 document.addEventListener("focusout",function(){ if(!pendingRender) return; setTimeout(function(){ if(pendingRender && !editingInApp()){ pendingRender=false; renderAll(); } },250); });
 
 function renderAll(){
+  var focused=document.activeElement;
+  var focusArea=focused?.closest("#view,#roles,#live,#nowStrip,#companion");
+  var controlKey=focusArea&&focused.matches("button,a[href]")?focusKey(focused):null;
   populateAgendaMembers();
   pendingRender=false; renderNav(); renderProj();
   renderMeta(); renderRoles(); renderRoster();
@@ -67,6 +74,10 @@ function renderAll(){
   if(document.getElementById("voteModal").classList.contains("on")) renderVoteModal();
   renderConnBtn();
   if(document.getElementById("welcome").classList.contains("on")&&W.step==="role"){ var ae=document.activeElement; if(ae&&ae.id==="wName") wRefreshWho(); else renderWelcome(); }
+  if(controlKey&&!focused.isConnected&&document.activeElement===document.body){
+    var candidates=focusArea.querySelectorAll(controlKey);
+    if(candidates.length===1) candidates[0].focus({preventScroll:true});
+  }
 }
 function renderLiveOnly(){ renderFin(); renderNow(); renderCompanion(); renderAgendaLine(); renderVoteBar(); maybeShowWinners(false); renderConnBtn(); renderRoles(); if(document.getElementById("voteModal").classList.contains("on")) renderVoteModal(); }
 function renderMeta(){

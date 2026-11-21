@@ -46,7 +46,7 @@ function assignTableHTML(){
   var opts=evaluatorChoices();
   return '<h2 class="sec">🔗 Who evaluates whom <span class="cnt">evaluators can also tap "Assign to me"</span></h2><div class="rp">'+sp.map(function(n){
     var cur=evaluatorOf(n), t=speechTitle(n);
-    return '<div class="rprow"><span class="rpl">'+esc(name)+(turn?'<span class="c">'+esc(turn.text)+'</span>':'')+(t?'<div class="spt" style="padding:0">“'+esc(t)+'”</div>':'')+'</span><div class="rpv"><select class="t" data-assign="'+esc(n)+'" aria-label="Evaluator for '+esc(n)+'"><option value="">— not assigned —</option>'+opts.map(function(o){return '<option'+(nkey(o)===nkey(cur)?' selected':'')+'>'+esc(o)+'</option>';}).join("")+(cur&&!opts.some(function(o){return nkey(o)===nkey(cur);})?'<option selected>'+esc(cur)+'</option>':'')+'</select></div></div>';
+    return '<div class="rprow"><span class="rpl">'+esc(n)+(t?'<div class="spt" style="padding:0">“'+esc(t)+'”</div>':'')+'</span><div class="rpv"><select class="t" data-assign="'+esc(n)+'" aria-label="Evaluator for '+esc(n)+'"><option value="">— not assigned —</option>'+opts.map(function(o){return '<option'+(nkey(o)===nkey(cur)?' selected':'')+'>'+esc(o)+'</option>';}).join("")+(cur&&!opts.some(function(o){return nkey(o)===nkey(cur);})?'<option selected>'+esc(cur)+'</option>':'')+'</select></div></div>';
   }).join("")+'</div>';
 }
 function evalHTML(){

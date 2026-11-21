@@ -49,8 +49,8 @@ body.v-agenda .meta,body.v-agenda #roles,body.v-agenda #companion,body.v-agenda 
 .pj-win{display:flex;gap:2vw;align-items:baseline;font-size:clamp(22px,3.4vw,56px);margin-top:2vh} .pj-win span{opacity:.8} .pj-win b{color:#f2df74}
 .pj-wotd{display:flex;gap:2vw;align-items:baseline;justify-content:center;flex-wrap:wrap;background:#772432;border-radius:18px;padding:1.6vh 2vw;font-size:clamp(16px,2.2vw,34px)}
 .pj-wotd span{text-transform:uppercase;letter-spacing:.14em;font-size:.7em;opacity:.85} .pj-wotd>b{font-size:1.4em} .pj-wotd i{opacity:.85}
-.pj-ctl{position:absolute;right:18px;bottom:14px;display:flex;gap:8px;opacity:.35;transition:opacity .2s} .pj-ctl:hover,.pj-ctl:focus-within{opacity:1}
-.pj-ctl .btn{background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.4)}
+.pj-ctl{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:8px;margin-top:8px}
+.pj-ctl .btn{min-height:44px;background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.4)}
 
 /* focus mode */
 body.focus .meta,body.focus #roles,body.focus #agendaLine,body.focus #companion{display:none!important}
