@@ -39,15 +39,26 @@ function liveEditableItems(items){
     return !row||rowState(row)==="idle";
   });
 }
+function setLiveOrder(order){
+  S.run.order=order;
+  S.run.orderU=Math.max(now(),(S.run.orderU||S.run.u||0)+1);
+}
 function reorderLiveItem(id,targetId,after){
   var items=runItems(), editable=liveEditableItems(items);
   if(id===targetId||!editable.some(function(it){return it.id===id;})||!editable.some(function(it){return it.id===targetId;})) return false;
   var order=items.map(function(it){return it.id;}).filter(function(value){return value!==id;});
   order.splice(order.indexOf(targetId)+(after?1:0),0,id);
   if(order.every(function(value,i){return value===items[i].id;})) return false;
-  S.run.order=order;
-  S.run.orderU=Math.max(now(),(S.run.orderU||S.run.u||0)+1);
-  commit(); return true;
+  var previous=(S.run.order||[]).slice(), mid=S.mid, current=S.run.cur;
+  setLiveOrder(order);
+  var version=S.run.orderU;
+  commit();
+  offerUndo("Running order updated",function(){
+    if(S.mid!==mid||S.run.cur!==current||S.run.orderU!==version||
+      !liveEditableItems(runItems()).some(function(it){return it.id===id;})) return false;
+    setLiveOrder(previous);
+  });
+  return true;
 }
 function runMoveEnd(id){
   var last=liveEditableItems(runItems()).at(-1);
@@ -56,8 +67,19 @@ function runMoveEnd(id){
 function runToggleSkip(id){
   if(!liveEditableItems(runItems()).some(function(it){return it.id===id;})) return;
   S.run.skip=S.run.skip||{};
-  if(S.run.skip[id]) delete S.run.skip[id]; else S.run.skip[id]=true;
-  S.run.by=runBy(); tick(S.run); commit();
+  var skipped=!isSkipped(id), mid=S.mid;
+  setLiveSkip(id,skipped);
+  var version=S.run.u;
+  commit();
+  offerUndo(skipped?"Agenda item skipped":"Agenda item restored",function(){
+    if(S.mid!==mid||S.run.u!==version||
+      !liveEditableItems(runItems()).some(function(it){return it.id===id;})) return false;
+    setLiveSkip(id,!skipped);
+  });
+}
+function setLiveSkip(id,skipped){
+  if(skipped) S.run.skip[id]=true; else delete S.run.skip[id];
+  S.run.by=runBy(); tick(S.run);
 }
 function queuedPreparedRows(){
   return orderPreparedTimerRows(S.rows.ps).filter(function(row){

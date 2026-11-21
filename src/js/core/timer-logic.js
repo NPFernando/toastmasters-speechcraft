@@ -151,7 +151,7 @@ function orgUndoApply(){
 function orgSnapA(){ var a=clone(S.agenda); delete a.fu; delete a.u; return a; }
 function orgSnapM(){ var m=clone(S.members); delete m.fu; delete m.u; return m; }
 function undoRemove(){
-  if(anyUndo){ var f=anyUndo; anyUndo=null; clearTimeout(undoTimer); document.getElementById("toast").classList.remove("on"); f(); commit(); renderAll(); showToastMsg("Undone"); return; }
+  if(anyUndo){ var f=anyUndo; anyUndo=null; clearTimeout(undoTimer); document.getElementById("toast").classList.remove("on"); if(f()===false){ showToastMsg("The running order has changed. Undo is no longer available."); return; } commit(); showToastMsg("Undone"); return; }
   if(orgUndo){ orgUndoApply(); return; }
   if(!lastRemoved) return; var x=lastRemoved; lastRemoved=null;
   delete S.dead[x.item.id]; tick(x.item);

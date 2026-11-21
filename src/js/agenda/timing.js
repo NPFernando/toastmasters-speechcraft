@@ -65,3 +65,22 @@ function preparedBlockRequirement(){
     return seconds+limits.r+60;
   },0)/60);
 }
+
+/* Estimate from the current turn's actual start and its planned duration. */
+function nextLiveEstimate(c){
+  if(!c.cur||!c.next) return null;
+  var started=S.run.started[c.cur.id];
+  if(!Number.isFinite(started)) return null;
+  var duration, plan=itemsSorted();
+  if(c.cur.rowId){
+    duration=Math.ceil(limOf("ps",findRow("ps",c.cur.rowId)).r/60)+1;
+  } else {
+    var index=plan.findIndex(function(it){return it.id===c.cur.id;});
+    duration=index>=0?agDur(plan,index):null;
+    if(c.cur.x==="speakers"&&duration!=null) duration=Math.max(0,duration-preparedBlockRequirement());
+  }
+  if(duration==null) return null;
+  var offset=(S.run.adj?.[c.next.id]||0)-(S.run.adj?.[c.cur.id]||0);
+  var end=new Date(Math.max(now(),started+(duration+offset)*60000));
+  return end.getHours()*60+end.getMinutes()+(end.getSeconds()>0?1:0);
+}

@@ -105,7 +105,7 @@ function dryBannerHTML(){ return S.meta&&S.meta.test?'<div class="drybanner" rol
 var CO_TABS=[["setup","⚙️","Set-up"],["agenda","📋","Agenda"],["people","👥","People"],["after","🏁","After"]];
 function coTab(){ return CO_TABS.some(function(t){return t[0]===L.coTab;})?L.coTab:"setup"; }
 function coTabsHTML(ct){ return '<div class="cotabs" role="tablist" aria-label="Coordinator sections">'+CO_TABS.map(function(t){ return '<button role="tab" aria-selected="'+(ct===t[0])+'" class="'+(ct===t[0]?'on':'')+'" data-cotab="'+t[0]+'"><span aria-hidden="true">'+t[1]+'</span> '+t[2]+'</button>'; }).join("")+'</div>'; }
-(function(){ document.getElementById("view").addEventListener("click",function(e){ var b=e.target.closest("[data-cotab]"); if(!b) return; L.coTab=b.dataset.cotab; saveL(); renderAll(); }); })();
+(function(){ document.getElementById("view").addEventListener("click",function(e){ var mode=e.target.closest("[data-co-agenda]"); if(mode){ L.coAgendaLive=mode.dataset.coAgenda==="live"; saveL(); renderAll(); return; } var b=e.target.closest("[data-cotab]"); if(!b) return; L.coTab=b.dataset.cotab; saveL(); renderAll(); }); })();
 function coordHTML(){
   var h='<section class="card">';
   if(!S.pin.hash && (L.pendingCo || (NET.mode && !NET.synced))){
@@ -164,9 +164,13 @@ function coordHTML(){
   h+='<div class="note">Role players fill in automatically on every device: names for each role, the Timer\'s Prepared Speech, Evaluations and Role reports lists, and the report header.</div>';
   }
   /* agenda items */
+  if(CT==="agenda") h+='<div class="row" role="group" aria-label="Agenda view">'+
+    '<button class="btn" data-co-agenda="plan" aria-pressed="'+(!L.coAgendaLive)+'">Saved plan</button>'+
+    '<button class="btn" data-co-agenda="live" aria-pressed="'+!!L.coAgendaLive+'">Live running order</button></div>';
+  if(CT==="agenda"&&L.coAgendaLive) return h+'</section>'+agendaViewHTML(true);
   if(CT==="agenda"){
   var AGL=itemsSorted();
-  h+='<h2 class="sec">📋 Agenda</h2>'+tplHTML()+
+  h+='<h2 class="sec">📋 Saved agenda plan</h2>'+tplHTML()+
     '<div class="agtools"><label class="agst">Start at <input class="t" type="time" id="agStart" aria-label="Agenda start time" value="'+esc(AGL[0]?AGL[0].time:"")+'"></label>'+
     '<span class="seg" role="group" aria-label="Move the whole agenda"><button data-agshift="-5" title="Move every item 5 minutes earlier">−5 min</button><button data-agshift="5" title="Move every item 5 minutes later">+5 min</button></span>'+
     '<span class="saved" id="agSpan">'+esc(agSpanText())+'</span></div>'+

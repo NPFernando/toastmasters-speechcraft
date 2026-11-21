@@ -24,11 +24,11 @@ function liveRoleCueHTML(){
   if(!c.cur) return "";
   var item=itemIsMine(c.cur)?c.cur:itemIsMine(c.next)?c.next:null;
   if(!item) return "";
-  var role=liveItemRole(item), details=liveItemExtra(item);
+  var role=liveItemRole(item), details=liveItemExtra(item), estimate=item===c.next?nextLiveEstimate(c):null;
   var row=item.rowId?findRow("ps",item.rowId):item.role==="keynote"?presentationRow(item.id):null;
   if(row) details=[details,limitsLine("ps",row)].filter(Boolean).join(" · ");
   return '<div class="note live-role-cue"><b>'+(item===c.cur?"You’re on now":"You’re up next")+'</b> · '+esc(roleName(role))+
-    (item.rowId?' · '+esc(item.text):'')+(details?'<div>'+esc(details)+'</div>':'')+
+    (item.rowId?' · '+esc(item.text):'')+(estimate!=null?' · Est. '+esc(fmtHM(min2hm(estimate))):'')+(details?'<div>'+esc(details)+'</div>':'')+
     '<button class="btn sm" data-live-open-role="'+role+'">Open my role</button></div>';
 }
 var lastNudge="";

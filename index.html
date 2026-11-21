@@ -1285,7 +1285,7 @@ function orgUndoApply(){
 function orgSnapA(){ var a=clone(S.agenda); delete a.fu; delete a.u; return a; }
 function orgSnapM(){ var m=clone(S.members); delete m.fu; delete m.u; return m; }
 function undoRemove(){
-  if(anyUndo){ var f=anyUndo; anyUndo=null; clearTimeout(undoTimer); document.getElementById("toast").classList.remove("on"); f(); commit(); renderAll(); showToastMsg("Undone"); return; }
+  if(anyUndo){ var f=anyUndo; anyUndo=null; clearTimeout(undoTimer); document.getElementById("toast").classList.remove("on"); if(f()===false){ showToastMsg("The running order has changed. Undo is no longer available."); return; } commit(); showToastMsg("Undone"); return; }
   if(orgUndo){ orgUndoApply(); return; }
   if(!lastRemoved) return; var x=lastRemoved; lastRemoved=null;
   delete S.dead[x.item.id]; tick(x.item);
@@ -1902,6 +1902,25 @@ function preparedBlockRequirement(){
     return seconds+limits.r+60;
   },0)/60);
 }
+
+/* Estimate from the current turn's actual start and its planned duration. */
+function nextLiveEstimate(c){
+  if(!c.cur||!c.next) return null;
+  var started=S.run.started[c.cur.id];
+  if(!Number.isFinite(started)) return null;
+  var duration, plan=itemsSorted();
+  if(c.cur.rowId){
+    duration=Math.ceil(limOf("ps",findRow("ps",c.cur.rowId)).r/60)+1;
+  } else {
+    var index=plan.findIndex(function(it){return it.id===c.cur.id;});
+    duration=index>=0?agDur(plan,index):null;
+    if(c.cur.x==="speakers"&&duration!=null) duration=Math.max(0,duration-preparedBlockRequirement());
+  }
+  if(duration==null) return null;
+  var offset=(S.run.adj?.[c.next.id]||0)-(S.run.adj?.[c.cur.id]||0);
+  var end=new Date(Math.max(now(),started+(duration+offset)*60000));
+  return end.getHours()*60+end.getMinutes()+(end.getSeconds()>0?1:0);
+}
 /* ---------- how the agenda ran: planned vs actual length of each item ---------- */
 function runSummary(){
   var st=(S.run&&S.run.started)||{}, plan=plannedRunItems(), done=plan.filter(function(it){return st[it.id]!=null;}).sort(function(a,b){return st[a.id]-st[b.id];});
@@ -2294,7 +2313,7 @@ function dryBannerHTML(){ return S.meta&&S.meta.test?'<div class="drybanner" rol
 var CO_TABS=[["setup","⚙️","Set-up"],["agenda","📋","Agenda"],["people","👥","People"],["after","🏁","After"]];
 function coTab(){ return CO_TABS.some(function(t){return t[0]===L.coTab;})?L.coTab:"setup"; }
 function coTabsHTML(ct){ return '<div class="cotabs" role="tablist" aria-label="Coordinator sections">'+CO_TABS.map(function(t){ return '<button role="tab" aria-selected="'+(ct===t[0])+'" class="'+(ct===t[0]?'on':'')+'" data-cotab="'+t[0]+'"><span aria-hidden="true">'+t[1]+'</span> '+t[2]+'</button>'; }).join("")+'</div>'; }
-(function(){ document.getElementById("view").addEventListener("click",function(e){ var b=e.target.closest("[data-cotab]"); if(!b) return; L.coTab=b.dataset.cotab; saveL(); renderAll(); }); })();
+(function(){ document.getElementById("view").addEventListener("click",function(e){ var mode=e.target.closest("[data-co-agenda]"); if(mode){ L.coAgendaLive=mode.dataset.coAgenda==="live"; saveL(); renderAll(); return; } var b=e.target.closest("[data-cotab]"); if(!b) return; L.coTab=b.dataset.cotab; saveL(); renderAll(); }); })();
 function coordHTML(){
   var h='<section class="card">';
   if(!S.pin.hash && (L.pendingCo || (NET.mode && !NET.synced))){
@@ -2353,9 +2372,13 @@ function coordHTML(){
   h+='<div class="note">Role players fill in automatically on every device: names for each role, the Timer\'s Prepared Speech, Evaluations and Role reports lists, and the report header.</div>';
   }
   /* agenda items */
+  if(CT==="agenda") h+='<div class="row" role="group" aria-label="Agenda view">'+
+    '<button class="btn" data-co-agenda="plan" aria-pressed="'+(!L.coAgendaLive)+'">Saved plan</button>'+
+    '<button class="btn" data-co-agenda="live" aria-pressed="'+!!L.coAgendaLive+'">Live running order</button></div>';
+  if(CT==="agenda"&&L.coAgendaLive) return h+'</section>'+agendaViewHTML(true);
   if(CT==="agenda"){
   var AGL=itemsSorted();
-  h+='<h2 class="sec">📋 Agenda</h2>'+tplHTML()+
+  h+='<h2 class="sec">📋 Saved agenda plan</h2>'+tplHTML()+
     '<div class="agtools"><label class="agst">Start at <input class="t" type="time" id="agStart" aria-label="Agenda start time" value="'+esc(AGL[0]?AGL[0].time:"")+'"></label>'+
     '<span class="seg" role="group" aria-label="Move the whole agenda"><button data-agshift="-5" title="Move every item 5 minutes earlier">−5 min</button><button data-agshift="5" title="Move every item 5 minutes later">+5 min</button></span>'+
     '<span class="saved" id="agSpan">'+esc(agSpanText())+'</span></div>'+
@@ -4386,15 +4409,26 @@ function liveEditableItems(items){
     return !row||rowState(row)==="idle";
   });
 }
+function setLiveOrder(order){
+  S.run.order=order;
+  S.run.orderU=Math.max(now(),(S.run.orderU||S.run.u||0)+1);
+}
 function reorderLiveItem(id,targetId,after){
   var items=runItems(), editable=liveEditableItems(items);
   if(id===targetId||!editable.some(function(it){return it.id===id;})||!editable.some(function(it){return it.id===targetId;})) return false;
   var order=items.map(function(it){return it.id;}).filter(function(value){return value!==id;});
   order.splice(order.indexOf(targetId)+(after?1:0),0,id);
   if(order.every(function(value,i){return value===items[i].id;})) return false;
-  S.run.order=order;
-  S.run.orderU=Math.max(now(),(S.run.orderU||S.run.u||0)+1);
-  commit(); return true;
+  var previous=(S.run.order||[]).slice(), mid=S.mid, current=S.run.cur;
+  setLiveOrder(order);
+  var version=S.run.orderU;
+  commit();
+  offerUndo("Running order updated",function(){
+    if(S.mid!==mid||S.run.cur!==current||S.run.orderU!==version||
+      !liveEditableItems(runItems()).some(function(it){return it.id===id;})) return false;
+    setLiveOrder(previous);
+  });
+  return true;
 }
 function runMoveEnd(id){
   var last=liveEditableItems(runItems()).at(-1);
@@ -4403,8 +4437,19 @@ function runMoveEnd(id){
 function runToggleSkip(id){
   if(!liveEditableItems(runItems()).some(function(it){return it.id===id;})) return;
   S.run.skip=S.run.skip||{};
-  if(S.run.skip[id]) delete S.run.skip[id]; else S.run.skip[id]=true;
-  S.run.by=runBy(); tick(S.run); commit();
+  var skipped=!isSkipped(id), mid=S.mid;
+  setLiveSkip(id,skipped);
+  var version=S.run.u;
+  commit();
+  offerUndo(skipped?"Agenda item skipped":"Agenda item restored",function(){
+    if(S.mid!==mid||S.run.u!==version||
+      !liveEditableItems(runItems()).some(function(it){return it.id===id;})) return false;
+    setLiveSkip(id,!skipped);
+  });
+}
+function setLiveSkip(id,skipped){
+  if(skipped) S.run.skip[id]=true; else delete S.run.skip[id];
+  S.run.by=runBy(); tick(S.run);
 }
 function queuedPreparedRows(){
   return orderPreparedTimerRows(S.rows.ps).filter(function(row){
@@ -4873,7 +4918,7 @@ function dashHTML(){
      '<button class="btn" id="projOpen">📺 Projector view</button></div>';
   if(ss){ var who=whoForItem(c.cur);
     h+='<div class="dh-now"><div class="dh-lbl">Now</div><div class="dh-item"><b>'+esc(fmtHM(rt(c.cur)))+'</b> '+esc(arole(c.cur.role).n)+(who?' · '+esc(who):'')+'<div class="muted">'+esc(c.cur.text)+'</div></div></div>';
-    if(c.next){ var wn=whoForItem(c.next); h+='<div class="dh-next"><div class="dh-lbl">Next</div><div class="dh-item"><b>'+esc(fmtHM(rt(c.next)))+'</b> '+esc(arole(c.next.role).n)+(wn?' · '+esc(wn):'')+(c.next.rowId?'<div class="muted">'+esc(c.next.text)+'</div>':'')+'</div></div>'; }
+    if(c.next){ var wn=whoForItem(c.next), estimate=nextLiveEstimate(c); h+='<div class="dh-next"><div class="dh-lbl">Next</div><div class="dh-item"><b>'+esc(estimate==null?fmtHM(rt(c.next)):'Est. '+fmtHM(min2hm(estimate)))+'</b> '+esc(arole(c.next.role).n)+(wn?' · '+esc(wn):'')+(c.next.rowId?'<div class="muted">'+esc(c.next.text)+'</div>':'')+'</div></div>'; }
     if(ss.txt) h+='<div class="'+ss.cls+'" style="margin-top:6px;font-weight:700">'+ss.txt+'</div>';
   } else if(S.run.endAt){ h+='<div class="dh-now"><div class="dh-lbl">Meeting finished</div><div class="dh-item">'+esc(hhmm(S.run.endAt))+'</div></div>'; }
   else { var f=nextLive(c.its,0); h+='<div class="dh-now"><div class="dh-lbl">Not started</div><div class="dh-item">The Toastmaster starts the run-sheet when the meeting begins.'+(f?'<div class="muted">First: '+esc(fmtHM(f.time))+' '+esc(arole(f.role).n)+(whoForItem(f)?' · '+esc(whoForItem(f)):'')+'</div>':'')+'</div></div>'; }
@@ -4896,14 +4941,15 @@ function dashHTML(){
   return h;
 }
 /* the agenda for everyone, with where the meeting is up to */
-function agendaViewHTML(){
-  var A=S.agenda, c=curItem(), editable=liveEditableItems(c.its), h='<section class="card"><div class="row" style="justify-content:space-between"><h2 class="sec" style="margin:0">📋 Agenda'+(A.no?' · No '+esc(A.no):'')+'</h2><button class="btn" id="agPrint">📄 Print / PDF</button></div>';
+function agendaViewHTML(embedded){
+  var A=S.agenda, c=curItem(), editable=liveEditableItems(c.its), h='<section class="card"><div class="row" style="justify-content:space-between"><h2 class="sec" style="margin:0">Live running order</h2><div class="row">'+(canEditLiveAgenda()?'<button class="btn" data-copy-live-agenda>Copy running order</button>':'')+(embedded?'':'<button class="btn" id="agPrint">📄 Print plan / PDF</button>')+'</div></div>';
   h+='<div class="saved" style="margin:4px 0 10px">'+esc(fmtDate(S.meta.date)||"")+(A.venue?' · '+esc(A.venue):'')+'</div>'+(A.theme?'<p><b>Meeting theme</b> · '+esc(A.theme)+'</p>':'')+(editable.length>1?'<p class="saved">Drag future items or use Move earlier and Move later. Times shown are from the plan, with any live time adjustments.</p>':'')+'<div class="agv2">';
   c.its.forEach(function(it){
     var who=whoForItem(it), st=isSkipped(it.id)?"skip":(c.cur&&c.cur.id===it.id)?"cur":(S.run.started&&S.run.started[it.id]!=null)?"done":"";
+    var estimate=it.id===c.next?.id?nextLiveEstimate(c):null;
     var x=it.rowId?esc(liveItemExtra(it)):it.x==="speakers"?"":agExtraHTML(it.x,it);
     var index=editable.indexOf(it), movable=index>=0&&editable.length>1;
-    h+='<div class="agv2i '+st+'" data-live-item="'+esc(it.id)+'"'+(movable?' data-live-movable':'')+'><div class="agv2t">'+esc(fmtHM(rt(it)))+'</div><div><div class="agv2r">'+esc(arole(it.role).n)+(who?' · <b>'+esc(who)+'</b>':'')+(st==="cur"?' <span class="badge on">Now</span>':st==="skip"?' <span class="badge no">Skipped</span>':'')+'</div><div class="agv2x">'+agActivityHTML(Object.assign({},it,{x:""}))+'</div>'+(x?'<div class="agv2s">'+x+'</div>':'')+(movable?agendaMoveControls(it,index,editable):'')+'</div></div>';
+    h+='<div class="agv2i '+st+'" data-live-item="'+esc(it.id)+'"'+(movable?' data-live-movable':'')+'><div class="agv2t">'+esc(fmtHM(rt(it)))+(estimate!=null?'<div class="saved">Est. '+esc(fmtHM(min2hm(estimate)))+'</div>':'')+'</div><div><div class="agv2r">'+esc(arole(it.role).n)+(who?' · <b>'+esc(who)+'</b>':'')+(st==="cur"?' <span class="badge on">Now</span>':st==="skip"?' <span class="badge no">Skipped</span>':'')+'</div><div class="agv2x">'+agActivityHTML(Object.assign({},it,{x:""}))+'</div>'+(x?'<div class="agv2s">'+x+'</div>':'')+(movable?agendaMoveControls(it,index,editable):'')+(index>=0?'<button class="btn sm" data-live-skip="'+esc(it.id)+'">'+(st==='skip'?'Restore item':'Skip item')+'</button>':'')+'</div></div>';
   });
   h+='</div>'+(A.next?'<div class="saved" style="margin-top:10px">Next meeting: '+esc(fmtDate(A.next))+'</div>':'')+'</section>';
   return h;
@@ -4948,7 +4994,7 @@ function agendaMoveControls(item,index,editable){
     dragged=""; clearDrop();
     if(!id||!row) return;
     event.preventDefault();
-    if(reorderLiveItem(id,row.dataset.liveItem,dropAfter(event,row))) showToastMsg("Running order updated");
+    reorderLiveItem(id,row.dataset.liveItem,dropAfter(event,row));
   });
   view.addEventListener("dragend",function(){ dragged=""; clearDrop(); });
   view.addEventListener("pointerdown",function(event){
@@ -4969,20 +5015,33 @@ function agendaMoveControls(item,index,editable){
     var move=touch; touch=null; clearDrop();
     if(Math.abs(event.clientY-move.startY)<8) return;
     var row=document.elementFromPoint(event.clientX,event.clientY)?.closest("[data-live-movable]");
-    if(row&&reorderLiveItem(move.id,row.dataset.liveItem,dropAfter(event,row))) showToastMsg("Running order updated");
+    if(row) reorderLiveItem(move.id,row.dataset.liveItem,dropAfter(event,row));
   });
   view.addEventListener("lostpointercapture",function(event){
     if(touch?.pointer===event.pointerId){ touch=null; clearDrop(); }
   });
   view.addEventListener("click",function(event){
+    var skip=event.target.closest("[data-live-skip]");
+    if(skip){ runToggleSkip(skip.dataset.liveSkip); return; }
+    if(event.target.closest("[data-copy-live-agenda]")&&canEditLiveAgenda()){ copyText(liveAgendaText()); return; }
     var button=event.target.closest("[data-live-move]");
     if(!button||button.getAttribute("aria-disabled")==="true") return;
     var items=liveEditableItems(runItems()), id=button.dataset.liveId, after=button.dataset.liveMove==="later";
     var index=items.findIndex(function(it){return it.id===id;});
     var adjacent=index<0?null:items[index+(after?1:-1)];
-    if(adjacent&&reorderLiveItem(id,adjacent.id,after)) showToastMsg("Running order updated");
+    if(adjacent) reorderLiveItem(id,adjacent.id,after);
   });
 })();
+
+function liveAgendaText(){
+  var c=curItem(), estimate=nextLiveEstimate(c);
+  return ["Live running order · "+(S.agenda.title||GROUP)].concat(c.its.slice(Math.max(0,c.i)).filter(function(it){
+    return !isSkipped(it.id);
+  }).map(function(it){
+    var time=it.id===c.next?.id&&estimate!=null?"Est. "+fmtHM(min2hm(estimate)):"";
+    return [it.id===c.cur?.id?"Now":time,itemLabel(it),liveItemExtra(it).startsWith("Evaluator:")?liveItemExtra(it):""].filter(Boolean).join(" · ");
+  })).join("\n");
+}
 /* ---------- Focus mode: only what the role needs right now ---------- */
 var FOCUS_ROLES={timer:1,ah:1,gram:1,tmod:1,ttm:1};
 function inFocus(){ return curView()==="role" && !!L.focus && !!FOCUS_ROLES[L.role]; }
@@ -5724,11 +5783,11 @@ function liveRoleCueHTML(){
   if(!c.cur) return "";
   var item=itemIsMine(c.cur)?c.cur:itemIsMine(c.next)?c.next:null;
   if(!item) return "";
-  var role=liveItemRole(item), details=liveItemExtra(item);
+  var role=liveItemRole(item), details=liveItemExtra(item), estimate=item===c.next?nextLiveEstimate(c):null;
   var row=item.rowId?findRow("ps",item.rowId):item.role==="keynote"?presentationRow(item.id):null;
   if(row) details=[details,limitsLine("ps",row)].filter(Boolean).join(" · ");
   return '<div class="note live-role-cue"><b>'+(item===c.cur?"You’re on now":"You’re up next")+'</b> · '+esc(roleName(role))+
-    (item.rowId?' · '+esc(item.text):'')+(details?'<div>'+esc(details)+'</div>':'')+
+    (item.rowId?' · '+esc(item.text):'')+(estimate!=null?' · Est. '+esc(fmtHM(min2hm(estimate))):'')+(details?'<div>'+esc(details)+'</div>':'')+
     '<button class="btn sm" data-live-open-role="'+role+'">Open my role</button></div>';
 }
 var lastNudge="";
