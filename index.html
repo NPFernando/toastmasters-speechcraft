@@ -659,6 +659,23 @@ body.dialog-open #app{isolation:isolate}
   .conn-share{grid-template-columns:1fr}
   .conn-qr .qr{width:min(150px,100%)}
 }
+
+
+/* More options disclosure */
+.moremenu{width:380px;z-index:48;padding:10px}
+.morehead{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 8px 8px}
+.morehead h2{font-size:1rem;margin:0}
+.moregroup,.moremenu .mset{border-top:1px solid var(--line);padding:8px 0 4px;margin:0}
+.moregroup h3,.moremenu .mset h3{color:var(--muted);font-size:.82rem;margin:0;padding:0 12px 4px}
+.moregroup .mi{width:100%;min-height:44px}
+.moregroup .mi[hidden]{display:none}
+.moregroup .more-caution{border-left:3px solid var(--r)}
+.moremenu .mset{padding:8px 12px 4px}
+.moremenu .mset h3{padding:0}
+.moremenu .mset h3 small{font-weight:400}
+@media (max-width:640px){
+  .moremenu{position:fixed;inset:auto 12px calc(66px + env(safe-area-inset-bottom));width:auto}
+}
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#004165">
@@ -679,25 +696,41 @@ body.dialog-open #app{isolation:isolate}
       <span class="saved" id="saved"></span>
       <button class="conn" id="connBtn" aria-haspopup="dialog" aria-controls="connModal" title="Connect devices"><i></i><span id="connTxt">Not connected</span></button>
       <button class="btn ghost" id="homeBtn" title="Back to the start screen: choose your role and meeting">🏠 Home</button>
-      <span class="morewrap"><button class="btn ghost" id="moreBtn" aria-controls="moreMenu" aria-expanded="false" title="More options">⋯ More</button>
-        <span class="moremenu" id="moreMenu" role="group" aria-label="More options">
-          <button class="mi mobonly" id="homeMi">🏠 Home<small>Start screen: change your role or meeting</small></button>
-          <button class="mi" id="backupBtn">⤓ Save meeting record<small>Download this meeting as a file (backup)</small></button>
-          <button class="mi" id="restoreBtn">⤒ Import meeting record<small>Bring a saved record back onto this device</small></button>
-          <button class="mi" id="newMeeting">🆕 New meeting<small>Clear this meeting; keep members and settings</small></button>
-          <button class="mi" id="installBtn" hidden>📲 Install as an app<small>Home-screen icon; opens even with weak signal</small></button>
-          <button class="mi" id="ccBtn">🔌 Connection check<small>Is this device ready for the meeting?</small></button>
-          <button class="mi" id="howBtn">❓ How to use<small>Short tips for every part of the app</small></button>
-          <button class="mi" id="guidesBtn">📘 Role guides<small>One printable page per role</small></button>
-          <button class="mi" id="practiceBtn">🎓 Practice meeting<small>Try every role with sample data; the real meeting isn’t touched</small></button>
-          <button class="mi" id="projBtn">📺 Projector view<small>Full screen for the room screen or Zoom share</small></button>
-          <a class="mi" href="https://github.com/NPFernando/toastmasters-speechcraft" target="_blank" rel="noopener">🐙 Open on GitHub<small>Source code, issues and ideas</small></a>
-          <button class="mi" id="fbBtn">💬 Report a problem or idea<small>Goes to the organisers; no account needed</small></button>
-          <button class="mi" id="aboutBtn">ℹ️ About &amp; clean up<small>Help, version, reset this device</small></button>
-          <span class="mset" id="mset"><b>Display <small>this device</small></b>
+      <div class="morewrap"><button class="btn ghost" id="moreBtn" aria-controls="moreMenu" aria-expanded="false">⋯ More</button>
+        <div class="moremenu" id="moreMenu" role="group" aria-labelledby="moreTitle">
+          <div class="morehead"><h2 id="moreTitle" tabindex="-1">More options</h2><button class="btn sm" id="moreClose">Close</button></div>
+          <section class="moregroup" aria-labelledby="moreMeeting">
+            <h3 id="moreMeeting">Meeting</h3>
+            <button class="mi mobonly" id="homeMi">🏠 Home<small>Change your role or meeting</small></button>
+            <button class="mi" id="projBtn">📺 Projector view<small>Show the meeting on a room screen or share it online</small></button>
+            <button class="mi" id="ccBtn">🔌 Connection check</button>
+          </section>
+          <section class="moregroup" aria-labelledby="moreRecords">
+            <h3 id="moreRecords">Meeting records</h3>
+            <button class="mi" id="backupBtn">⤓ Download meeting record</button>
+            <button class="mi" id="restoreBtn">⤒ Import meeting record</button>
+            <button class="mi more-caution" id="newMeeting">🆕 Start a new meeting<small>Clears the current meeting. Keeps members and settings.</small></button>
+          </section>
+          <section class="moregroup" aria-labelledby="moreHelp">
+            <h3 id="moreHelp">Help and practice</h3>
+            <button class="mi" id="howBtn">❓ How to use</button>
+            <button class="mi" id="guidesBtn">📘 Printable role guides</button>
+            <button class="mi" id="practiceBtn">🎓 Practice meeting<small>Try roles with sample data</small></button>
+            <button class="mi" id="fbBtn">💬 Report a problem or idea</button>
+          </section>
+          <section class="moregroup" aria-labelledby="moreApp">
+            <h3 id="moreApp">App and device</h3>
+            <button class="mi" id="installBtn" hidden>📲 Install as an app</button>
+            <button class="mi" id="aboutBtn">ℹ️ About &amp; device reset</button>
+            <a class="mi" href="https://github.com/NPFernando/toastmasters-speechcraft" target="_blank" rel="noopener">Open on GitHub ↗<small>Source code and issues (new tab)</small></a>
+          </section>
+          <section class="mset" id="mset" aria-labelledby="moreDisplay">
+            <h3 id="moreDisplay">Display <small>This device</small></h3>
             <span class="seg" role="group" aria-label="Theme"><button data-theme-set="auto">Auto</button><button data-theme-set="light">☀️ Light</button><button data-theme-set="dark">🌙 Dark</button></span>
-            <label class="tgl"><input type="checkbox" id="bigText"> <span>Bigger text</span></label></span>
-        </span></span>
+            <label class="tgl"><input type="checkbox" id="bigText"> <span>Bigger text</span></label>
+          </section>
+        </div>
+      </div>
       <input type="file" id="restoreFile" accept=".json,application/json" style="display:none">
       <button class="btn primary" id="openReport" aria-haspopup="dialog" aria-controls="reportWrap">Meeting report</button>
     </div>
@@ -4684,6 +4717,7 @@ function renderNav(){
     var focused=document.activeElement?.dataset.nav;
     el.navHTML=html;
     el.innerHTML=html;
+    if(document.getElementById("moreMenu").classList.contains("on")) el.querySelector('[data-nav="more"]').setAttribute("aria-expanded","true");
     if(focused) el.querySelector('[data-nav="'+focused+'"]')?.focus({preventScroll:true});
   }
   document.body.classList.toggle("v-now",v==="now"); document.body.classList.toggle("v-agenda",v==="agenda");
@@ -4691,7 +4725,7 @@ function renderNav(){
 document.getElementById("bnav").addEventListener("click",function(e){
   var b=e.target.closest("[data-nav]"); if(!b) return; var n=b.dataset.nav;
   if(n==="report"){ document.getElementById("openReport").click(); return; }
-  if(n==="more"){ e.stopPropagation(); openMoreMenu(true); return; }
+  if(n==="more"){ e.stopPropagation(); openMoreMenu(); return; }
   setView(n);
 });
 
@@ -5647,27 +5681,26 @@ applyDisplay();
 /* ---------- ⋯ More menu ---------- */
 (function(){
   var b=document.getElementById("moreBtn"), m=document.getElementById("moreMenu");
-  function setOpen(open,fromNav,restore){
-    var mobile=document.querySelector('[data-nav="more"]'), wasOpen=m.classList.contains("on");
-    var trigger=(fromNav||(!b.getClientRects().length&&mobile))?mobile:b;
-    if(open){
-      var narrow=trigger===mobile;
-      m.style.position=narrow?"fixed":"";
-      m.style.left=m.style.right=narrow?"12px":"";
-      m.style.top=narrow?"auto":"";
-      m.style.bottom=narrow?"calc(66px + env(safe-area-inset-bottom))":"";
-    }
+  var layout=window.matchMedia("(max-width:640px)");
+  function isOpen(){ return m.classList.contains("on"); }
+  function setOpen(open,restore){
+    var mobile=document.querySelector('[data-nav="more"]'), wasOpen=isOpen();
     m.classList.toggle("on",open);
-    b.setAttribute("aria-expanded",open?"true":"false");
-    mobile?.setAttribute("aria-expanded",open?"true":"false");
-    if(open) Array.from(m.querySelectorAll("button,a[href]")).find(function(el){return !el.disabled&&el.getClientRects().length;})?.focus();
-    else if(wasOpen&&restore) trigger?.focus();
+    b.setAttribute("aria-expanded",String(open));
+    mobile?.setAttribute("aria-expanded",String(open));
+    if(open){ m.scrollTop=0; document.getElementById("moreTitle").focus({preventScroll:true}); }
+    else if(wasOpen&&restore) (layout.matches?mobile:b)?.focus();
   }
-  b.addEventListener("click",function(e){ e.stopPropagation(); setOpen(!m.classList.contains("on"),false,true); });
-  m.addEventListener("click",function(e){ if(e.target.closest("#mset")) return; setTimeout(function(){ setOpen(false,false,m.contains(document.activeElement)); },0); });
-  document.addEventListener("click",function(e){ if(!e.target.closest(".morewrap")) setOpen(false); });
-  window.openMoreMenu=function(fromNav){ setOpen(!m.classList.contains("on"),fromNav,true); };
-  document.addEventListener("keydown",function(e){ if(e.key==="Escape") setOpen(false,false,true); });
+  b.addEventListener("click",function(){ setOpen(!isOpen(),true); });
+  document.getElementById("moreClose").addEventListener("click",function(){ setOpen(false,true); });
+  m.addEventListener("click",function(e){
+    if(e.target.closest("#mset")||!e.target.closest(".mi")) return;
+    setTimeout(function(){ setOpen(false,m.contains(document.activeElement)); },0);
+  });
+  document.addEventListener("click",function(e){ if(!e.target.closest(".morewrap,[data-nav=more]")) setOpen(false); });
+  document.addEventListener("focusin",function(e){ if(isOpen()&&!e.target.closest(".morewrap,[data-nav=more]")) setOpen(false); });
+  window.openMoreMenu=function(){ setOpen(!isOpen(),true); };
+  document.addEventListener("keydown",function(e){ if(e.key==="Escape"&&isOpen()){ e.preventDefault(); setOpen(false,true); } });
 })();
 /* ❓ How to use: kept in ⋯ More so it doesn't take space on every screen */
 (function(){
