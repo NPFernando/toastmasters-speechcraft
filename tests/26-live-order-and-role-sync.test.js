@@ -78,8 +78,16 @@ module.exports = async (browser) => {
   await host.click('[data-rtab="coord"]');
   await T.coTab(host, "agenda");
   await host.click('[data-co-agenda="live"]');
+  await host.getByRole("button", { name: "Jump to Now" }).click();
+  T.assert.equal(await host.evaluate(() => document.activeElement.dataset.liveItem), "d7");
+  await host.locator('[data-live-item^="prepared|"]').filter({ hasText: "Chloe" }).locator("summary").click();
+  await host.getByRole("button", { name: "Move next" }).click();
+  await T.eventually(async () => await order() === "Chloe,Taylor,Asha", "Move next updates the shared Timer order");
+  await host.click("#toastUndo");
+  await T.eventually(async () => await order() === "Taylor,Chloe,Asha", "Undo restores the previous order");
   const firstSpeaker = host.locator('[data-live-item^="prepared|"]').filter({ hasText: "Taylor" });
   T.assert.match(await firstSpeaker.innerText(), /Est\./);
+  await firstSpeaker.locator("summary").click();
   await firstSpeaker.getByRole("button", { name: "Skip item" }).click();
   await T.eventually(async () => (await timer.locator("tr.nextup").locator('[data-edit="name"]').inputValue()) === "Chloe", "Coordinator skip advances the shared Timer queue");
   await host.click("#toastUndo");

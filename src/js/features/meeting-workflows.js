@@ -106,6 +106,14 @@ function floorRecipientOptions(role,selected){
  return (names.length>1?'<option value="">Choose a recipient</option>':names.length?'':'<option value="">Anyone in this role</option>')+
    names.map(function(name){return '<option'+(name===selected?' selected':'')+'>'+esc(name)+'</option>';}).join("");
 }
+function handoverChanged(record,suggested){
+ return record.suggestedItem!==undefined&&
+   (record.suggestedItem!==(suggested?.id||"")||record.suggestedName!==nkey(suggested?.name));
+}
+function addFloorRequest(from,role,name,suggested){
+ S.handovers.push({id:uid(),fromRole:L.role,toRole:role,toName:name,named:true,by:from,itemId:curItem().cur?.id||"",
+   suggestedItem:suggested?.id||"",suggestedName:nkey(suggested?.name),at:now(),state:"pending",ord:maxOrd(S.handovers)+1,u:now()});
+}
 function handoverHTML(choice){
  var from=myName();
  if(!from) return '<p class="saved">Enter your name in My role to hand over the floor.</p>';
@@ -120,8 +128,10 @@ function handoverHTML(choice){
  if(last){
    var recipient=last.toName||roleName(last.toRole);
    var message=last.state==="pending"?"Waiting for "+recipient+" to accept the floor.":last.state==="accepted"?(last.acceptedBy||recipient)+" accepted the floor.":"Handover to "+recipient+" cancelled.";
+   if(pending&&handoverChanged(last,suggested)) message+=' The running order changed.';
    h+='<div class="row"><span role="status">'+esc(message)+'</span>'+
-     (pending?'<button class="btn sm" data-handover-cancel="'+esc(last.id)+'">Cancel handover</button>':'')+'</div>';
+     (pending?'<button class="btn sm" data-handover-cancel="'+esc(last.id)+'">Cancel handover</button>':'')+
+     (pending&&suggested?.name&&handoverChanged(last,suggested)?'<button class="btn sm" data-handover-redirect="'+esc(last.id)+'">Redirect to '+esc(suggested.name)+'</button>':'')+'</div>';
  }
  if(!pending) h+='<div class="row"><label class="f"><b>Hand over to</b><select class="t" id="handoverTarget">'+
    roles.map(function(r){return '<option value="'+r.id+'"'+(r.id===target?' selected':'')+'>'+esc(r.name)+'</option>';}).join("")+
@@ -186,7 +196,7 @@ document.getElementById("view").addEventListener("change",function(event){
  }
 });
 document.getElementById("app").addEventListener("click",function(event){
- var button=event.target.closest("[data-handover-accept],[data-handover-cancel],#handoverSend");
+ var button=event.target.closest("[data-handover-accept],[data-handover-cancel],[data-handover-redirect],#handoverSend");
  if(!button) return;
  if(button.id==="handoverSend"){
    var from=myName(), target=document.getElementById("handoverTarget").value, name=document.getElementById("handoverRecipient").value;
@@ -194,16 +204,23 @@ document.getElementById("app").addEventListener("click",function(event){
    if(!from||!HANDOVER_ROLES.includes(target)||target===L.role&&(!name||nkey(name)===nkey(L.me||from))) return;
    if(names.length&&!names.includes(name)){ document.getElementById("handoverRecipient").focus(); return; }
    if(S.handovers.some(function(x){return x.state==="pending"&&x.fromRole===L.role&&nkey(x.by)===nkey(from);})) return;
-   S.handovers.push({id:uid(),fromRole:L.role,toRole:target,toName:name,named:true,by:from,itemId:curItem().cur?.id||"",at:now(),state:"pending",ord:maxOrd(S.handovers)+1,u:now()});
+   addFloorRequest(from,target,name,suggestedHandover());
    commit(); return;
  }
- var record=S.handovers.find(function(x){return x.id===(button.dataset.handoverAccept||button.dataset.handoverCancel);});
+ var record=S.handovers.find(function(x){return x.id===(button.dataset.handoverAccept||button.dataset.handoverCancel||button.dataset.handoverRedirect);});
  if(!record||record.state!=="pending") return;
  if(button.dataset.handoverAccept&&canAcceptHandover(record)){
    record.state="accepted";
    record.acceptedBy=(L.myNames||{})[record.toRole]||L.me||myName();
    record.acceptedAt=now();
- } else if(button.dataset.handoverCancel&&record.fromRole===L.role&&nkey(myName())===nkey(record.by)) record.state="cancelled";
+ } else if(record.fromRole===L.role&&nkey(myName())===nkey(record.by)){
+   if(button.dataset.handoverRedirect){
+     var suggested=suggestedHandover();
+     if(!suggested?.name||!handoverChanged(record,suggested)) return;
+     addFloorRequest(myName(),suggested.role,suggested.name,suggested);
+   } else if(!button.dataset.handoverCancel) return;
+   record.state="cancelled";
+ }
  else return;
  tick(record); commit();
 });

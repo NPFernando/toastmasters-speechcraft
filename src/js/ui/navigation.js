@@ -80,25 +80,30 @@ function dashHTML(){
 /* the agenda for everyone, with where the meeting is up to */
 function agendaViewHTML(embedded){
   var A=S.agenda, c=curItem(), editable=liveEditableItems(c.its), h='<section class="card"><div class="row" style="justify-content:space-between"><h2 class="sec" style="margin:0">Live running order</h2><div class="row">'+(canEditLiveAgenda()?'<button class="btn" data-copy-live-agenda>Copy running order</button>':'')+(embedded?'':'<button class="btn" id="agPrint">📄 Print plan / PDF</button>')+'</div></div>';
+  var completed=c.its.filter(function(it){return it.id!==c.cur?.id&&(S.run.started[it.id]!=null||it.report&&liveReportState(it.report)==="presented");});
+  if(c.cur||completed.length) h+='<div class="row">'+(c.cur?'<button class="btn sm" data-jump-now>Jump to Now</button>':'')+(completed.length?'<button class="btn sm" data-toggle-completed aria-expanded="'+!!L.showCompletedAgenda+'">'+(L.showCompletedAgenda?'Hide':'Show')+' completed ('+completed.length+')</button>':'')+'</div>';
   h+='<div class="saved" style="margin:4px 0 10px">'+esc(fmtDate(S.meta.date)||"")+(A.venue?' · '+esc(A.venue):'')+'</div>'+(A.theme?'<p><b>Meeting theme</b> · '+esc(A.theme)+'</p>':'')+(editable.length>1?'<p class="saved">Drag future items or use Move earlier and Move later. Times shown are from the plan, with any live time adjustments.</p>':'')+'<div class="agv2">';
   c.its.forEach(function(it){
+    if(!L.showCompletedAgenda&&completed.includes(it)) return;
     var who=whoForItem(it), st=isSkipped(it.id)?"skip":(c.cur&&c.cur.id===it.id)?"cur":(S.run.started&&S.run.started[it.id]!=null)||it.report&&liveReportState(it.report)==="presented"?"done":"";
     var estimate=it.id===c.next?.id?nextLiveEstimate(c):null;
     var x=it.rowId?esc(liveItemExtra(it)):["speakers","evals"].includes(it.x)?"":agExtraHTML(it.x,it);
     var index=editable.indexOf(it), movable=index>=0&&editable.length>1;
-    h+='<div class="agv2i '+st+'" data-live-item="'+esc(it.id)+'"'+(movable?' data-live-movable':'')+'><div class="agv2t">'+esc(fmtHM(rt(it)))+(estimate!=null?'<div class="saved">Est. '+esc(fmtHM(min2hm(estimate)))+'</div>':'')+'</div><div><div class="agv2r">'+esc(arole(it.role).n)+(who?' · <b>'+esc(who)+'</b>':'')+(st==="cur"?' <span class="badge on">Now</span>':st==="skip"?' <span class="badge no">Skipped</span>':st==='done'&&it.report&&liveReportState(it.report)==='presented'?' <span class="badge">Presented</span>':'')+'</div><div class="agv2x">'+agActivityHTML(Object.assign({},it,{x:""}))+'</div>'+(x?'<div class="agv2s">'+x+'</div>':'')+(movable?agendaMoveControls(it,index,editable):'')+(index>=0?'<button class="btn sm" data-live-skip="'+esc(it.id)+'">'+(st==='skip'?'Restore item':'Skip item')+'</button>':'')+'</div></div>';
+    h+='<div class="agv2i '+st+'" data-live-item="'+esc(it.id)+'"'+(movable?' data-live-movable':'')+'><div class="agv2t">'+(estimate!=null&&it.time?'<div class="saved">Planned '+esc(fmtHM(it.time))+'</div>':esc(fmtHM(rt(it))))+(estimate!=null?'<div class="saved">Est. '+esc(fmtHM(min2hm(estimate)))+'</div>':'')+'</div><div><div class="agv2r">'+esc(arole(it.role).n)+(who?' · <b>'+esc(who)+'</b>':'')+(st==="cur"?' <span class="badge on">Now</span>':st==="skip"?' <span class="badge no">Skipped</span>':st==='done'&&it.report&&liveReportState(it.report)==='presented'?' <span class="badge">Presented</span>':'')+'</div><div class="agv2x">'+agActivityHTML(Object.assign({},it,{x:""}))+'</div>'+(x?'<div class="agv2s">'+x+'</div>':'')+(index>=0?agendaMoveControls(it,index,editable,c.next):'')+'</div></div>';
   });
   h+='</div>'+(A.next?'<div class="saved" style="margin-top:10px">Next meeting: '+esc(fmtDate(A.next))+'</div>':'')+'</section>';
   return h;
 }
 
 
-function agendaMoveControls(item,index,editable){
+function agendaMoveControls(item,index,editable,next){
   var label=whoForItem(item)||String(item.text||"").split(" — ")[0]||arole(item.role).n;
-  return '<div class="row live-move"><span class="live-grip" draggable="true" aria-hidden="true" title="Drag to move">⠿ Drag</span>'+
-    [["earlier",index>0],["later",index<editable.length-1]].map(function(action){
-      return '<button class="btn sm" data-live-move="'+action[0]+'" data-live-id="'+esc(item.id)+'" aria-label="Move '+esc(label)+' '+action[0]+'"'+(action[1]?'':' aria-disabled="true"')+'>Move '+action[0]+'</button>';
-    }).join("")+'</div>';
+  return '<div class="row live-move">'+(editable.length>1?'<span class="live-grip" draggable="true" aria-hidden="true" title="Drag to move">⠿ Drag</span>':'')+
+    '<details><summary aria-label="Actions for '+esc(label)+'">Actions</summary><div class="row">'+
+    [["earlier",index>0,"Move earlier"],["later",index<editable.length-1,"Move later"],
+     ["next",!!next&&next.id!==item.id&&!isSkipped(item.id)&&editable.some(function(it){return it.id===next.id;}),"Move next"]].map(function(action){
+      return '<button class="btn sm" data-live-move="'+action[0]+'" data-live-id="'+esc(item.id)+'"'+(action[1]?'':' disabled')+'>'+action[2]+'</button>';
+    }).join("")+'<button class="btn sm" data-live-skip="'+esc(item.id)+'">'+(isSkipped(item.id)?"Restore item":"Skip item")+'</button></div></details></div>';
 }
 (function(){
   var view=document.getElementById("view"), dragged="", touch=null;
@@ -158,14 +163,20 @@ function agendaMoveControls(item,index,editable){
     if(touch?.pointer===event.pointerId){ touch=null; clearDrop(); }
   });
   view.addEventListener("click",function(event){
+    if(event.target.closest("[data-toggle-completed]")){ L.showCompletedAgenda=!L.showCompletedAgenda; saveL(); renderAll(); return; }
+    if(event.target.closest("[data-jump-now]")){
+      var current=view.querySelector(".agv2i.cur");
+      if(current){ current.tabIndex=-1; current.focus({preventScroll:true}); current.scrollIntoView({block:"center"}); }
+      return;
+    }
     var skip=event.target.closest("[data-live-skip]");
     if(skip){ runToggleSkip(skip.dataset.liveSkip); return; }
     if(event.target.closest("[data-copy-live-agenda]")&&canEditLiveAgenda()){ copyText(liveAgendaText()); return; }
     var button=event.target.closest("[data-live-move]");
-    if(!button||button.getAttribute("aria-disabled")==="true") return;
+    if(!button||button.disabled) return;
     var items=liveEditableItems(runItems()), id=button.dataset.liveId, after=button.dataset.liveMove==="later";
     var index=items.findIndex(function(it){return it.id===id;});
-    var adjacent=index<0?null:items[index+(after?1:-1)];
+    var adjacent=button.dataset.liveMove==="next"?curItem().next:index<0?null:items[index+(after?1:-1)];
     if(adjacent) reorderLiveItem(id,adjacent.id,after);
   });
 })();

@@ -52,7 +52,7 @@ function runAdjust(delta){
   rest.forEach(function(it){ var v=(S.run.adj[it.id]||0)+delta; if(v) S.run.adj[it.id]=v; else delete S.run.adj[it.id]; });
   tick(S.run); commit();
 }
-function runRetimeNow(){ var c=curItem(), n=c.cur?c.next:nextLive(c.its,0); if(!n) return; var target=Math.ceil(minutesNow()), m=hm2min(rt(n)); if(m==null) return; runAdjust(target-m); }
+function runRetimeNow(){ var c=curItem(), n=c.cur?c.next:nextLive(c.its,0); if(!n) return; var target=Math.ceil(minutesNow()), m=hm2min(rt(n))??nextLiveEstimate(c); if(m==null) return; runAdjust(target-m); }
 
 
 function preparedBlockRequirement(){
@@ -78,6 +78,7 @@ function nextLiveEstimate(c){
     var index=plan.findIndex(function(it){return it.id===c.cur.id;});
     duration=index>=0?agDur(plan,index):null;
     if(c.cur.x==="evals"&&c.next.report) duration=1;
+    if(duration==null&&c.next.report) duration=1;
     if(c.cur.x==="speakers"&&duration!=null) duration=Math.max(0,duration-preparedBlockRequirement());
   }
   if(duration==null) return null;
