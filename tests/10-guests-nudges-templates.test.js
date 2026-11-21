@@ -48,7 +48,8 @@ module.exports = async (b) => {
   const M = await T.device(b); await T.join(M, code, "SC Nimega Dilshara", ["tmod"]);
   await M.click("#runStart");
   for (let i = 0; i < 5; i++) { await M.click("#runNext"); await T.sleep(550); }
-  await T.eventually(async () => /You.re up next: Toastmaster of the Day/.test(await L.innerText("#nudge")), "speaker nudged before the Prepared Speech session");
   await T.eventually(async () => /You.re on now: Educational Presenter/.test(await K.innerText("#nudge")), "keynote guest nudged when it's their turn");
+  await M.click("#runNext");
+  await T.eventually(async () => /You.re up next: Prepared Speakers.*SC Laurel Senanayake/.test(await L.innerText("#nudge")), "speaker nudged for their own prepared speech");
   T.noErrors(C, L, G, K, M);
 };

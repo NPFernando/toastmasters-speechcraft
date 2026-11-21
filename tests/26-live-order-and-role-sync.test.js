@@ -34,7 +34,9 @@ module.exports = async (browser) => {
   await ben.locator(".live-grip").dragTo(chloe, { targetPosition: { x: 12, y: 8 } });
   await T.eventually(async () => await order() === "Ben,Chloe,Asha", "Drag updates the shared Timer order");
   T.assert.match(await chloe.innerText(), /Evaluator: Dev/);
+  await timer.click('[data-nav="agenda"]');
   T.assert.equal(await timer.locator("[data-live-move]").count(), 0);
+  await timer.click('[data-nav="role"]');
 
   await host.click('[data-nav="role"]');
   await host.click('[data-run="d7"]');
