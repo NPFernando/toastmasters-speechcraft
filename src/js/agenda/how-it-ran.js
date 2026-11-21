@@ -74,13 +74,13 @@ function liveCtlHTML(){
 function runAdjReset(){ S.run.by=runBy(); S.run.adj={}; tick(S.run); commit(); }
 function runAdjTotal(){ var c=curItem(), n=c.cur?c.next:null; return n&&S.run.adj?(S.run.adj[n.id]||0):0; }
 function extraText(x,item){
-  if(x==="speakers"){ var sp=uniq(asList("speakers").concat(S.speeches.filter(function(s){return s.type!=="tt";}).map(function(s){return s.name;}))); return sp.length?"Speakers: "+sp.map(function(n){ var t=speechTitle(n); return n+(t?" — “"+t+"”":""); }).join(", "):""; }
+  if(x==="speakers"){ var sp=agendaPreparedSpeakers(); return sp.length?"Speakers: "+sp.map(function(n){ var t=speechTitle(n); return n+(t?" — “"+t+"”":""); }).join(", "):""; }
   if(x==="keynote"){var p=presentationOf(item&&item.id||keynoteItems()[0]&&keynoteItems()[0].id);return p?(p.name||assigned("keynote")||"")+(p.organization?" ("+p.organization+")":"")+(p.topic?" — "+p.topic:"")+(p.objective?"\nObjectives: "+p.objective:"")+(p.intro?"\nIntroduction: "+p.intro:"")+(p.materials?"\nMaterials: "+p.materials:""):"";}
   if(x==="ttevals"){ var tv=asList("ttevals"); return tv.length?"Evaluators: "+tv.join(", "):""; }
   if(x==="evals"){
     var p=[]; ["timer","ah","gram"].forEach(function(k){ if(assigned(k)) p.push(arole(k).n+" – "+assigned(k)); });
     var se=asList("sevals"), te=asList("ttevals");
-    var pairs=(S.assigns||[]).filter(function(a){return a.evaluator;});
+    var pairs=activeEvaluatorPairs("ps");
     if(pairs.length) p.push("Prepared speech evaluations – "+pairs.map(function(a){return a.evaluator+" (for "+a.speaker+")";}).join(", "));
     else if(se.length) p.push("Prepared speech evaluations – "+se.join(", "));
     if(te.length) p.push("Table Topic evaluations – "+te.join(", "));
@@ -89,6 +89,7 @@ function extraText(x,item){
   return "";
 }
 function whoForItem(it){
+  if(it.report) return it.report.name;
   if(it.rowId) return it.name;
   if(it.role==="keynote") return presentationOf(it.id)?.name||whoFor(it.role);
   return whoFor(it.role);
@@ -98,7 +99,7 @@ function liveItemExtra(it){
     var evaluator=evaluatorOf(it.name);
     return evaluator?"Evaluator: "+evaluator:"";
   }
-  return it.x==="speakers"?"":extraText(it.x,it);
+  return ["speakers","evals"].includes(it.x)?"":extraText(it.x,it);
 }
 function whoFor(role){ var v=asList(role); return v.join(", "); }
 
@@ -109,11 +110,13 @@ function applyAgenda(){
     var nm=assigned(k); if(nm && S.people[k]!==nm){ S.people[k]=nm; S.peopleU[k]=Math.max(now(),(S.peopleU[k]||0)+1); }
   });
   var want={ps:[],ev:[],rep:[]};
-  asList("speakers").forEach(function(n){ want.ps.push({ak:"ps:"+n.toLowerCase(),name:n}); });
+  asList("speakers").forEach(function(n){ want.ps.push({ak:"ps:"+nkey(n),name:n}); });
   var asg=activeEvaluatorPairs("ps");
   asg.forEach(function(a){ want.ev.push({ak:"ev:a:"+nkey(a.speaker),name:a.evaluator+" – evaluating "+a.speaker}); });
   asList("sevals").forEach(function(n){ if(asg.some(function(a){return nkey(a.evaluator)===nkey(n);})) return; want.ev.push({ak:"ev:s:"+n.toLowerCase(),name:n+" – speech evaluation"}); });
-  asList("ttevals").forEach(function(n){ want.ev.push({ak:"ev:t:"+n.toLowerCase(),name:n+" – Table Topics evaluation"}); });
+  reportQueue().filter(function(entry){return entry.role==="tteval";}).forEach(function(entry){
+    want.ev.push({ak:entry.timerKey,name:entry.name+" – "+(entry.speaker?"evaluating "+entry.speaker:"Table Topics evaluation")});
+  });
   [["timer","Timer's report",{g:30,a:45,r:60}],["ah","Ah-Counter's report",{g:30,a:45,r:60}],["gram","Grammarian's report",{g:60,a:90,r:120}]].forEach(function(x){
     var n=assigned(x[0]); if(n) want.rep.push({ak:"rep:"+x[0],name:n+" – "+x[1],lim:x[2]});
   });
@@ -124,7 +127,8 @@ function applyAgenda(){
     want[sid].forEach(function(w){
       var ex=S.rows[sid].find(function(r){return r.ak===w.ak || (sid==="ps" && !String(r.ak||"").startsWith("keynote:") && nkey(baseName(r.name))===nkey(w.name));});
       if(ex){ if(rowState(ex)==="idle" && ex.name!==w.name){ ex.name=w.name; if(w.lim) ex.lim=w.lim; tick(ex); } return; }
-      var r=newRow(sid,w.name); r.ak=w.ak; if(w.lim) r.lim=w.lim; if(sid==="ps"){ var sl=presetLim((speechRec(w.name)||{}).lim); if(sl) r.lim=sl; } S.rows[sid].push(r);
+      if(sid==="ps"){ addAssignedPreparedRow(w.name); return; }
+      var r=newRow(sid,w.name); r.ak=w.ak; if(w.lim) r.lim=w.lim; S.rows[sid].push(r);
     });
   });
 }

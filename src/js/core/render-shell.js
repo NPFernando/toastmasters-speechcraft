@@ -32,6 +32,7 @@ function renderAll(){
   var focusArea=focused?.closest("#view,#roles,#live,#nowStrip,#companion");
   var controlKey=focusArea&&focused.matches("button,a[href]")?focusKey(focused):null;
   populateAgendaMembers();
+  if(ensureAssignedPreparedRows()) commitQuiet();
   pendingRender=false; renderNav(); renderProj();
   renderMeta(); renderRoles(); renderRoster();
   renderLive(); renderNow();
@@ -133,15 +134,11 @@ function nextAgendaTiming(){
     var item=live.its[i];
     if(isSkipped(item.id)) continue;
     var sid, row;
-    if(item.role==="keynote"){ sid="ps"; row=presentationRow(item.id); }
-    else if(item.rowId){ sid="ps"; row=findRow(sid,item.rowId); }
+    if(agendaTimerSession(item)){ sid=agendaTimerSession(item); row=agendaTimerRow(item); }
     else if(item.role==="rrm"){ sid="rr"; row=firstQueued(sid); }
     else if(item.role==="ttm"){ sid="tt"; row=firstQueued(sid); }
-    else if(item.x==="evals"){
-      sid="rep"; row=firstQueued(sid);
-      if(!row){ sid="ev"; row=firstQueued(sid); }
-    }
-    if(row&&rowState(row)==="idle") return {sid:sid,row:row};
+
+    if(row&&rowState(row)==="idle"&&!timerAgendaSkipped(sid,row)) return {sid:sid,row:row};
   }
   return null;
 }

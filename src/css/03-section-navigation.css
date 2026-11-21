@@ -212,3 +212,4 @@ body.dialog-open #app{isolation:isolate}
 .role-turn-status{font-size:.78em;padding:2px 5px;border:1px solid currentColor;border-radius:6px;white-space:nowrap}
 .live-report-queue .tlist li{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
 .live-role-cue .btn{margin-inline-start:8px}
+.agplan-assignments{margin:0 0 8px;padding:0 12px 8px;border-bottom:1px solid var(--line)}

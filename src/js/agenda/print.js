@@ -6,14 +6,14 @@ function agDateShort(iso){ var d=isoDate(iso); if(!d) return iso||""; return ord
 var AG_SIDE=[["president","President"],["saa","Sergeant at Arms"],["tmod","Toastmaster"],["ttm","Table Topics Master"],["keynote","Keynote Presenter"],["rrm","Round Robin Master"],["ge","General Evaluator"],["timer","Timer"],["ah","Ah-Counter"],["gram","Grammarian"],["speakers","Prepared Speakers"],["sevals","Speech Evaluator"],["ttevals","Table Topics Evaluator"],["coord","Speechcraft Coordinator"]];
 function agLines(arr){ return arr.map(function(x){ return '<div class="agl">'+x+'</div>'; }).join(""); }
 function agExtraHTML(x,item){
-  if(x==="speakers"){ var sp=uniq(asList("speakers").concat(S.speeches.filter(function(s){return s.type!=="tt";}).map(function(s){return s.name;}))); if(!sp.length) return "";
+  if(x==="speakers"){ var sp=agendaPreparedSpeakers(); if(!sp.length) return "";
     return '<div class="agsub">'+agLines(sp.map(function(n){ var t=speechTitle(n), e=evaluatorOf(n); return esc(n)+(t?' – “'+esc(t)+'”':'')+(e?' <span class="agev">· evaluator '+esc(e)+'</span>':''); }))+'</div>'; }
   if(x==="keynote"){var p=presentationOf(item&&item.id||keynoteItems()[0]&&keynoteItems()[0].id);return p?'<div class="agsub">'+agLines([esc(p.name||assigned("keynote")||"")+(p.organization?" ("+esc(p.organization)+")":""),esc(p.topic||"")])+'</div>':"";}
   if(x==="ttevals"){ var tv=asList("ttevals"); return tv.length?'<div class="agsub">'+agLines(tv.map(esc))+'</div>':""; }
   if(x==="evals"){
     var h="", rep=["timer","ah","gram"].filter(function(k){return assigned(k);}).map(function(k){ return esc(arole(k).n)+' – '+esc(assigned(k)); });
     if(rep.length) h+='<div class="agsub"><div class="agh">Call for reports:</div>'+agLines(rep)+'</div>';
-    var pairs=(S.assigns||[]).filter(function(a){return a.evaluator;}), se=pairs.length?pairs.map(function(a){ return esc(a.evaluator)+' <span class="agev">(for '+esc(a.speaker)+')</span>'; }):asList("sevals").map(esc);
+    var pairs=activeEvaluatorPairs("ps"), se=pairs.length?pairs.map(function(a){ return esc(a.evaluator)+' <span class="agev">(for '+esc(a.speaker)+')</span>'; }):asList("sevals").map(esc);
     if(se.length) h+='<div class="agsub"><div class="agh">Prepared Speech evaluations –</div>'+agLines(se)+'</div>';
     var te=asList("ttevals"); if(te.length) h+='<div class="agsub"><div class="agh">Table Topics evaluations –</div>'+agLines(te.map(function(ev){ var sp=S.ttassign.filter(function(a){return nkey(a.evaluator)===nkey(ev);}).map(function(a){return a.speaker;}); return esc(ev)+(sp.length?' <span class="agev">(for '+esc(sp.join(", "))+')</span>':''); }))+'</div>';
     return h;

@@ -14,7 +14,7 @@ function focusWhoPicker(who){
 function focusHTML(){
   var r=L.role, h='<div class="fbar"><b>🎯 Focus · '+esc(roleObj(r).name)+'</b><button class="btn sm" data-focus="off">Show everything</button></div>';
   if(r==="timer"){
-    var sid=L.tab||"tt", s=sessionOf(sid)||SESSIONS[0], idle=timerRows(sid).filter(function(x){return rowState(x)==="idle"&&(sid!=="ps"||!preparedTimerSkipped(x));}).slice(0,4);
+    var sid=L.tab||"tt", s=sessionOf(sid)||SESSIONS[0], idle=timerRows(sid).filter(function(x){return rowState(x)==="idle"&&!timerAgendaSkipped(sid,x);}).slice(0,4);
     h+='<section class="card fcard"><div class="flbl">'+esc(s.name)+' · '+esc(limitsLine(sid,null))+'</div>'+
        '<div class="seg fseg">'+SESSIONS.map(function(x){ return '<button data-ftab="'+x.id+'" class="'+(x.id===sid?'on':'')+'">'+esc(x.name)+'</button>'; }).join("")+'</div>'+
        (runningList().length?'<div class="note" style="text-align:center">Timing now — use <b>Stop</b> on the live bar above.</div>':'')+

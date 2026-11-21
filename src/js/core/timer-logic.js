@@ -41,7 +41,7 @@ function runningList(){ var out=[]; SESSIONS.forEach(function(s){ S.rows[s.id].f
 function anyRunning(){ return runningList().length>0; }
 function timerRows(sid){
   var rows=S.rows[sid];
-  if(sid==="ps") return orderPreparedTimerRows(rows);
+  if(["ps","rep","ev"].includes(sid)) return orderAgendaTimerRows(sid,rows);
   if(sid!=="rr") return rows;
   var seen=new Set(rows.filter(function(row){return row.qid&&rowState(row)!=="idle";}).map(roundRobinTurnKey));
   return rows.filter(function(row){
@@ -53,7 +53,7 @@ function timerRows(sid){
   });
 }
 function roundRobinTurnKey(row){ return JSON.stringify([row.qid,nkey(row.name)]); }
-function firstQueued(sid){ return timerRows(sid).find(function(r){return rowState(r)==="idle"&&(sid!=="ps"||!preparedTimerSkipped(r));}); }
+function firstQueued(sid){ return timerRows(sid).find(function(r){return rowState(r)==="idle"&&!timerAgendaSkipped(sid,r);}); }
 var timerConflictMessage="";
 function reconcileTimerTurns(state){
   var running=SESSIONS.flatMap(function(session){
@@ -81,7 +81,7 @@ function reconcileTimerTurns(state){
 }
 function startRow(sid,id){
   var r=findRow(sid,id);
-  if(!r||rowState(r)!=="idle"||(sid==="ps"&&preparedTimerSkipped(r))||(sid==="rr"&&!timerRows(sid).includes(r))) return;
+  if(!r||rowState(r)!=="idle"||timerAgendaSkipped(sid,r)||(sid==="rr"&&!timerRows(sid).includes(r))) return;
   if(S.timerDemo.until){ S.timerDemo.until=0; tick(S.timerDemo); }
   r.timedLim=clone(limOf(sid,r));
   r.start=now(); r.clockOwner=timerClockOwner(); r.end=null; r.manual=null; r.pz=0; r.paused=null;
@@ -151,7 +151,7 @@ function orgUndoApply(){
 function orgSnapA(){ var a=clone(S.agenda); delete a.fu; delete a.u; return a; }
 function orgSnapM(){ var m=clone(S.members); delete m.fu; delete m.u; return m; }
 function undoRemove(){
-  if(anyUndo){ var f=anyUndo; anyUndo=null; clearTimeout(undoTimer); document.getElementById("toast").classList.remove("on"); f(); commit(); renderAll(); showToastMsg("Undone"); return; }
+  if(anyUndo){ var f=anyUndo; anyUndo=null; clearTimeout(undoTimer); document.getElementById("toast").classList.remove("on"); if(f()===false){ showToastMsg("The running order has changed. Undo is no longer available."); return; } commit(); showToastMsg("Undone"); return; }
   if(orgUndo){ orgUndoApply(); return; }
   if(!lastRemoved) return; var x=lastRemoved; lastRemoved=null;
   delete S.dead[x.item.id]; tick(x.item);

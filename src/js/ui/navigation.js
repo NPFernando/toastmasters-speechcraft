@@ -55,12 +55,12 @@ function dashHTML(){
      '<button class="btn" id="projOpen">📺 Projector view</button></div>';
   if(ss){ var who=whoForItem(c.cur);
     h+='<div class="dh-now"><div class="dh-lbl">Now</div><div class="dh-item"><b>'+esc(fmtHM(rt(c.cur)))+'</b> '+esc(arole(c.cur.role).n)+(who?' · '+esc(who):'')+'<div class="muted">'+esc(c.cur.text)+'</div></div></div>';
-    if(c.next){ var wn=whoForItem(c.next); h+='<div class="dh-next"><div class="dh-lbl">Next</div><div class="dh-item"><b>'+esc(fmtHM(rt(c.next)))+'</b> '+esc(arole(c.next.role).n)+(wn?' · '+esc(wn):'')+(c.next.rowId?'<div class="muted">'+esc(c.next.text)+'</div>':'')+'</div></div>'; }
+    if(c.next){ var wn=whoForItem(c.next), estimate=nextLiveEstimate(c); h+='<div class="dh-next"><div class="dh-lbl">Next</div><div class="dh-item"><b>'+esc(estimate==null?fmtHM(rt(c.next)):'Est. '+fmtHM(min2hm(estimate)))+'</b> '+esc(arole(c.next.role).n)+(wn?' · '+esc(wn):'')+((c.next.rowId||c.next.report)?'<div class="muted">'+esc(c.next.text)+'</div>':'')+'</div></div>'; }
     if(ss.txt) h+='<div class="'+ss.cls+'" style="margin-top:6px;font-weight:700">'+ss.txt+'</div>';
   } else if(S.run.endAt){ h+='<div class="dh-now"><div class="dh-lbl">Meeting finished</div><div class="dh-item">'+esc(hhmm(S.run.endAt))+'</div></div>'; }
   else { var f=nextLive(c.its,0); h+='<div class="dh-now"><div class="dh-lbl">Not started</div><div class="dh-item">The Toastmaster starts the run-sheet when the meeting begins.'+(f?'<div class="muted">First: '+esc(fmtHM(f.time))+' '+esc(arole(f.role).n)+(whoForItem(f)?' · '+esc(whoForItem(f)):'')+'</div>':'')+'</div></div>'; }
   var floor=document.querySelector(".floor-controls");
-  var choice=floor?.dataset.item===(S.run.cur||"")&&floor.dataset.role===L.role
+  var choice=floor?.hasAttribute("data-manual")&&floor.dataset.item===(S.run.cur||"")&&floor.dataset.role===L.role&&floor.dataset.suggested===(suggestedHandover()?.id||"")
     ?{role:document.getElementById("handoverTarget")?.value,name:document.getElementById("handoverRecipient")?.value}:null;
   h+=liveRoleCueHTML()+liveCtlHTML()+liveSubstitutionHTML(c)+handoverHTML(choice);
   if(pr.n) h+='<div class="dh-prog"><div class="bar"><i style="width:'+Math.round(pr.done/pr.n*100)+'%"></i></div><span class="saved">'+pr.done+' of '+pr.n+' agenda items</span></div>';
@@ -78,14 +78,15 @@ function dashHTML(){
   return h;
 }
 /* the agenda for everyone, with where the meeting is up to */
-function agendaViewHTML(){
-  var A=S.agenda, c=curItem(), editable=liveEditableItems(c.its), h='<section class="card"><div class="row" style="justify-content:space-between"><h2 class="sec" style="margin:0">📋 Agenda'+(A.no?' · No '+esc(A.no):'')+'</h2><button class="btn" id="agPrint">📄 Print / PDF</button></div>';
+function agendaViewHTML(embedded){
+  var A=S.agenda, c=curItem(), editable=liveEditableItems(c.its), h='<section class="card"><div class="row" style="justify-content:space-between"><h2 class="sec" style="margin:0">Live running order</h2><div class="row">'+(canEditLiveAgenda()?'<button class="btn" data-copy-live-agenda>Copy running order</button>':'')+(embedded?'':'<button class="btn" id="agPrint">📄 Print plan / PDF</button>')+'</div></div>';
   h+='<div class="saved" style="margin:4px 0 10px">'+esc(fmtDate(S.meta.date)||"")+(A.venue?' · '+esc(A.venue):'')+'</div>'+(A.theme?'<p><b>Meeting theme</b> · '+esc(A.theme)+'</p>':'')+(editable.length>1?'<p class="saved">Drag future items or use Move earlier and Move later. Times shown are from the plan, with any live time adjustments.</p>':'')+'<div class="agv2">';
   c.its.forEach(function(it){
-    var who=whoForItem(it), st=isSkipped(it.id)?"skip":(c.cur&&c.cur.id===it.id)?"cur":(S.run.started&&S.run.started[it.id]!=null)?"done":"";
-    var x=it.rowId?esc(liveItemExtra(it)):it.x==="speakers"?"":agExtraHTML(it.x,it);
+    var who=whoForItem(it), st=isSkipped(it.id)?"skip":(c.cur&&c.cur.id===it.id)?"cur":(S.run.started&&S.run.started[it.id]!=null)||it.report&&liveReportState(it.report)==="presented"?"done":"";
+    var estimate=it.id===c.next?.id?nextLiveEstimate(c):null;
+    var x=it.rowId?esc(liveItemExtra(it)):["speakers","evals"].includes(it.x)?"":agExtraHTML(it.x,it);
     var index=editable.indexOf(it), movable=index>=0&&editable.length>1;
-    h+='<div class="agv2i '+st+'" data-live-item="'+esc(it.id)+'"'+(movable?' data-live-movable':'')+'><div class="agv2t">'+esc(fmtHM(rt(it)))+'</div><div><div class="agv2r">'+esc(arole(it.role).n)+(who?' · <b>'+esc(who)+'</b>':'')+(st==="cur"?' <span class="badge on">Now</span>':st==="skip"?' <span class="badge no">Skipped</span>':'')+'</div><div class="agv2x">'+agActivityHTML(Object.assign({},it,{x:""}))+'</div>'+(x?'<div class="agv2s">'+x+'</div>':'')+(movable?agendaMoveControls(it,index,editable):'')+'</div></div>';
+    h+='<div class="agv2i '+st+'" data-live-item="'+esc(it.id)+'"'+(movable?' data-live-movable':'')+'><div class="agv2t">'+esc(fmtHM(rt(it)))+(estimate!=null?'<div class="saved">Est. '+esc(fmtHM(min2hm(estimate)))+'</div>':'')+'</div><div><div class="agv2r">'+esc(arole(it.role).n)+(who?' · <b>'+esc(who)+'</b>':'')+(st==="cur"?' <span class="badge on">Now</span>':st==="skip"?' <span class="badge no">Skipped</span>':st==='done'&&it.report&&liveReportState(it.report)==='presented'?' <span class="badge">Presented</span>':'')+'</div><div class="agv2x">'+agActivityHTML(Object.assign({},it,{x:""}))+'</div>'+(x?'<div class="agv2s">'+x+'</div>':'')+(movable?agendaMoveControls(it,index,editable):'')+(index>=0?'<button class="btn sm" data-live-skip="'+esc(it.id)+'">'+(st==='skip'?'Restore item':'Skip item')+'</button>':'')+'</div></div>';
   });
   h+='</div>'+(A.next?'<div class="saved" style="margin-top:10px">Next meeting: '+esc(fmtDate(A.next))+'</div>':'')+'</section>';
   return h;
@@ -130,7 +131,7 @@ function agendaMoveControls(item,index,editable){
     dragged=""; clearDrop();
     if(!id||!row) return;
     event.preventDefault();
-    if(reorderLiveItem(id,row.dataset.liveItem,dropAfter(event,row))) showToastMsg("Running order updated");
+    reorderLiveItem(id,row.dataset.liveItem,dropAfter(event,row));
   });
   view.addEventListener("dragend",function(){ dragged=""; clearDrop(); });
   view.addEventListener("pointerdown",function(event){
@@ -151,17 +152,30 @@ function agendaMoveControls(item,index,editable){
     var move=touch; touch=null; clearDrop();
     if(Math.abs(event.clientY-move.startY)<8) return;
     var row=document.elementFromPoint(event.clientX,event.clientY)?.closest("[data-live-movable]");
-    if(row&&reorderLiveItem(move.id,row.dataset.liveItem,dropAfter(event,row))) showToastMsg("Running order updated");
+    if(row) reorderLiveItem(move.id,row.dataset.liveItem,dropAfter(event,row));
   });
   view.addEventListener("lostpointercapture",function(event){
     if(touch?.pointer===event.pointerId){ touch=null; clearDrop(); }
   });
   view.addEventListener("click",function(event){
+    var skip=event.target.closest("[data-live-skip]");
+    if(skip){ runToggleSkip(skip.dataset.liveSkip); return; }
+    if(event.target.closest("[data-copy-live-agenda]")&&canEditLiveAgenda()){ copyText(liveAgendaText()); return; }
     var button=event.target.closest("[data-live-move]");
     if(!button||button.getAttribute("aria-disabled")==="true") return;
     var items=liveEditableItems(runItems()), id=button.dataset.liveId, after=button.dataset.liveMove==="later";
     var index=items.findIndex(function(it){return it.id===id;});
     var adjacent=index<0?null:items[index+(after?1:-1)];
-    if(adjacent&&reorderLiveItem(id,adjacent.id,after)) showToastMsg("Running order updated");
+    if(adjacent) reorderLiveItem(id,adjacent.id,after);
   });
 })();
+
+function liveAgendaText(){
+  var c=curItem(), estimate=nextLiveEstimate(c);
+  return ["Live running order · "+(S.agenda.title||GROUP)].concat(c.its.slice(Math.max(0,c.i)).filter(function(it){
+    return !isSkipped(it.id);
+  }).map(function(it){
+    var time=it.id===c.next?.id&&estimate!=null?"Est. "+fmtHM(min2hm(estimate)):"";
+    return [it.id===c.cur?.id?"Now":time,itemLabel(it),liveItemExtra(it).startsWith("Evaluator:")?liveItemExtra(it):""].filter(Boolean).join(" · ");
+  })).join("\n");
+}

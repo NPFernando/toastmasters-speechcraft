@@ -689,6 +689,7 @@ body.dialog-open #app{isolation:isolate}
 .role-turn-status{font-size:.78em;padding:2px 5px;border:1px solid currentColor;border-radius:6px;white-space:nowrap}
 .live-report-queue .tlist li{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
 .live-role-cue .btn{margin-inline-start:8px}
+.agplan-assignments{margin:0 0 8px;padding:0 12px 8px;border-bottom:1px solid var(--line)}
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#004165">
@@ -1175,7 +1176,7 @@ function runningList(){ var out=[]; SESSIONS.forEach(function(s){ S.rows[s.id].f
 function anyRunning(){ return runningList().length>0; }
 function timerRows(sid){
   var rows=S.rows[sid];
-  if(sid==="ps") return orderPreparedTimerRows(rows);
+  if(["ps","rep","ev"].includes(sid)) return orderAgendaTimerRows(sid,rows);
   if(sid!=="rr") return rows;
   var seen=new Set(rows.filter(function(row){return row.qid&&rowState(row)!=="idle";}).map(roundRobinTurnKey));
   return rows.filter(function(row){
@@ -1187,7 +1188,7 @@ function timerRows(sid){
   });
 }
 function roundRobinTurnKey(row){ return JSON.stringify([row.qid,nkey(row.name)]); }
-function firstQueued(sid){ return timerRows(sid).find(function(r){return rowState(r)==="idle"&&(sid!=="ps"||!preparedTimerSkipped(r));}); }
+function firstQueued(sid){ return timerRows(sid).find(function(r){return rowState(r)==="idle"&&!timerAgendaSkipped(sid,r);}); }
 var timerConflictMessage="";
 function reconcileTimerTurns(state){
   var running=SESSIONS.flatMap(function(session){
@@ -1215,7 +1216,7 @@ function reconcileTimerTurns(state){
 }
 function startRow(sid,id){
   var r=findRow(sid,id);
-  if(!r||rowState(r)!=="idle"||(sid==="ps"&&preparedTimerSkipped(r))||(sid==="rr"&&!timerRows(sid).includes(r))) return;
+  if(!r||rowState(r)!=="idle"||timerAgendaSkipped(sid,r)||(sid==="rr"&&!timerRows(sid).includes(r))) return;
   if(S.timerDemo.until){ S.timerDemo.until=0; tick(S.timerDemo); }
   r.timedLim=clone(limOf(sid,r));
   r.start=now(); r.clockOwner=timerClockOwner(); r.end=null; r.manual=null; r.pz=0; r.paused=null;
@@ -1285,7 +1286,7 @@ function orgUndoApply(){
 function orgSnapA(){ var a=clone(S.agenda); delete a.fu; delete a.u; return a; }
 function orgSnapM(){ var m=clone(S.members); delete m.fu; delete m.u; return m; }
 function undoRemove(){
-  if(anyUndo){ var f=anyUndo; anyUndo=null; clearTimeout(undoTimer); document.getElementById("toast").classList.remove("on"); f(); commit(); renderAll(); showToastMsg("Undone"); return; }
+  if(anyUndo){ var f=anyUndo; anyUndo=null; clearTimeout(undoTimer); document.getElementById("toast").classList.remove("on"); if(f()===false){ showToastMsg("The running order has changed. Undo is no longer available."); return; } commit(); showToastMsg("Undone"); return; }
   if(orgUndo){ orgUndoApply(); return; }
   if(!lastRemoved) return; var x=lastRemoved; lastRemoved=null;
   delete S.dead[x.item.id]; tick(x.item);
@@ -1352,6 +1353,7 @@ function renderAll(){
   var focusArea=focused?.closest("#view,#roles,#live,#nowStrip,#companion");
   var controlKey=focusArea&&focused.matches("button,a[href]")?focusKey(focused):null;
   populateAgendaMembers();
+  if(ensureAssignedPreparedRows()) commitQuiet();
   pendingRender=false; renderNav(); renderProj();
   renderMeta(); renderRoles(); renderRoster();
   renderLive(); renderNow();
@@ -1453,15 +1455,11 @@ function nextAgendaTiming(){
     var item=live.its[i];
     if(isSkipped(item.id)) continue;
     var sid, row;
-    if(item.role==="keynote"){ sid="ps"; row=presentationRow(item.id); }
-    else if(item.rowId){ sid="ps"; row=findRow(sid,item.rowId); }
+    if(agendaTimerSession(item)){ sid=agendaTimerSession(item); row=agendaTimerRow(item); }
     else if(item.role==="rrm"){ sid="rr"; row=firstQueued(sid); }
     else if(item.role==="ttm"){ sid="tt"; row=firstQueued(sid); }
-    else if(item.x==="evals"){
-      sid="rep"; row=firstQueued(sid);
-      if(!row){ sid="ev"; row=firstQueued(sid); }
-    }
-    if(row&&rowState(row)==="idle") return {sid:sid,row:row};
+
+    if(row&&rowState(row)==="idle"&&!timerAgendaSkipped(sid,row)) return {sid:sid,row:row};
   }
   return null;
 }
@@ -1536,8 +1534,8 @@ function timerHTML(){
   if(!rows.length) h+='<tr><td colspan="6" class="empty">No speakers yet. Plan ahead with <b>+ Add to list</b> (e.g. <i>Nimal, Kasun, Amali</i>), or press <b>Start speaker</b> when someone begins.</td></tr>';
   var nx=firstQueued(s.id);
   rows.forEach(function(r,i){
-    var st=rowState(r), sec=timerElapsed(s.id,r,t), sg=signal(s.id,sec,r), stx=status(s.id,r,t), isNext=st==="idle"&&r===nx, skipped=st==="idle"&&s.id==="ps"&&preparedTimerSkipped(r);
-    if(st==="idle"&&r.manual==null) stx={text:skipped?"Skipped on agenda":isNext?"Next up":"Waiting",cls:"st-queue"};
+    var st=rowState(r), sec=timerElapsed(s.id,r,t), sg=signal(s.id,sec,r), stx=status(s.id,r,t), isNext=st==="idle"&&r===nx, skipped=st==="idle"&&timerAgendaSkipped(s.id,r);
+    if(st==="idle"&&r.manual==null) stx={text:skipped?(["ev","rep"].includes(s.id)&&timerReportPresented(r)?"Already presented":"Skipped on agenda"):isNext?"Next up":"Waiting",cls:"st-queue"};
     var ctl= st==="running"?'<button class="btn sm" data-act="'+(r.paused?'resume':'pause')+'">'+(r.paused?'▶':'⏸')+'</button><button class="btn stop sm" data-act="stop">■ Stop</button>': skipped?'—': st==="done"?'<span class="donetag">✓ Done</span>':'<button class="btn go sm" data-act="start">▶ Start</button>';
     var timeCell= st==="running"?'<div class="timebox '+sg+'" data-live="time">'+fmt(sec)+'</div>'
       :'<input class="timebox '+sg+'" data-edit="time" value="'+(sec==null?"":fmt(sec))+'" placeholder="m:ss" title="Type a time as m:ss to set or correct it">';
@@ -1545,8 +1543,8 @@ function timerHTML(){
       '<td><input class="name" data-edit="name" list="roster" autocomplete="off" value="'+esc(r.name)+'" placeholder="Speaker '+(i+1)+' (add name)">'+(s.id==="ps"&&speechTitle(baseName(r.name))?'<div class="spt">“'+esc(speechTitle(baseName(r.name)))+'”'+(r.lim?' · '+fmt(r.lim.g)+'–'+fmt(r.lim.r):'')+'</div>':'')+'</td>'+
       '<td class="ctl">'+ctl+'</td><td class="tm">'+timeCell+'</td>'+
       '<td><span class="status '+stx.cls+'" data-live="status">'+esc(stx.text)+'</span>'+(r.manual!=null?'<span class="edited">'+(r.start==null?'✎ entered manually':'✎ edited')+'</span>':'')+'</td>'+
-      '<td class="act">'+(st==="idle"&&!(s.id==="ps"&&S.run.order?.length)?'<button class="iconbtn" data-act="up" title="Move up">↑</button><button class="iconbtn" data-act="down" title="Move down">↓</button>':'')+
-      (st==="running"?'':'<button class="iconbtn" data-act="del" title="Remove this speaker">✕</button>')+'</td></tr>';
+      '<td class="act">'+(st==="idle"&&!(["ps","ev","rep"].includes(s.id)&&S.run.order?.length)?'<button class="iconbtn" data-act="up" title="Move up">↑</button><button class="iconbtn" data-act="down" title="Move down">↓</button>':'')+
+      (st==="running"||st==="idle"&&s.id==="ps"&&!String(r.ak||"").startsWith("keynote:")&&asList("speakers").some(function(name){return nkey(name)===nkey(baseName(r.name))||r.ak==="ps:"+nkey(name);})?'':'<button class="iconbtn" data-act="del" title="Remove this speaker">✕</button>')+'</td></tr>';
   });
   h+='</tbody></table>';
   var done=rows.filter(function(r){return rowState(r)==="done";}), ok=done.filter(function(r){return status(s.id,r,t).ok;}).length;
@@ -1902,6 +1900,26 @@ function preparedBlockRequirement(){
     return seconds+limits.r+60;
   },0)/60);
 }
+
+/* Estimate from the current turn's actual start and its planned duration. */
+function nextLiveEstimate(c){
+  if(!c.cur||!c.next) return null;
+  var started=S.run.started[c.cur.id];
+  if(!Number.isFinite(started)) return null;
+  var duration, plan=itemsSorted();
+  if(c.cur.rowId||c.cur.report){
+    duration=Math.ceil(limOf(agendaTimerSession(c.cur),agendaTimerRow(c.cur)).r/60)+(c.cur.rowId?1:0);
+  } else {
+    var index=plan.findIndex(function(it){return it.id===c.cur.id;});
+    duration=index>=0?agDur(plan,index):null;
+    if(c.cur.x==="evals"&&c.next.report) duration=1;
+    if(c.cur.x==="speakers"&&duration!=null) duration=Math.max(0,duration-preparedBlockRequirement());
+  }
+  if(duration==null) return null;
+  var offset=(S.run.adj?.[c.next.id]||0)-(S.run.adj?.[c.cur.id]||0);
+  var end=new Date(Math.max(now(),started+(duration+offset)*60000));
+  return end.getHours()*60+end.getMinutes()+(end.getSeconds()>0?1:0);
+}
 /* ---------- how the agenda ran: planned vs actual length of each item ---------- */
 function runSummary(){
   var st=(S.run&&S.run.started)||{}, plan=plannedRunItems(), done=plan.filter(function(it){return st[it.id]!=null;}).sort(function(a,b){return st[a.id]-st[b.id];});
@@ -1978,13 +1996,13 @@ function liveCtlHTML(){
 function runAdjReset(){ S.run.by=runBy(); S.run.adj={}; tick(S.run); commit(); }
 function runAdjTotal(){ var c=curItem(), n=c.cur?c.next:null; return n&&S.run.adj?(S.run.adj[n.id]||0):0; }
 function extraText(x,item){
-  if(x==="speakers"){ var sp=uniq(asList("speakers").concat(S.speeches.filter(function(s){return s.type!=="tt";}).map(function(s){return s.name;}))); return sp.length?"Speakers: "+sp.map(function(n){ var t=speechTitle(n); return n+(t?" — “"+t+"”":""); }).join(", "):""; }
+  if(x==="speakers"){ var sp=agendaPreparedSpeakers(); return sp.length?"Speakers: "+sp.map(function(n){ var t=speechTitle(n); return n+(t?" — “"+t+"”":""); }).join(", "):""; }
   if(x==="keynote"){var p=presentationOf(item&&item.id||keynoteItems()[0]&&keynoteItems()[0].id);return p?(p.name||assigned("keynote")||"")+(p.organization?" ("+p.organization+")":"")+(p.topic?" — "+p.topic:"")+(p.objective?"\nObjectives: "+p.objective:"")+(p.intro?"\nIntroduction: "+p.intro:"")+(p.materials?"\nMaterials: "+p.materials:""):"";}
   if(x==="ttevals"){ var tv=asList("ttevals"); return tv.length?"Evaluators: "+tv.join(", "):""; }
   if(x==="evals"){
     var p=[]; ["timer","ah","gram"].forEach(function(k){ if(assigned(k)) p.push(arole(k).n+" – "+assigned(k)); });
     var se=asList("sevals"), te=asList("ttevals");
-    var pairs=(S.assigns||[]).filter(function(a){return a.evaluator;});
+    var pairs=activeEvaluatorPairs("ps");
     if(pairs.length) p.push("Prepared speech evaluations – "+pairs.map(function(a){return a.evaluator+" (for "+a.speaker+")";}).join(", "));
     else if(se.length) p.push("Prepared speech evaluations – "+se.join(", "));
     if(te.length) p.push("Table Topic evaluations – "+te.join(", "));
@@ -1993,6 +2011,7 @@ function extraText(x,item){
   return "";
 }
 function whoForItem(it){
+  if(it.report) return it.report.name;
   if(it.rowId) return it.name;
   if(it.role==="keynote") return presentationOf(it.id)?.name||whoFor(it.role);
   return whoFor(it.role);
@@ -2002,7 +2021,7 @@ function liveItemExtra(it){
     var evaluator=evaluatorOf(it.name);
     return evaluator?"Evaluator: "+evaluator:"";
   }
-  return it.x==="speakers"?"":extraText(it.x,it);
+  return ["speakers","evals"].includes(it.x)?"":extraText(it.x,it);
 }
 function whoFor(role){ var v=asList(role); return v.join(", "); }
 
@@ -2013,11 +2032,13 @@ function applyAgenda(){
     var nm=assigned(k); if(nm && S.people[k]!==nm){ S.people[k]=nm; S.peopleU[k]=Math.max(now(),(S.peopleU[k]||0)+1); }
   });
   var want={ps:[],ev:[],rep:[]};
-  asList("speakers").forEach(function(n){ want.ps.push({ak:"ps:"+n.toLowerCase(),name:n}); });
+  asList("speakers").forEach(function(n){ want.ps.push({ak:"ps:"+nkey(n),name:n}); });
   var asg=activeEvaluatorPairs("ps");
   asg.forEach(function(a){ want.ev.push({ak:"ev:a:"+nkey(a.speaker),name:a.evaluator+" – evaluating "+a.speaker}); });
   asList("sevals").forEach(function(n){ if(asg.some(function(a){return nkey(a.evaluator)===nkey(n);})) return; want.ev.push({ak:"ev:s:"+n.toLowerCase(),name:n+" – speech evaluation"}); });
-  asList("ttevals").forEach(function(n){ want.ev.push({ak:"ev:t:"+n.toLowerCase(),name:n+" – Table Topics evaluation"}); });
+  reportQueue().filter(function(entry){return entry.role==="tteval";}).forEach(function(entry){
+    want.ev.push({ak:entry.timerKey,name:entry.name+" – "+(entry.speaker?"evaluating "+entry.speaker:"Table Topics evaluation")});
+  });
   [["timer","Timer's report",{g:30,a:45,r:60}],["ah","Ah-Counter's report",{g:30,a:45,r:60}],["gram","Grammarian's report",{g:60,a:90,r:120}]].forEach(function(x){
     var n=assigned(x[0]); if(n) want.rep.push({ak:"rep:"+x[0],name:n+" – "+x[1],lim:x[2]});
   });
@@ -2028,7 +2049,8 @@ function applyAgenda(){
     want[sid].forEach(function(w){
       var ex=S.rows[sid].find(function(r){return r.ak===w.ak || (sid==="ps" && !String(r.ak||"").startsWith("keynote:") && nkey(baseName(r.name))===nkey(w.name));});
       if(ex){ if(rowState(ex)==="idle" && ex.name!==w.name){ ex.name=w.name; if(w.lim) ex.lim=w.lim; tick(ex); } return; }
-      var r=newRow(sid,w.name); r.ak=w.ak; if(w.lim) r.lim=w.lim; if(sid==="ps"){ var sl=presetLim((speechRec(w.name)||{}).lim); if(sl) r.lim=sl; } S.rows[sid].push(r);
+      if(sid==="ps"){ addAssignedPreparedRow(w.name); return; }
+      var r=newRow(sid,w.name); r.ak=w.ak; if(w.lim) r.lim=w.lim; S.rows[sid].push(r);
     });
   });
 }
@@ -2294,7 +2316,7 @@ function dryBannerHTML(){ return S.meta&&S.meta.test?'<div class="drybanner" rol
 var CO_TABS=[["setup","⚙️","Set-up"],["agenda","📋","Agenda"],["people","👥","People"],["after","🏁","After"]];
 function coTab(){ return CO_TABS.some(function(t){return t[0]===L.coTab;})?L.coTab:"setup"; }
 function coTabsHTML(ct){ return '<div class="cotabs" role="tablist" aria-label="Coordinator sections">'+CO_TABS.map(function(t){ return '<button role="tab" aria-selected="'+(ct===t[0])+'" class="'+(ct===t[0]?'on':'')+'" data-cotab="'+t[0]+'"><span aria-hidden="true">'+t[1]+'</span> '+t[2]+'</button>'; }).join("")+'</div>'; }
-(function(){ document.getElementById("view").addEventListener("click",function(e){ var b=e.target.closest("[data-cotab]"); if(!b) return; L.coTab=b.dataset.cotab; saveL(); renderAll(); }); })();
+(function(){ document.getElementById("view").addEventListener("click",function(e){ var mode=e.target.closest("[data-co-agenda]"); if(mode){ L.coAgendaLive=mode.dataset.coAgenda==="live"; saveL(); renderAll(); return; } var b=e.target.closest("[data-cotab]"); if(!b) return; L.coTab=b.dataset.cotab; saveL(); renderAll(); }); })();
 function coordHTML(){
   var h='<section class="card">';
   if(!S.pin.hash && (L.pendingCo || (NET.mode && !NET.synced))){
@@ -2353,9 +2375,13 @@ function coordHTML(){
   h+='<div class="note">Role players fill in automatically on every device: names for each role, the Timer\'s Prepared Speech, Evaluations and Role reports lists, and the report header.</div>';
   }
   /* agenda items */
+  if(CT==="agenda") h+='<div class="row" role="group" aria-label="Agenda view">'+
+    '<button class="btn" data-co-agenda="plan" aria-pressed="'+(!L.coAgendaLive)+'">Saved plan</button>'+
+    '<button class="btn" data-co-agenda="live" aria-pressed="'+!!L.coAgendaLive+'">Live running order</button></div>';
+  if(CT==="agenda"&&L.coAgendaLive) return h+'</section>'+agendaViewHTML(true);
   if(CT==="agenda"){
   var AGL=itemsSorted();
-  h+='<h2 class="sec">📋 Agenda</h2>'+tplHTML()+
+  h+='<h2 class="sec">📋 Saved agenda plan</h2>'+tplHTML()+
     '<div class="agtools"><label class="agst">Start at <input class="t" type="time" id="agStart" aria-label="Agenda start time" value="'+esc(AGL[0]?AGL[0].time:"")+'"></label>'+
     '<span class="seg" role="group" aria-label="Move the whole agenda"><button data-agshift="-5" title="Move every item 5 minutes earlier">−5 min</button><button data-agshift="5" title="Move every item 5 minutes later">+5 min</button></span>'+
     '<span class="saved" id="agSpan">'+esc(agSpanText())+'</span></div>'+
@@ -2372,7 +2398,8 @@ function coordHTML(){
        '<select class="t agrole" data-it="role" aria-label="Role">'+AROLES.filter(function(a){return !a.multi;}).map(function(a){ return '<option value="'+a.k+'"'+(it.role===a.k?' selected':'')+'>'+a.n+'</option>'; }).join("")+'</select>'+
        '<textarea class="t agtext" data-it="text" rows="2" aria-label="Activity">'+esc(it.text)+'</textarea>'+
        '<select class="t agx" data-it="x" title="Add names automatically" aria-label="Add names automatically">'+XTRAS.map(function(x){ return '<option value="'+x.k+'"'+((it.x||"")===x.k?' selected':'')+'>'+x.n+'</option>'; }).join("")+'</select>'+
-       '<span class="agacts"><button class="iconbtn" data-agins title="Insert an item below" aria-label="Insert an item below">＋</button><button class="iconbtn" data-itdel title="Remove item" aria-label="Remove item">✕</button></span></div>';
+       '<span class="agacts"><button class="iconbtn" data-agins title="Insert an item below" aria-label="Insert an item below">＋</button><button class="iconbtn" data-itdel title="Remove item" aria-label="Remove item">✕</button></span></div>'+
+       (["speakers","evals"].includes(it.x)?'<div class="agplan-assignments">'+(agExtraHTML(it.x,it)||'<span class="saved">No role players assigned yet.</span>')+'<button class="linkbtn" data-cotab="setup">Edit role players</button></div>':'');
   });
   h+='</div><div class="row" style="margin-top:8px"><button class="btn" id="itAdd">+ Add agenda item</button></div>';
   }
@@ -2393,14 +2420,14 @@ function agDateShort(iso){ var d=isoDate(iso); if(!d) return iso||""; return ord
 var AG_SIDE=[["president","President"],["saa","Sergeant at Arms"],["tmod","Toastmaster"],["ttm","Table Topics Master"],["keynote","Keynote Presenter"],["rrm","Round Robin Master"],["ge","General Evaluator"],["timer","Timer"],["ah","Ah-Counter"],["gram","Grammarian"],["speakers","Prepared Speakers"],["sevals","Speech Evaluator"],["ttevals","Table Topics Evaluator"],["coord","Speechcraft Coordinator"]];
 function agLines(arr){ return arr.map(function(x){ return '<div class="agl">'+x+'</div>'; }).join(""); }
 function agExtraHTML(x,item){
-  if(x==="speakers"){ var sp=uniq(asList("speakers").concat(S.speeches.filter(function(s){return s.type!=="tt";}).map(function(s){return s.name;}))); if(!sp.length) return "";
+  if(x==="speakers"){ var sp=agendaPreparedSpeakers(); if(!sp.length) return "";
     return '<div class="agsub">'+agLines(sp.map(function(n){ var t=speechTitle(n), e=evaluatorOf(n); return esc(n)+(t?' – “'+esc(t)+'”':'')+(e?' <span class="agev">· evaluator '+esc(e)+'</span>':''); }))+'</div>'; }
   if(x==="keynote"){var p=presentationOf(item&&item.id||keynoteItems()[0]&&keynoteItems()[0].id);return p?'<div class="agsub">'+agLines([esc(p.name||assigned("keynote")||"")+(p.organization?" ("+esc(p.organization)+")":""),esc(p.topic||"")])+'</div>':"";}
   if(x==="ttevals"){ var tv=asList("ttevals"); return tv.length?'<div class="agsub">'+agLines(tv.map(esc))+'</div>':""; }
   if(x==="evals"){
     var h="", rep=["timer","ah","gram"].filter(function(k){return assigned(k);}).map(function(k){ return esc(arole(k).n)+' – '+esc(assigned(k)); });
     if(rep.length) h+='<div class="agsub"><div class="agh">Call for reports:</div>'+agLines(rep)+'</div>';
-    var pairs=(S.assigns||[]).filter(function(a){return a.evaluator;}), se=pairs.length?pairs.map(function(a){ return esc(a.evaluator)+' <span class="agev">(for '+esc(a.speaker)+')</span>'; }):asList("sevals").map(esc);
+    var pairs=activeEvaluatorPairs("ps"), se=pairs.length?pairs.map(function(a){ return esc(a.evaluator)+' <span class="agev">(for '+esc(a.speaker)+')</span>'; }):asList("sevals").map(esc);
     if(se.length) h+='<div class="agsub"><div class="agh">Prepared Speech evaluations –</div>'+agLines(se)+'</div>';
     var te=asList("ttevals"); if(te.length) h+='<div class="agsub"><div class="agh">Table Topics evaluations –</div>'+agLines(te.map(function(ev){ var sp=S.ttassign.filter(function(a){return nkey(a.evaluator)===nkey(ev);}).map(function(a){return a.speaker;}); return esc(ev)+(sp.length?' <span class="agev">(for '+esc(sp.join(", "))+')</span>':''); }))+'</div>';
     return h;
@@ -2586,12 +2613,12 @@ function setAssign(speaker,evaluator){ var a=upsert(["assigns"],"as|"+nkey(speak
 /* Table Topics: each speaker can be given to one Table Topics Evaluator; an evaluator can have several speakers */
 function ttAssignId(key){ return "tta|"+(ttTurn(key)?key:nkey(key)); }
 function ttEvaluatorOf(speaker){ var a=S.ttassign.find(function(x){return x.id===ttAssignId(speaker);}); return a&&a.evaluator?a.evaluator:""; }
-function setTTAssign(speaker,evaluator){ var a=upsert(["ttassign"],ttAssignId(speaker),{speaker:ttTargetName(speaker),evaluator:""}); a.speaker=ttTargetName(speaker); a.turnId=ttTurn(speaker)?.id||null; a.evaluator=evaluator||""; tick(a); commit(); }
+function setTTAssign(speaker,evaluator){ var a=upsert(["ttassign"],ttAssignId(speaker),{speaker:ttTargetName(speaker),evaluator:""}); a.speaker=ttTargetName(speaker); a.turnId=ttTurn(speaker)?.id||null; a.evaluator=evaluator||""; tick(a); applyAgenda(); commit(); }
 function ttLoad(ev){ return S.ttassign.filter(function(a){return nkey(a.evaluator)===nkey(ev);}).length; }
 function autoAssignTT(speaker){
   if(!speaker||ttEvaluatorOf(speaker)) return; var evs=asList("ttevals").filter(function(e){return nkey(e)!==nkey(ttTargetName(speaker));}); if(!evs.length) return;
   var best=evs.slice().sort(function(a,b){ return ttLoad(a)-ttLoad(b) || evs.indexOf(a)-evs.indexOf(b); })[0];
-  var a=upsert(["ttassign"],ttAssignId(speaker),{speaker:ttTargetName(speaker),evaluator:""}); a.speaker=ttTargetName(speaker); a.turnId=ttTurn(speaker)?.id||null; a.evaluator=best; tick(a);
+  var a=upsert(["ttassign"],ttAssignId(speaker),{speaker:ttTargetName(speaker),evaluator:""}); a.speaker=ttTargetName(speaker); a.turnId=ttTurn(speaker)?.id||null; a.evaluator=best; tick(a); applyAgenda();
 }
 function anyEvaluatorOf(kind,n){ return kind==="ps"?evaluatorOf(n):ttEvaluatorOf(n); }
 function evStatusOf(kind,n,me){ var dd=meetingEvalDrafts()[evId(kind,n,me)]; if((dd&&dd.submitted)||S.evals.some(function(e){return e.id===evId(kind,n,me)&&e.done&&e.state!=="writing";})) return "done"; if(dd&&(dd.c1||dd.r||dd.c2)) return "writing"; return "todo"; }
@@ -4345,9 +4372,33 @@ function companionHTML(){
 }
 function renderCompanion(){ var el=document.getElementById("companion"); if(!el) return; var h=companionHTML(); el.innerHTML=h; el.classList.toggle("on",!!h); }
 
+function addAssignedPreparedRow(name){
+  var row=newRow("ps",name), key=nkey(name);
+  var id="agenda-prepared|"+encodeURIComponent(JSON.stringify([S.mid,key]));
+  row.id=id;
+  for(var turn=2;findRow("ps",row.id);turn++) row.id=id+"|"+turn;
+  row.ak="ps:"+key;
+  row.u=Math.max(row.u,(S.dead[row.id]||0)+1);
+  delete S.dead[row.id];
+  var limits=presetLim((speechRec(name)||{}).lim);
+  if(limits) row.lim=limits;
+  S.rows.ps.push(row);
+}
+function ensureAssignedPreparedRows(){
+  var existing=new Set();
+  S.rows.ps.forEach(function(row){
+    if(String(row.ak||"").startsWith("keynote:")) return;
+    existing.add(nkey(baseName(row.name)));
+    if(String(row.ak||"").startsWith("ps:")) existing.add(nkey(row.ak.slice(3)));
+  });
+  var missing=uniq(asList("speakers")).filter(function(name){return !existing.has(nkey(name));});
+  missing.forEach(addAssignedPreparedRow);
+  return missing.length>0;
+}
+
 /* Live agenda entries keep their identities when the running order changes. */
 function plannedRunItems(){
-  var base=itemsSorted(), block=base.find(function(it){return it.x==="speakers";});
+  var base=itemsSorted(), block=base.find(function(it){return it.x==="speakers";})||base.find(function(it){return !it.x&&/^prepared speech(?:es| session)?(?:\s*[-–—:]|$)/i.test(String(it.text||"").trim());});
   var scheduled=new Set(asList("speakers").map(nkey)), start=hm2min(block?.time);
   var speeches=S.rows.ps.filter(function(row){
     return String(row.name||"").trim()&&!String(row.ak||"").startsWith("keynote:")&&(block||scheduled.has(nkey(baseName(row.name))));
@@ -4357,6 +4408,16 @@ function plannedRunItems(){
     return {id:preparedItemId(row),rowId:row.id,role:"speakers",name:name,time:time,text:speechTitle(name)||"Prepared speech",x:""};
   });
   base.splice(block?base.indexOf(block)+1:base.length,0,...speeches);
+  var evaluation=base.find(function(it){return it.x==="evals";});
+  if(evaluation){
+    var reports=reportQueue().map(function(entry){
+      var sid=entry.timerKey.startsWith("rep:")?"rep":"ev";
+      var role=entry.role==="seval"?"sevals":entry.role==="tteval"?"ttevals":entry.role;
+      var text=entry.speaker?"Evaluation for "+entry.speaker:sid==="rep"?arole(role).n+" report":"Evaluation";
+      return {id:reportItemId(entry),report:entry,role:role,time:"",text:text,x:""};
+    });
+    base.splice(base.indexOf(evaluation)+1,0,...reports);
+  }
   return base;
 }
 function preparedItemId(row){ return "prepared|"+row.id; }
@@ -4373,7 +4434,7 @@ function runItems(){
   return out;
 }
 function isSkipped(id){ return !!(S.run.skip&&S.run.skip[id]); }
-function nextLive(its,from){ for(var j=from;j<its.length;j++) if(!isSkipped(its[j].id)) return its[j]; return null; }
+function nextLive(its,from){ for(var j=from;j<its.length;j++) if(!isSkipped(its[j].id)&&(!its[j].report||liveReportState(its[j].report)!=="presented")) return its[j]; return null; }
 function previousLive(its,from){ for(var j=from;j>=0;j--) if(!isSkipped(its[j].id)) return its[j]; return null; }
 function canEditLiveAgenda(){ var roles=myRoles(); return roles.includes("tmod")||(roles.includes("coord")&&coordUnlocked()); }
 function liveEditableItems(items){
@@ -4382,9 +4443,14 @@ function liveEditableItems(items){
     return it.id===S.run.cur||S.run.started[it.id]!=null?i:last;
   },-1);
   return items.slice(boundary+1).filter(function(it){
-    var row=it.rowId?findRow("ps",it.rowId):it.role==="keynote"?presentationRow(it.id):null;
+    var row=agendaTimerRow(it);
+    if(it.report&&liveReportState(it.report)==="presented") return false;
     return !row||rowState(row)==="idle";
   });
+}
+function setLiveOrder(order){
+  S.run.order=order;
+  S.run.orderU=Math.max(now(),(S.run.orderU||S.run.u||0)+1);
 }
 function reorderLiveItem(id,targetId,after){
   var items=runItems(), editable=liveEditableItems(items);
@@ -4392,9 +4458,16 @@ function reorderLiveItem(id,targetId,after){
   var order=items.map(function(it){return it.id;}).filter(function(value){return value!==id;});
   order.splice(order.indexOf(targetId)+(after?1:0),0,id);
   if(order.every(function(value,i){return value===items[i].id;})) return false;
-  S.run.order=order;
-  S.run.orderU=Math.max(now(),(S.run.orderU||S.run.u||0)+1);
-  commit(); return true;
+  var previous=(S.run.order||[]).slice(), mid=S.mid, current=S.run.cur;
+  setLiveOrder(order);
+  var version=S.run.orderU;
+  commit();
+  offerUndo("Running order updated",function(){
+    if(S.mid!==mid||S.run.cur!==current||S.run.orderU!==version||
+      !liveEditableItems(runItems()).some(function(it){return it.id===id;})) return false;
+    setLiveOrder(previous);
+  });
+  return true;
 }
 function runMoveEnd(id){
   var last=liveEditableItems(runItems()).at(-1);
@@ -4403,25 +4476,57 @@ function runMoveEnd(id){
 function runToggleSkip(id){
   if(!liveEditableItems(runItems()).some(function(it){return it.id===id;})) return;
   S.run.skip=S.run.skip||{};
-  if(S.run.skip[id]) delete S.run.skip[id]; else S.run.skip[id]=true;
-  S.run.by=runBy(); tick(S.run); commit();
+  var skipped=!isSkipped(id), mid=S.mid;
+  setLiveSkip(id,skipped);
+  var version=S.run.u;
+  commit();
+  offerUndo(skipped?"Agenda item skipped":"Agenda item restored",function(){
+    if(S.mid!==mid||S.run.u!==version||
+      !liveEditableItems(runItems()).some(function(it){return it.id===id;})) return false;
+    setLiveSkip(id,!skipped);
+  });
+}
+function setLiveSkip(id,skipped){
+  if(skipped) S.run.skip[id]=true; else delete S.run.skip[id];
+  S.run.by=runBy(); tick(S.run);
 }
 function queuedPreparedRows(){
-  return orderPreparedTimerRows(S.rows.ps).filter(function(row){
+  return orderAgendaTimerRows("ps",S.rows.ps).filter(function(row){
     return rowState(row)==="idle"&&String(row.name||"").trim()&&!String(row.ak||"").startsWith("keynote:")&&!isSkipped(preparedItemId(row));
   });
 }
-function preparedTimerSkipped(row){
+function agendaTimerSession(it){
+  if(it.report) return it.report.timerKey.startsWith("rep:")?"rep":"ev";
+  if(it.rowId||it.role==="keynote") return "ps";
+  return "";
+}
+function agendaTimerRow(it){
+  if(it.report) return S.rows[agendaTimerSession(it)].find(function(row){return row.ak===it.report.timerKey&&rowState(row)==="idle";})||
+    S.rows[agendaTimerSession(it)].find(function(row){return row.ak===it.report.timerKey;});
+  return it.rowId?findRow("ps",it.rowId):it.role==="keynote"?presentationRow(it.id):null;
+}
+function timerReportPresented(row){
+  if(!row.ak) return false;
+  var entry=reportQueue().find(function(report){return report.timerKey===row.ak;});
+  return !!entry&&liveReportState(entry)==="presented";
+}
+function timerAgendaSkipped(sid,row){
+  if(sid==="rep"||sid==="ev"){
+    if(!row.ak) return false;
+    return isSkipped("agenda-report|"+row.ak)||timerReportPresented(row);
+  }
+  if(sid!=="ps") return false;
   var itemId=row.presentationItemId;
   if(!itemId&&String(row.ak||"").startsWith("keynote:")){
     itemId=keynoteItems().find(function(it){return presentationRow(it.id)===row;})?.id;
   }
   return isSkipped(itemId||preparedItemId(row));
 }
-function orderPreparedTimerRows(rows){
+function orderAgendaTimerRows(sid,rows){
   var rank=new Map();
   runItems().forEach(function(it,i){
-    var id=it.rowId||(it.role==="keynote"?presentationRow(it.id)?.id:null);
+    if(agendaTimerSession(it)!==sid) return;
+    var id=agendaTimerRow(it)?.id;
     if(id) rank.set(id,i);
   });
   var upcoming=rows.filter(function(row){return rowState(row)==="idle"&&rank.has(row.id);});
@@ -4873,12 +4978,12 @@ function dashHTML(){
      '<button class="btn" id="projOpen">📺 Projector view</button></div>';
   if(ss){ var who=whoForItem(c.cur);
     h+='<div class="dh-now"><div class="dh-lbl">Now</div><div class="dh-item"><b>'+esc(fmtHM(rt(c.cur)))+'</b> '+esc(arole(c.cur.role).n)+(who?' · '+esc(who):'')+'<div class="muted">'+esc(c.cur.text)+'</div></div></div>';
-    if(c.next){ var wn=whoForItem(c.next); h+='<div class="dh-next"><div class="dh-lbl">Next</div><div class="dh-item"><b>'+esc(fmtHM(rt(c.next)))+'</b> '+esc(arole(c.next.role).n)+(wn?' · '+esc(wn):'')+(c.next.rowId?'<div class="muted">'+esc(c.next.text)+'</div>':'')+'</div></div>'; }
+    if(c.next){ var wn=whoForItem(c.next), estimate=nextLiveEstimate(c); h+='<div class="dh-next"><div class="dh-lbl">Next</div><div class="dh-item"><b>'+esc(estimate==null?fmtHM(rt(c.next)):'Est. '+fmtHM(min2hm(estimate)))+'</b> '+esc(arole(c.next.role).n)+(wn?' · '+esc(wn):'')+((c.next.rowId||c.next.report)?'<div class="muted">'+esc(c.next.text)+'</div>':'')+'</div></div>'; }
     if(ss.txt) h+='<div class="'+ss.cls+'" style="margin-top:6px;font-weight:700">'+ss.txt+'</div>';
   } else if(S.run.endAt){ h+='<div class="dh-now"><div class="dh-lbl">Meeting finished</div><div class="dh-item">'+esc(hhmm(S.run.endAt))+'</div></div>'; }
   else { var f=nextLive(c.its,0); h+='<div class="dh-now"><div class="dh-lbl">Not started</div><div class="dh-item">The Toastmaster starts the run-sheet when the meeting begins.'+(f?'<div class="muted">First: '+esc(fmtHM(f.time))+' '+esc(arole(f.role).n)+(whoForItem(f)?' · '+esc(whoForItem(f)):'')+'</div>':'')+'</div></div>'; }
   var floor=document.querySelector(".floor-controls");
-  var choice=floor?.dataset.item===(S.run.cur||"")&&floor.dataset.role===L.role
+  var choice=floor?.hasAttribute("data-manual")&&floor.dataset.item===(S.run.cur||"")&&floor.dataset.role===L.role&&floor.dataset.suggested===(suggestedHandover()?.id||"")
     ?{role:document.getElementById("handoverTarget")?.value,name:document.getElementById("handoverRecipient")?.value}:null;
   h+=liveRoleCueHTML()+liveCtlHTML()+liveSubstitutionHTML(c)+handoverHTML(choice);
   if(pr.n) h+='<div class="dh-prog"><div class="bar"><i style="width:'+Math.round(pr.done/pr.n*100)+'%"></i></div><span class="saved">'+pr.done+' of '+pr.n+' agenda items</span></div>';
@@ -4896,14 +5001,15 @@ function dashHTML(){
   return h;
 }
 /* the agenda for everyone, with where the meeting is up to */
-function agendaViewHTML(){
-  var A=S.agenda, c=curItem(), editable=liveEditableItems(c.its), h='<section class="card"><div class="row" style="justify-content:space-between"><h2 class="sec" style="margin:0">📋 Agenda'+(A.no?' · No '+esc(A.no):'')+'</h2><button class="btn" id="agPrint">📄 Print / PDF</button></div>';
+function agendaViewHTML(embedded){
+  var A=S.agenda, c=curItem(), editable=liveEditableItems(c.its), h='<section class="card"><div class="row" style="justify-content:space-between"><h2 class="sec" style="margin:0">Live running order</h2><div class="row">'+(canEditLiveAgenda()?'<button class="btn" data-copy-live-agenda>Copy running order</button>':'')+(embedded?'':'<button class="btn" id="agPrint">📄 Print plan / PDF</button>')+'</div></div>';
   h+='<div class="saved" style="margin:4px 0 10px">'+esc(fmtDate(S.meta.date)||"")+(A.venue?' · '+esc(A.venue):'')+'</div>'+(A.theme?'<p><b>Meeting theme</b> · '+esc(A.theme)+'</p>':'')+(editable.length>1?'<p class="saved">Drag future items or use Move earlier and Move later. Times shown are from the plan, with any live time adjustments.</p>':'')+'<div class="agv2">';
   c.its.forEach(function(it){
-    var who=whoForItem(it), st=isSkipped(it.id)?"skip":(c.cur&&c.cur.id===it.id)?"cur":(S.run.started&&S.run.started[it.id]!=null)?"done":"";
-    var x=it.rowId?esc(liveItemExtra(it)):it.x==="speakers"?"":agExtraHTML(it.x,it);
+    var who=whoForItem(it), st=isSkipped(it.id)?"skip":(c.cur&&c.cur.id===it.id)?"cur":(S.run.started&&S.run.started[it.id]!=null)||it.report&&liveReportState(it.report)==="presented"?"done":"";
+    var estimate=it.id===c.next?.id?nextLiveEstimate(c):null;
+    var x=it.rowId?esc(liveItemExtra(it)):["speakers","evals"].includes(it.x)?"":agExtraHTML(it.x,it);
     var index=editable.indexOf(it), movable=index>=0&&editable.length>1;
-    h+='<div class="agv2i '+st+'" data-live-item="'+esc(it.id)+'"'+(movable?' data-live-movable':'')+'><div class="agv2t">'+esc(fmtHM(rt(it)))+'</div><div><div class="agv2r">'+esc(arole(it.role).n)+(who?' · <b>'+esc(who)+'</b>':'')+(st==="cur"?' <span class="badge on">Now</span>':st==="skip"?' <span class="badge no">Skipped</span>':'')+'</div><div class="agv2x">'+agActivityHTML(Object.assign({},it,{x:""}))+'</div>'+(x?'<div class="agv2s">'+x+'</div>':'')+(movable?agendaMoveControls(it,index,editable):'')+'</div></div>';
+    h+='<div class="agv2i '+st+'" data-live-item="'+esc(it.id)+'"'+(movable?' data-live-movable':'')+'><div class="agv2t">'+esc(fmtHM(rt(it)))+(estimate!=null?'<div class="saved">Est. '+esc(fmtHM(min2hm(estimate)))+'</div>':'')+'</div><div><div class="agv2r">'+esc(arole(it.role).n)+(who?' · <b>'+esc(who)+'</b>':'')+(st==="cur"?' <span class="badge on">Now</span>':st==="skip"?' <span class="badge no">Skipped</span>':st==='done'&&it.report&&liveReportState(it.report)==='presented'?' <span class="badge">Presented</span>':'')+'</div><div class="agv2x">'+agActivityHTML(Object.assign({},it,{x:""}))+'</div>'+(x?'<div class="agv2s">'+x+'</div>':'')+(movable?agendaMoveControls(it,index,editable):'')+(index>=0?'<button class="btn sm" data-live-skip="'+esc(it.id)+'">'+(st==='skip'?'Restore item':'Skip item')+'</button>':'')+'</div></div>';
   });
   h+='</div>'+(A.next?'<div class="saved" style="margin-top:10px">Next meeting: '+esc(fmtDate(A.next))+'</div>':'')+'</section>';
   return h;
@@ -4948,7 +5054,7 @@ function agendaMoveControls(item,index,editable){
     dragged=""; clearDrop();
     if(!id||!row) return;
     event.preventDefault();
-    if(reorderLiveItem(id,row.dataset.liveItem,dropAfter(event,row))) showToastMsg("Running order updated");
+    reorderLiveItem(id,row.dataset.liveItem,dropAfter(event,row));
   });
   view.addEventListener("dragend",function(){ dragged=""; clearDrop(); });
   view.addEventListener("pointerdown",function(event){
@@ -4969,20 +5075,33 @@ function agendaMoveControls(item,index,editable){
     var move=touch; touch=null; clearDrop();
     if(Math.abs(event.clientY-move.startY)<8) return;
     var row=document.elementFromPoint(event.clientX,event.clientY)?.closest("[data-live-movable]");
-    if(row&&reorderLiveItem(move.id,row.dataset.liveItem,dropAfter(event,row))) showToastMsg("Running order updated");
+    if(row) reorderLiveItem(move.id,row.dataset.liveItem,dropAfter(event,row));
   });
   view.addEventListener("lostpointercapture",function(event){
     if(touch?.pointer===event.pointerId){ touch=null; clearDrop(); }
   });
   view.addEventListener("click",function(event){
+    var skip=event.target.closest("[data-live-skip]");
+    if(skip){ runToggleSkip(skip.dataset.liveSkip); return; }
+    if(event.target.closest("[data-copy-live-agenda]")&&canEditLiveAgenda()){ copyText(liveAgendaText()); return; }
     var button=event.target.closest("[data-live-move]");
     if(!button||button.getAttribute("aria-disabled")==="true") return;
     var items=liveEditableItems(runItems()), id=button.dataset.liveId, after=button.dataset.liveMove==="later";
     var index=items.findIndex(function(it){return it.id===id;});
     var adjacent=index<0?null:items[index+(after?1:-1)];
-    if(adjacent&&reorderLiveItem(id,adjacent.id,after)) showToastMsg("Running order updated");
+    if(adjacent) reorderLiveItem(id,adjacent.id,after);
   });
 })();
+
+function liveAgendaText(){
+  var c=curItem(), estimate=nextLiveEstimate(c);
+  return ["Live running order · "+(S.agenda.title||GROUP)].concat(c.its.slice(Math.max(0,c.i)).filter(function(it){
+    return !isSkipped(it.id);
+  }).map(function(it){
+    var time=it.id===c.next?.id&&estimate!=null?"Est. "+fmtHM(min2hm(estimate)):"";
+    return [it.id===c.cur?.id?"Now":time,itemLabel(it),liveItemExtra(it).startsWith("Evaluator:")?liveItemExtra(it):""].filter(Boolean).join(" · ");
+  })).join("\n");
+}
 /* ---------- Focus mode: only what the role needs right now ---------- */
 var FOCUS_ROLES={timer:1,ah:1,gram:1,tmod:1,ttm:1};
 function inFocus(){ return curView()==="role" && !!L.focus && !!FOCUS_ROLES[L.role]; }
@@ -4999,7 +5118,7 @@ function focusWhoPicker(who){
 function focusHTML(){
   var r=L.role, h='<div class="fbar"><b>🎯 Focus · '+esc(roleObj(r).name)+'</b><button class="btn sm" data-focus="off">Show everything</button></div>';
   if(r==="timer"){
-    var sid=L.tab||"tt", s=sessionOf(sid)||SESSIONS[0], idle=timerRows(sid).filter(function(x){return rowState(x)==="idle"&&(sid!=="ps"||!preparedTimerSkipped(x));}).slice(0,4);
+    var sid=L.tab||"tt", s=sessionOf(sid)||SESSIONS[0], idle=timerRows(sid).filter(function(x){return rowState(x)==="idle"&&!timerAgendaSkipped(sid,x);}).slice(0,4);
     h+='<section class="card fcard"><div class="flbl">'+esc(s.name)+' · '+esc(limitsLine(sid,null))+'</div>'+
        '<div class="seg fseg">'+SESSIONS.map(function(x){ return '<button data-ftab="'+x.id+'" class="'+(x.id===sid?'on':'')+'">'+esc(x.name)+'</button>'; }).join("")+'</div>'+
        (runningList().length?'<div class="note" style="text-align:center">Timing now — use <b>Stop</b> on the live bar above.</div>':'')+
@@ -5701,12 +5820,12 @@ function openCC(){ document.getElementById("ccModal").classList.add("on"); ccMea
 /* Match the agenda assignment to the signed-in participant before showing a turn cue. */
 function liveItemRole(it){
   if(!it) return "";
-  return it.rowId?"speaker":it.role;
+  return it.report?.role||(it.rowId?"speaker":it.role);
 }
 function itemIsMine(it){
   var role=liveItemRole(it);
   if(!roleObj(role)) return false;
-  var me=nkey(L.me||myName()), names=it.rowId||role==="keynote"?[whoForItem(it)]:asList(role);
+  var me=nkey(L.me||myName()), names=it.report||it.rowId||role==="keynote"?[whoForItem(it)]:asList(role);
   if(names.some(Boolean)) return names.some(function(name){return nkey(name)===me;});
   return myRoles().includes(role);
 }
@@ -5724,11 +5843,11 @@ function liveRoleCueHTML(){
   if(!c.cur) return "";
   var item=itemIsMine(c.cur)?c.cur:itemIsMine(c.next)?c.next:null;
   if(!item) return "";
-  var role=liveItemRole(item), details=liveItemExtra(item);
-  var row=item.rowId?findRow("ps",item.rowId):item.role==="keynote"?presentationRow(item.id):null;
-  if(row) details=[details,limitsLine("ps",row)].filter(Boolean).join(" · ");
+  var role=liveItemRole(item), details=liveItemExtra(item), estimate=item===c.next?nextLiveEstimate(c):null;
+  var row=agendaTimerRow(item);
+  if(row) details=[details,limitsLine(agendaTimerSession(item),row)].filter(Boolean).join(" · ");
   return '<div class="note live-role-cue"><b>'+(item===c.cur?"You’re on now":"You’re up next")+'</b> · '+esc(roleName(role))+
-    (item.rowId?' · '+esc(item.text):'')+(details?'<div>'+esc(details)+'</div>':'')+
+    ((item.rowId||item.report)?' · '+esc(item.text):'')+(estimate!=null?' · Est. '+esc(fmtHM(min2hm(estimate))):'')+(details?'<div>'+esc(details)+'</div>':'')+
     '<button class="btn sm" data-live-open-role="'+role+'">Open my role</button></div>';
 }
 var lastNudge="";
@@ -5761,28 +5880,33 @@ document.getElementById("app").addEventListener("click",function(e){
 /* Public report coordination. Private evaluation text stays in the feedback workflow. */
 function reportQueue(){
   var entries=[];
-  function addReport(role,name,speaker,turn){
+  function addReport(role,name,speaker,turn,timerKey){
     if(!name) return;
     var id="report|"+JSON.stringify([role,nkey(name),nkey(speaker),turn||""]);
     if(entries.some(function(entry){return entry.id===id;})) return;
-    entries.push({id:id,role:role,name:name,speaker:speaker||"",turn:turn||""});
+    entries.push({id:id,role:role,name:name,speaker:speaker||"",turn:turn||"",timerKey:timerKey});
   }
-  ["timer","ah","gram"].forEach(function(role){addReport(role,assigned(role)||S.people[role]);});
+  ["timer","ah","gram"].forEach(function(role){addReport(role,assigned(role)||S.people[role],"","","rep:"+role);});
   [["ps","seval","sevals"],["tt","tteval","ttevals"]].forEach(function(group){
     var pairs=activeEvaluatorPairs(group[0]);
-    pairs.forEach(function(pair){addReport(group[1],pair.evaluator,pair.speaker,pair.turnId);});
+    pairs.forEach(function(pair){addReport(group[1],pair.evaluator,pair.speaker,pair.turnId,group[0]==="ps"?"ev:a:"+nkey(pair.speaker):"ev:tt:"+pair.id);});
     asList(group[2]).forEach(function(name){
-      if(!pairs.some(function(pair){return nkey(pair.evaluator)===nkey(name);})) addReport(group[1],name);
+      if(!pairs.some(function(pair){return nkey(pair.evaluator)===nkey(name);})) addReport(group[1],name,"","",(group[0]==="ps"?"ev:s:":"ev:t:")+name.toLowerCase());
     });
   });
   return entries;
 }
+function reportItemId(entry){ return "agenda-report|"+entry.timerKey; }
+function orderedReportQueue(){
+  var rank=new Map(runItems().map(function(it,i){return [it.id,i];}));
+  return reportQueue().sort(function(a,b){return (rank.get(reportItemId(a))??Infinity)-(rank.get(reportItemId(b))??Infinity);});
+}
 function isMyLiveReport(entry){ return nkey(entry.name)===nkey(L.me||myName()); }
 function liveReportState(entry){ return S.liveReports.find(function(record){return record.id===entry.id;})?.state||"waiting"; }
 function liveReportQueueHTML(manager){
-  var reports=reportQueue().filter(function(entry){return manager||isMyLiveReport(entry);});
+  var reports=orderedReportQueue().filter(function(entry){return manager||isMyLiveReport(entry);});
   if(!reports.length) return "";
-  var control=manager&&!reports.some(function(entry){return liveReportState(entry)==="called";})?reports.find(function(entry){return liveReportState(entry)==="ready";}):null;
+  var control=manager&&!reports.some(function(entry){return liveReportState(entry)==="called";})?reports.find(function(entry){return liveReportState(entry)==="ready"&&!isSkipped(reportItemId(entry));}):null;
   return '<section class="card live-report-queue"><h2 class="sec">'+(manager?"Evaluation report queue":"My meeting reports")+'</h2>'+
     (control?'<button class="btn primary" data-report-id="'+esc(control.id)+'" data-report-state="called">Call next ready report</button>':'')+
     '<ul class="tlist">'+reports.map(function(entry){
@@ -5794,7 +5918,7 @@ function liveReportQueueHTML(manager){
       return '<li><div><b>'+esc(roleName(entry.role))+'</b> · '+esc(entry.name)+(entry.speaker?' · for '+esc(entry.speaker):'')+
         ' <span class="badge '+(state==="called"||state==="ready"?'on':'')+'">'+labels[state]+'</span></div><div class="row">'+
         (mine&&state==="waiting"?button("ready","Mark ready"):"")+
-        (manager&&state!=="called"&&state!=="presented"?button("called","Call report"):"")+
+        (manager&&state!=="called"&&state!=="presented"&&!isSkipped(reportItemId(entry))?button("called","Call report"):"")+
         ((manager||mine)&&state!=="presented"?button("presented","Mark presented"):"")+
         (manager&&state==="presented"?button("ready","Reopen"):"")+
         (manager&&team?copyBtn(entry.role):!team&&mine?'<button class="btn sm" data-report-evaluation="'+esc(entry.id)+'">Open evaluation</button>':"")+
@@ -5881,7 +6005,7 @@ document.getElementById("view").addEventListener("click",function(e){
     return;
   }
   if(!(action==="ready"&&(mine&&current==="waiting"||manager&&current==="presented")||
-    action==="called"&&manager&&current!=="presented"||
+    action==="called"&&manager&&current!=="presented"&&!isSkipped(reportItemId(report))||
     action==="presented"&&(manager||mine))) return;
   var record=upsert(["liveReports"],report.id,{});
   record.state=action; tick(record); commit();
@@ -6179,13 +6303,26 @@ function addWorkflowAction(text,owner,due,source){
  var a={id:source?'action|'+S.mid+'|'+source:uid(),text:text,owner:owner||'',due:due||'',state:'open',source:source||'',meeting:S.mid,ord:maxOrd(S.actions)+1,u:now()};S.actions.push(a);clearActionDraft();L.actionFilter='open';commit();
 }
 function workflowReportLines(){var out=S.geobs.map(function(o){return 'Agenda observation — '+o.itemLabel+' — '+o.role+(o.who?' ('+o.who+')':'')+' at '+clock(o.at)+': '+o.note;});S.actions.filter(function(a){return !a.archived;}).forEach(function(a){out.push('Action ['+(a.state||'open')+(actionOverdue(a)?', overdue':'')+']: '+a.text+' — '+(a.owner||'Unassigned')+'; target '+(a.due||'not set'));});return out;}
-var HANDOVER_ROLES=['coord','president','tmod','ge','rrm','ttm','keynote'];
+var HANDOVER_ROLES=['coord','president','tmod','ge','rrm','ttm','keynote','speaker','timer','ah','gram','seval','tteval','saa'];
+function suggestedHandover(){
+ var c=curItem();
+ if(!c.cur) return null;
+ for(var i=c.i+1;i<c.its.length;i++){
+   var item=c.its[i], role=liveItemRole(item), name=whoForItem(item);
+   if(!HANDOVER_ROLES.includes(role)||isSkipped(item.id)||item.report&&liveReportState(item.report)==="presented") continue;
+   if(role===L.role&&(!name||nkey(name)===nkey(L.me||myName()))) continue;
+   return {id:item.id,role:role,name:name};
+ }
+ return null;
+}
 function defaultHandoverRole(){
- var c=curItem();if(c.cur&&c.cur.role===L.role){var next=c.its.slice(c.i+1).find(function(it){return !isSkipped(it.id)&&it.role!==L.role&&HANDOVER_ROLES.indexOf(it.role)>=0;});if(next)return next.role;}
+ var suggested=suggestedHandover();
+ if(suggested) return suggested.role;
  if(['timer','ah','gram','seval','tteval'].indexOf(L.role)>=0)return 'ge';if(L.role==='tmod'||L.role==='saa')return 'president';if(L.role==='president')return 'tmod';return 'tmod';
 }
 function handoverRecipients(role){
- return uniq(asList(role).concat(onlinePeople().filter(function(p){return p.roles.includes(role);}).map(function(p){return p.name;})).filter(Boolean));
+ var suggested=suggestedHandover();
+ return uniq((suggested?.role===role?[suggested.name]:[]).concat(agendaRoleNames(role),onlinePeople().filter(function(p){return p.roles.includes(role);}).map(function(p){return p.name;})).filter(Boolean));
 }
 function canAcceptHandover(record){
  var role=record.toRole, name=(L.myNames||{})[role]||L.me||(role===L.role?myName():"");
@@ -6202,13 +6339,14 @@ function floorRecipientOptions(role,selected){
 function handoverHTML(choice){
  var from=myName();
  if(!from) return '<p class="saved">Enter your name in My role to hand over the floor.</p>';
- var roles=ROLES.filter(function(r){return r.id!==L.role&&HANDOVER_ROLES.includes(r.id);});
+ var suggested=suggestedHandover();
+ var roles=ROLES.filter(function(r){return (r.id!==L.role||r.id===suggested?.role)&&HANDOVER_ROLES.includes(r.id);});
  if(!roles.length) return "";
  var target=roles.find(function(r){return r.id===choice?.role;})?.id||defaultHandoverRole();
  if(!roles.some(function(r){return r.id===target;})) target=roles[0].id;
  var outgoing=S.handovers.filter(function(x){return x.fromRole===L.role&&nkey(x.by)===nkey(from);}).sort(function(a,b){return b.ord-a.ord;});
  var pending=outgoing.find(function(x){return x.state==="pending";}), last=pending||outgoing[0];
- var h='<div class="floor-controls" data-item="'+esc(S.run.cur||"")+'" data-role="'+esc(L.role)+'">';
+ var h='<div class="floor-controls" data-item="'+esc(S.run.cur||"")+'" data-role="'+esc(L.role)+'" data-suggested="'+esc(suggested?.id||"")+'"'+(choice?' data-manual':'')+'>';
  if(last){
    var recipient=last.toName||roleName(last.toRole);
    var message=last.state==="pending"?"Waiting for "+recipient+" to accept the floor.":last.state==="accepted"?(last.acceptedBy||recipient)+" accepted the floor.":"Handover to "+recipient+" cancelled.";
@@ -6217,7 +6355,7 @@ function handoverHTML(choice){
  }
  if(!pending) h+='<div class="row"><label class="f"><b>Hand over to</b><select class="t" id="handoverTarget">'+
    roles.map(function(r){return '<option value="'+r.id+'"'+(r.id===target?' selected':'')+'>'+esc(r.name)+'</option>';}).join("")+
-   '</select></label><label class="f"><b>Recipient</b><select class="t" id="handoverRecipient">'+floorRecipientOptions(target,choice?.name)+'</select></label>'+
+   '</select></label><label class="f"><b>Recipient</b><select class="t" id="handoverRecipient">'+floorRecipientOptions(target,choice?.name||(suggested?.role===target?suggested.name:""))+'</select></label>'+
    '<button class="btn" id="handoverSend">Hand over</button></div>';
  return h+'</div>';
 }
@@ -6272,6 +6410,7 @@ ROLE_GUIDE.ge.app.push('Record observations against specific agenda items; creat
 
 
 document.getElementById("view").addEventListener("change",function(event){
+ if(["handoverTarget","handoverRecipient"].includes(event.target.id)) event.target.closest(".floor-controls").dataset.manual="true";
  if(event.target.id==="handoverTarget"){
    document.getElementById("handoverRecipient").innerHTML=floorRecipientOptions(event.target.value);
  }
@@ -6282,7 +6421,7 @@ document.getElementById("app").addEventListener("click",function(event){
  if(button.id==="handoverSend"){
    var from=myName(), target=document.getElementById("handoverTarget").value, name=document.getElementById("handoverRecipient").value;
    var names=handoverRecipients(target);
-   if(!from||target===L.role||!HANDOVER_ROLES.includes(target)) return;
+   if(!from||!HANDOVER_ROLES.includes(target)||target===L.role&&(!name||nkey(name)===nkey(L.me||from))) return;
    if(names.length&&!names.includes(name)){ document.getElementById("handoverRecipient").focus(); return; }
    if(S.handovers.some(function(x){return x.state==="pending"&&x.fromRole===L.role&&nkey(x.by)===nkey(from);})) return;
    S.handovers.push({id:uid(),fromRole:L.role,toRole:target,toName:name,named:true,by:from,itemId:curItem().cur?.id||"",at:now(),state:"pending",ord:maxOrd(S.handovers)+1,u:now()});

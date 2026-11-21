@@ -1,28 +1,33 @@
 /* Public report coordination. Private evaluation text stays in the feedback workflow. */
 function reportQueue(){
   var entries=[];
-  function addReport(role,name,speaker,turn){
+  function addReport(role,name,speaker,turn,timerKey){
     if(!name) return;
     var id="report|"+JSON.stringify([role,nkey(name),nkey(speaker),turn||""]);
     if(entries.some(function(entry){return entry.id===id;})) return;
-    entries.push({id:id,role:role,name:name,speaker:speaker||"",turn:turn||""});
+    entries.push({id:id,role:role,name:name,speaker:speaker||"",turn:turn||"",timerKey:timerKey});
   }
-  ["timer","ah","gram"].forEach(function(role){addReport(role,assigned(role)||S.people[role]);});
+  ["timer","ah","gram"].forEach(function(role){addReport(role,assigned(role)||S.people[role],"","","rep:"+role);});
   [["ps","seval","sevals"],["tt","tteval","ttevals"]].forEach(function(group){
     var pairs=activeEvaluatorPairs(group[0]);
-    pairs.forEach(function(pair){addReport(group[1],pair.evaluator,pair.speaker,pair.turnId);});
+    pairs.forEach(function(pair){addReport(group[1],pair.evaluator,pair.speaker,pair.turnId,group[0]==="ps"?"ev:a:"+nkey(pair.speaker):"ev:tt:"+pair.id);});
     asList(group[2]).forEach(function(name){
-      if(!pairs.some(function(pair){return nkey(pair.evaluator)===nkey(name);})) addReport(group[1],name);
+      if(!pairs.some(function(pair){return nkey(pair.evaluator)===nkey(name);})) addReport(group[1],name,"","",(group[0]==="ps"?"ev:s:":"ev:t:")+name.toLowerCase());
     });
   });
   return entries;
 }
+function reportItemId(entry){ return "agenda-report|"+entry.timerKey; }
+function orderedReportQueue(){
+  var rank=new Map(runItems().map(function(it,i){return [it.id,i];}));
+  return reportQueue().sort(function(a,b){return (rank.get(reportItemId(a))??Infinity)-(rank.get(reportItemId(b))??Infinity);});
+}
 function isMyLiveReport(entry){ return nkey(entry.name)===nkey(L.me||myName()); }
 function liveReportState(entry){ return S.liveReports.find(function(record){return record.id===entry.id;})?.state||"waiting"; }
 function liveReportQueueHTML(manager){
-  var reports=reportQueue().filter(function(entry){return manager||isMyLiveReport(entry);});
+  var reports=orderedReportQueue().filter(function(entry){return manager||isMyLiveReport(entry);});
   if(!reports.length) return "";
-  var control=manager&&!reports.some(function(entry){return liveReportState(entry)==="called";})?reports.find(function(entry){return liveReportState(entry)==="ready";}):null;
+  var control=manager&&!reports.some(function(entry){return liveReportState(entry)==="called";})?reports.find(function(entry){return liveReportState(entry)==="ready"&&!isSkipped(reportItemId(entry));}):null;
   return '<section class="card live-report-queue"><h2 class="sec">'+(manager?"Evaluation report queue":"My meeting reports")+'</h2>'+
     (control?'<button class="btn primary" data-report-id="'+esc(control.id)+'" data-report-state="called">Call next ready report</button>':'')+
     '<ul class="tlist">'+reports.map(function(entry){
@@ -34,7 +39,7 @@ function liveReportQueueHTML(manager){
       return '<li><div><b>'+esc(roleName(entry.role))+'</b> · '+esc(entry.name)+(entry.speaker?' · for '+esc(entry.speaker):'')+
         ' <span class="badge '+(state==="called"||state==="ready"?'on':'')+'">'+labels[state]+'</span></div><div class="row">'+
         (mine&&state==="waiting"?button("ready","Mark ready"):"")+
-        (manager&&state!=="called"&&state!=="presented"?button("called","Call report"):"")+
+        (manager&&state!=="called"&&state!=="presented"&&!isSkipped(reportItemId(entry))?button("called","Call report"):"")+
         ((manager||mine)&&state!=="presented"?button("presented","Mark presented"):"")+
         (manager&&state==="presented"?button("ready","Reopen"):"")+
         (manager&&team?copyBtn(entry.role):!team&&mine?'<button class="btn sm" data-report-evaluation="'+esc(entry.id)+'">Open evaluation</button>':"")+
@@ -121,7 +126,7 @@ document.getElementById("view").addEventListener("click",function(e){
     return;
   }
   if(!(action==="ready"&&(mine&&current==="waiting"||manager&&current==="presented")||
-    action==="called"&&manager&&current!=="presented"||
+    action==="called"&&manager&&current!=="presented"&&!isSkipped(reportItemId(report))||
     action==="presented"&&(manager||mine))) return;
   var record=upsert(["liveReports"],report.id,{});
   record.state=action; tick(record); commit();

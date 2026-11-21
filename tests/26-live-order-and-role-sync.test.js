@@ -75,5 +75,16 @@ module.exports = async (browser) => {
   await phone.fill(observation, "Handover checked");
   await T.eventually(async () => await host.inputValue(observation) === "Handover checked", "Second device edit reaches first device");
   await T.eventually(async () => await height(host) === initialHeight, "Observation shrinks after the text is shortened");
+  await host.click('[data-rtab="coord"]');
+  await T.coTab(host, "agenda");
+  await host.click('[data-co-agenda="live"]');
+  const firstSpeaker = host.locator('[data-live-item^="prepared|"]').filter({ hasText: "Taylor" });
+  T.assert.match(await firstSpeaker.innerText(), /Est\./);
+  await firstSpeaker.getByRole("button", { name: "Skip item" }).click();
+  await T.eventually(async () => (await timer.locator("tr.nextup").locator('[data-edit="name"]').inputValue()) === "Chloe", "Coordinator skip advances the shared Timer queue");
+  await host.click("#toastUndo");
+  await T.eventually(async () => (await timer.locator("tr.nextup").locator('[data-edit="name"]').inputValue()) === "Taylor", "Undo restores the shared Timer queue");
+  await host.click('[data-co-agenda="plan"]');
+  T.assert.ok(await host.locator(".agedit .agrow").count(), "Saved plan editor is still available");
   T.noErrors(host, phone, timer, speaker);
 };
