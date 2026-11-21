@@ -72,11 +72,12 @@ function nextLiveEstimate(c){
   var started=S.run.started[c.cur.id];
   if(!Number.isFinite(started)) return null;
   var duration, plan=itemsSorted();
-  if(c.cur.rowId){
-    duration=Math.ceil(limOf("ps",findRow("ps",c.cur.rowId)).r/60)+1;
+  if(c.cur.rowId||c.cur.report){
+    duration=Math.ceil(limOf(agendaTimerSession(c.cur),agendaTimerRow(c.cur)).r/60)+(c.cur.rowId?1:0);
   } else {
     var index=plan.findIndex(function(it){return it.id===c.cur.id;});
     duration=index>=0?agDur(plan,index):null;
+    if(c.cur.x==="evals"&&c.next.report) duration=1;
     if(c.cur.x==="speakers"&&duration!=null) duration=Math.max(0,duration-preparedBlockRequirement());
   }
   if(duration==null) return null;

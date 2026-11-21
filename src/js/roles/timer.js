@@ -36,8 +36,8 @@ function timerHTML(){
   if(!rows.length) h+='<tr><td colspan="6" class="empty">No speakers yet. Plan ahead with <b>+ Add to list</b> (e.g. <i>Nimal, Kasun, Amali</i>), or press <b>Start speaker</b> when someone begins.</td></tr>';
   var nx=firstQueued(s.id);
   rows.forEach(function(r,i){
-    var st=rowState(r), sec=timerElapsed(s.id,r,t), sg=signal(s.id,sec,r), stx=status(s.id,r,t), isNext=st==="idle"&&r===nx, skipped=st==="idle"&&s.id==="ps"&&preparedTimerSkipped(r);
-    if(st==="idle"&&r.manual==null) stx={text:skipped?"Skipped on agenda":isNext?"Next up":"Waiting",cls:"st-queue"};
+    var st=rowState(r), sec=timerElapsed(s.id,r,t), sg=signal(s.id,sec,r), stx=status(s.id,r,t), isNext=st==="idle"&&r===nx, skipped=st==="idle"&&timerAgendaSkipped(s.id,r);
+    if(st==="idle"&&r.manual==null) stx={text:skipped?(["ev","rep"].includes(s.id)&&timerReportPresented(r)?"Already presented":"Skipped on agenda"):isNext?"Next up":"Waiting",cls:"st-queue"};
     var ctl= st==="running"?'<button class="btn sm" data-act="'+(r.paused?'resume':'pause')+'">'+(r.paused?'▶':'⏸')+'</button><button class="btn stop sm" data-act="stop">■ Stop</button>': skipped?'—': st==="done"?'<span class="donetag">✓ Done</span>':'<button class="btn go sm" data-act="start">▶ Start</button>';
     var timeCell= st==="running"?'<div class="timebox '+sg+'" data-live="time">'+fmt(sec)+'</div>'
       :'<input class="timebox '+sg+'" data-edit="time" value="'+(sec==null?"":fmt(sec))+'" placeholder="m:ss" title="Type a time as m:ss to set or correct it">';
@@ -45,7 +45,7 @@ function timerHTML(){
       '<td><input class="name" data-edit="name" list="roster" autocomplete="off" value="'+esc(r.name)+'" placeholder="Speaker '+(i+1)+' (add name)">'+(s.id==="ps"&&speechTitle(baseName(r.name))?'<div class="spt">“'+esc(speechTitle(baseName(r.name)))+'”'+(r.lim?' · '+fmt(r.lim.g)+'–'+fmt(r.lim.r):'')+'</div>':'')+'</td>'+
       '<td class="ctl">'+ctl+'</td><td class="tm">'+timeCell+'</td>'+
       '<td><span class="status '+stx.cls+'" data-live="status">'+esc(stx.text)+'</span>'+(r.manual!=null?'<span class="edited">'+(r.start==null?'✎ entered manually':'✎ edited')+'</span>':'')+'</td>'+
-      '<td class="act">'+(st==="idle"&&!(s.id==="ps"&&S.run.order?.length)?'<button class="iconbtn" data-act="up" title="Move up">↑</button><button class="iconbtn" data-act="down" title="Move down">↓</button>':'')+
+      '<td class="act">'+(st==="idle"&&!(["ps","ev","rep"].includes(s.id)&&S.run.order?.length)?'<button class="iconbtn" data-act="up" title="Move up">↑</button><button class="iconbtn" data-act="down" title="Move down">↓</button>':'')+
       (st==="running"?'':'<button class="iconbtn" data-act="del" title="Remove this speaker">✕</button>')+'</td></tr>';
   });
   h+='</tbody></table>';

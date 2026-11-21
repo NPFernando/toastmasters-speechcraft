@@ -89,6 +89,7 @@ function extraText(x,item){
   return "";
 }
 function whoForItem(it){
+  if(it.report) return it.report.name;
   if(it.rowId) return it.name;
   if(it.role==="keynote") return presentationOf(it.id)?.name||whoFor(it.role);
   return whoFor(it.role);
@@ -98,7 +99,7 @@ function liveItemExtra(it){
     var evaluator=evaluatorOf(it.name);
     return evaluator?"Evaluator: "+evaluator:"";
   }
-  return it.x==="speakers"?"":extraText(it.x,it);
+  return ["speakers","evals"].includes(it.x)?"":extraText(it.x,it);
 }
 function whoFor(role){ var v=asList(role); return v.join(", "); }
 
@@ -113,7 +114,9 @@ function applyAgenda(){
   var asg=activeEvaluatorPairs("ps");
   asg.forEach(function(a){ want.ev.push({ak:"ev:a:"+nkey(a.speaker),name:a.evaluator+" – evaluating "+a.speaker}); });
   asList("sevals").forEach(function(n){ if(asg.some(function(a){return nkey(a.evaluator)===nkey(n);})) return; want.ev.push({ak:"ev:s:"+n.toLowerCase(),name:n+" – speech evaluation"}); });
-  asList("ttevals").forEach(function(n){ want.ev.push({ak:"ev:t:"+n.toLowerCase(),name:n+" – Table Topics evaluation"}); });
+  reportQueue().filter(function(entry){return entry.role==="tteval";}).forEach(function(entry){
+    want.ev.push({ak:entry.timerKey,name:entry.name+" – "+(entry.speaker?"evaluating "+entry.speaker:"Table Topics evaluation")});
+  });
   [["timer","Timer's report",{g:30,a:45,r:60}],["ah","Ah-Counter's report",{g:30,a:45,r:60}],["gram","Grammarian's report",{g:60,a:90,r:120}]].forEach(function(x){
     var n=assigned(x[0]); if(n) want.rep.push({ak:"rep:"+x[0],name:n+" – "+x[1],lim:x[2]});
   });

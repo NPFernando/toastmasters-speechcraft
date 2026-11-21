@@ -21,12 +21,12 @@ function setAssign(speaker,evaluator){ var a=upsert(["assigns"],"as|"+nkey(speak
 /* Table Topics: each speaker can be given to one Table Topics Evaluator; an evaluator can have several speakers */
 function ttAssignId(key){ return "tta|"+(ttTurn(key)?key:nkey(key)); }
 function ttEvaluatorOf(speaker){ var a=S.ttassign.find(function(x){return x.id===ttAssignId(speaker);}); return a&&a.evaluator?a.evaluator:""; }
-function setTTAssign(speaker,evaluator){ var a=upsert(["ttassign"],ttAssignId(speaker),{speaker:ttTargetName(speaker),evaluator:""}); a.speaker=ttTargetName(speaker); a.turnId=ttTurn(speaker)?.id||null; a.evaluator=evaluator||""; tick(a); commit(); }
+function setTTAssign(speaker,evaluator){ var a=upsert(["ttassign"],ttAssignId(speaker),{speaker:ttTargetName(speaker),evaluator:""}); a.speaker=ttTargetName(speaker); a.turnId=ttTurn(speaker)?.id||null; a.evaluator=evaluator||""; tick(a); applyAgenda(); commit(); }
 function ttLoad(ev){ return S.ttassign.filter(function(a){return nkey(a.evaluator)===nkey(ev);}).length; }
 function autoAssignTT(speaker){
   if(!speaker||ttEvaluatorOf(speaker)) return; var evs=asList("ttevals").filter(function(e){return nkey(e)!==nkey(ttTargetName(speaker));}); if(!evs.length) return;
   var best=evs.slice().sort(function(a,b){ return ttLoad(a)-ttLoad(b) || evs.indexOf(a)-evs.indexOf(b); })[0];
-  var a=upsert(["ttassign"],ttAssignId(speaker),{speaker:ttTargetName(speaker),evaluator:""}); a.speaker=ttTargetName(speaker); a.turnId=ttTurn(speaker)?.id||null; a.evaluator=best; tick(a);
+  var a=upsert(["ttassign"],ttAssignId(speaker),{speaker:ttTargetName(speaker),evaluator:""}); a.speaker=ttTargetName(speaker); a.turnId=ttTurn(speaker)?.id||null; a.evaluator=best; tick(a); applyAgenda();
 }
 function anyEvaluatorOf(kind,n){ return kind==="ps"?evaluatorOf(n):ttEvaluatorOf(n); }
 function evStatusOf(kind,n,me){ var dd=meetingEvalDrafts()[evId(kind,n,me)]; if((dd&&dd.submitted)||S.evals.some(function(e){return e.id===evId(kind,n,me)&&e.done&&e.state!=="writing";})) return "done"; if(dd&&(dd.c1||dd.r||dd.c2)) return "writing"; return "todo"; }

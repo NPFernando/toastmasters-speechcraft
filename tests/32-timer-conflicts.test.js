@@ -59,6 +59,8 @@ module.exports = async () => {
   const view = source("core/render-shell.js");
   vm.runInContext(view.slice(view.indexOf("function nextAgendaTiming"), view.indexOf("function renderTimerHandoff")), model);
   for (const file of ["roles/shared.js", "agenda/timing.js", "roles/toastmaster-order.js"]) vm.runInContext(source(file), model);
+  vm.runInContext(source("features/live-meeting-roles.js"), model);
+  model.activeEvaluatorPairs = () => [];
   model.speechTitle = () => "";
   model.presentationRow = () => undefined;
   const agendaQueue = vm.runInContext(`(() => {
@@ -103,4 +105,23 @@ module.exports = async () => {
   assert.deepStrictEqual(liveOrder.queue, ["second", "first"]);
   assert.strictEqual(liveOrder.current, "prepared|second");
   assert.ok(liveOrder.order.indexOf("prepared|second") < liveOrder.order.indexOf("prepared|first"));
+  const reports = JSON.parse(vm.runInContext(`JSON.stringify((() => {
+    S = blank();
+    S.agenda.assign.timer = "Taylor";
+    S.agenda.assign.ah = "Alex";
+    S.rows.rep = [{id:"timer",ak:"rep:timer"},{id:"ah",ak:"rep:ah"}];
+    S.run.cur = "d8";
+    S.run.started.d8 = 100;
+    reorderLiveItem("agenda-report|rep:ah", "d9", false);
+    const timeline = runItems().map((item) => item.id);
+    const queue = orderedReportQueue().map((report) => report.role);
+    const timer = firstQueued("rep").id;
+    S.run.skip = {"agenda-report|rep:ah":true};
+    const afterSkip = firstQueued("rep").id;
+    return { timeline, queue, timer, afterSkip };
+  })())`, model));
+  assert.ok(reports.timeline.indexOf("agenda-report|rep:ah") < reports.timeline.indexOf("d9"));
+  assert.deepStrictEqual(reports.queue, ["ah","timer"]);
+  assert.strictEqual(reports.timer, "ah");
+  assert.strictEqual(reports.afterSkip, "timer");
 };

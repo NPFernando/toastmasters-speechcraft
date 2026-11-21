@@ -1,12 +1,12 @@
 /* Match the agenda assignment to the signed-in participant before showing a turn cue. */
 function liveItemRole(it){
   if(!it) return "";
-  return it.rowId?"speaker":it.role;
+  return it.report?.role||(it.rowId?"speaker":it.role);
 }
 function itemIsMine(it){
   var role=liveItemRole(it);
   if(!roleObj(role)) return false;
-  var me=nkey(L.me||myName()), names=it.rowId||role==="keynote"?[whoForItem(it)]:asList(role);
+  var me=nkey(L.me||myName()), names=it.report||it.rowId||role==="keynote"?[whoForItem(it)]:asList(role);
   if(names.some(Boolean)) return names.some(function(name){return nkey(name)===me;});
   return myRoles().includes(role);
 }
@@ -25,10 +25,10 @@ function liveRoleCueHTML(){
   var item=itemIsMine(c.cur)?c.cur:itemIsMine(c.next)?c.next:null;
   if(!item) return "";
   var role=liveItemRole(item), details=liveItemExtra(item), estimate=item===c.next?nextLiveEstimate(c):null;
-  var row=item.rowId?findRow("ps",item.rowId):item.role==="keynote"?presentationRow(item.id):null;
-  if(row) details=[details,limitsLine("ps",row)].filter(Boolean).join(" · ");
+  var row=agendaTimerRow(item);
+  if(row) details=[details,limitsLine(agendaTimerSession(item),row)].filter(Boolean).join(" · ");
   return '<div class="note live-role-cue"><b>'+(item===c.cur?"You’re on now":"You’re up next")+'</b> · '+esc(roleName(role))+
-    (item.rowId?' · '+esc(item.text):'')+(estimate!=null?' · Est. '+esc(fmtHM(min2hm(estimate))):'')+(details?'<div>'+esc(details)+'</div>':'')+
+    ((item.rowId||item.report)?' · '+esc(item.text):'')+(estimate!=null?' · Est. '+esc(fmtHM(min2hm(estimate))):'')+(details?'<div>'+esc(details)+'</div>':'')+
     '<button class="btn sm" data-live-open-role="'+role+'">Open my role</button></div>';
 }
 var lastNudge="";
