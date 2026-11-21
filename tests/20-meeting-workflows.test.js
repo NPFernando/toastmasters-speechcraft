@@ -9,7 +9,7 @@ module.exports=async b=>{
  await E.fill('#geObservationText','Introduction was clear');await E.click('#geObservationAdd');
  T.assert.equal((await read(E)).geobs.length,1);await E.click('[data-observation-action]');T.assert.equal((await read(E)).actions.length,1);
  await E.click('[data-action-toggle]');T.assert.equal((await read(E)).actions[0].state,'done');
- await E.selectOption('#handoverTarget','tmod');await E.click('#handoverSend');T.assert.equal((await read(E)).handovers[0].state,'pending');
+ await E.click('[data-nav=now]');await E.selectOption('#handoverTarget','tmod');await E.click('#handoverSend');T.assert.equal((await read(E)).handovers[0].state,'pending');
  await E.click('#homeBtn');await E.click('#wChange');await T.pickWho(E,'Host',['tmod']);await E.click('[data-handover-accept]');T.assert.equal((await read(E)).handovers[0].state,'accepted');
  // Follow-up actions survive a new meeting, observations and handovers do not.
  await E.evaluate(()=>document.getElementById('newMeeting').click());s=await read(E);T.assert.equal(s.actions.length,1);T.assert.equal(s.geobs.length,0);T.assert.equal(s.handovers.length,0);

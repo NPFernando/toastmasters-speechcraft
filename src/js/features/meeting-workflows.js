@@ -78,10 +78,50 @@ function defaultHandoverRole(){
  var c=curItem();if(c.cur&&c.cur.role===L.role){var next=c.its.slice(c.i+1).find(function(it){return !isSkipped(it.id)&&it.role!==L.role&&HANDOVER_ROLES.indexOf(it.role)>=0;});if(next)return next.role;}
  if(['timer','ah','gram','seval','tteval'].indexOf(L.role)>=0)return 'ge';if(L.role==='tmod'||L.role==='saa')return 'president';if(L.role==='president')return 'tmod';return 'tmod';
 }
-function handoverHTML(){
- var h='<section class="card"><h2>Hand over the floor</h2>',from=myName();
- h+='<label class="f"><b>Hand over to</b><select class="t" id="handoverTarget">'+ROLES.filter(function(r){return r.id!==L.role&&HANDOVER_ROLES.indexOf(r.id)>=0;}).map(function(r){return '<option value="'+r.id+'"'+(r.id===defaultHandoverRole()?' selected':'')+'>'+esc(r.name+(whoFor(r.id)?' · '+whoFor(r.id):''))+'</option>';}).join('')+'</select></label><button class="btn" id="handoverSend"'+(!from?' disabled':'')+'>My part is complete → hand over</button><p class="saved">The recipient accepts the floor. This does not advance the live agenda or stop a running timer.</p>';
- h+=S.handovers.slice().reverse().slice(0,8).map(function(x){return '<div class="wcard">'+esc(x.by+' ('+roleName(x.fromRole)+') → '+roleName(x.toRole)+(x.toName?' · '+x.toName:'')+' · '+clock(x.at)+' · '+x.state)+(x.state==='pending'&&L.role===x.toRole&&(!x.toName||nkey(myName())===nkey(x.toName))?'<button class="btn sm" data-handover-accept="'+esc(x.id)+'">Accept floor</button>':'')+(x.state==='pending'&&nkey(myName())===nkey(x.by)?'<button class="linkbtn" data-handover-cancel="'+esc(x.id)+'">Cancel</button>':'')+'</div>';}).join('');return h+'</section>';
+function handoverRecipients(role){
+ return uniq(asList(role).concat(onlinePeople().filter(function(p){return p.roles.includes(role);}).map(function(p){return p.name;})).filter(Boolean));
+}
+function canAcceptHandover(record){
+ var role=record.toRole, name=(L.myNames||{})[role]||L.me||(role===L.role?myName():"");
+ if(record.state!=="pending"||!name||!myRoles().includes(role)) return false;
+ if(!record.toName||nkey(record.toName)===nkey(name)) return true;
+ // Older records stored the entire recipient list as one string.
+ return !record.named&&record.toName.split(",").some(function(n){return nkey(n)===nkey(name);});
+}
+function floorRecipientOptions(role,selected){
+ var names=handoverRecipients(role);
+ return (names.length>1?'<option value="">Choose a recipient</option>':names.length?'':'<option value="">Anyone in this role</option>')+
+   names.map(function(name){return '<option'+(name===selected?' selected':'')+'>'+esc(name)+'</option>';}).join("");
+}
+function handoverHTML(choice){
+ var from=myName();
+ if(!from) return '<p class="saved">Enter your name in My role to hand over the floor.</p>';
+ var roles=ROLES.filter(function(r){return r.id!==L.role&&HANDOVER_ROLES.includes(r.id);});
+ if(!roles.length) return "";
+ var target=roles.find(function(r){return r.id===choice?.role;})?.id||defaultHandoverRole();
+ if(!roles.some(function(r){return r.id===target;})) target=roles[0].id;
+ var outgoing=S.handovers.filter(function(x){return x.fromRole===L.role&&nkey(x.by)===nkey(from);}).sort(function(a,b){return b.ord-a.ord;});
+ var pending=outgoing.find(function(x){return x.state==="pending";}), last=pending||outgoing[0];
+ var h='<div class="floor-controls" data-item="'+esc(S.run.cur||"")+'" data-role="'+esc(L.role)+'">';
+ if(last){
+   var recipient=last.toName||roleName(last.toRole);
+   var message=last.state==="pending"?"Waiting for "+recipient+" to accept the floor.":last.state==="accepted"?(last.acceptedBy||recipient)+" accepted the floor.":"Handover to "+recipient+" cancelled.";
+   h+='<div class="row"><span role="status">'+esc(message)+'</span>'+
+     (pending?'<button class="btn sm" data-handover-cancel="'+esc(last.id)+'">Cancel handover</button>':'')+'</div>';
+ }
+ if(!pending) h+='<div class="row"><label class="f"><b>Hand over to</b><select class="t" id="handoverTarget">'+
+   roles.map(function(r){return '<option value="'+r.id+'"'+(r.id===target?' selected':'')+'>'+esc(r.name)+'</option>';}).join("")+
+   '</select></label><label class="f"><b>Recipient</b><select class="t" id="handoverRecipient">'+floorRecipientOptions(target,choice?.name)+'</select></label>'+
+   '<button class="btn" id="handoverSend">Hand over</button></div>';
+ return h+'</div>';
+}
+function renderIncomingFloor(){
+ var banner=document.getElementById("floorIncoming");
+ var html=S.handovers.filter(canAcceptHandover).map(function(record){
+   return '<div class="card row floor-request"><span role="status"><b>'+esc(record.by)+'</b> is handing the floor to '+esc(roleName(record.toRole))+'.</span>'+
+     '<button class="btn primary" data-handover-accept="'+esc(record.id)+'">Accept floor</button></div>';
+ }).join("");
+ if(banner.floorHTML!==html){ banner.innerHTML=html; banner.floorHTML=html; }
 }
 function downloadReferencePack(){
  var body=ROLES.map(function(r){return guidePageHTML(r.id);}).join('');
@@ -112,8 +152,6 @@ ROLE_GUIDE.ge.app.push('Record observations against specific agenda items; creat
  });
  V.addEventListener('click',function(e){
   var t=e.target;if(t.closest('#keynoteQueue')&&(L.role==='keynote'||L.role==='coord'&&coordUnlocked())){queueKeynote();return;}
-  var ho=t.closest('[data-handover-accept],[data-handover-cancel]');if(ho){var id=ho.dataset.handoverAccept||ho.dataset.handoverCancel,x=S.handovers.find(function(o){return o.id===id;});if(!x||x.state!=='pending')return;if(ho.dataset.handoverAccept&&L.role===x.toRole&&(!x.toName||nkey(myName())===nkey(x.toName))){x.state='accepted';x.acceptedBy=myName();x.acceptedAt=now();}else if(ho.dataset.handoverCancel&&nkey(myName())===nkey(x.by)){x.state='cancelled';}else return;tick(x);commit();return;}
-  if(t.closest('#handoverSend')&&myName()){var target=document.getElementById('handoverTarget').value,c=curItem(),existing=S.handovers.find(function(x){return x.state==='pending'&&x.fromRole===L.role&&nkey(x.by)===nkey(myName());});if(existing){alert('Your previous handover is still pending. Cancel it or ask the recipient to accept.');return;}S.handovers.push({id:uid(),fromRole:L.role,toRole:target,toName:whoFor(target),by:myName(),itemId:c.cur?c.cur.id:'',at:now(),state:'pending',ord:maxOrd(S.handovers)+1,u:now()});commit();return;}
   if(L.role!=='ge'&&!(L.role==='coord'&&coordUnlocked()))return;
   if(t.closest('#geObservationAdd')){var it=S.agenda.items.find(function(i){return i.id===document.getElementById('geAgendaItem').value;}),note=document.getElementById('geObservationText').value.trim();if(!it){alert('Choose an existing agenda item.');return;}if(!note)return;saveWorkflowFields({geObservationText:null});S.geobs.push({id:uid(),itemId:it.id,itemLabel:it.text,role:arole(it.role).n,who:whoFor(it.role),kind:document.getElementById('geObservationKind').value,note:note,at:now(),by:myName(),ord:maxOrd(S.geobs)+1,u:now()});commit();return;}
   var oa=t.closest('[data-observation-action]');if(oa){var o=S.geobs.find(function(x){return x.id===oa.dataset.observationAction;});if(o)addWorkflowAction(o.note,o.who,S.agenda.next,o.id);return;}
@@ -125,3 +163,32 @@ ROLE_GUIDE.ge.app.push('Record observations against specific agenda items; creat
   var ar=t.closest('[data-action-archive]');if(ar){var a=S.actions.find(function(x){return x.id===ar.dataset.actionArchive;});if(a){a.archived=!a.archived;tick(a);commit();}}
  });
 })();
+
+
+document.getElementById("view").addEventListener("change",function(event){
+ if(event.target.id==="handoverTarget"){
+   document.getElementById("handoverRecipient").innerHTML=floorRecipientOptions(event.target.value);
+ }
+});
+document.getElementById("app").addEventListener("click",function(event){
+ var button=event.target.closest("[data-handover-accept],[data-handover-cancel],#handoverSend");
+ if(!button) return;
+ if(button.id==="handoverSend"){
+   var from=myName(), target=document.getElementById("handoverTarget").value, name=document.getElementById("handoverRecipient").value;
+   var names=handoverRecipients(target);
+   if(!from||target===L.role||!HANDOVER_ROLES.includes(target)) return;
+   if(names.length&&!names.includes(name)){ document.getElementById("handoverRecipient").focus(); return; }
+   if(S.handovers.some(function(x){return x.state==="pending"&&x.fromRole===L.role&&nkey(x.by)===nkey(from);})) return;
+   S.handovers.push({id:uid(),fromRole:L.role,toRole:target,toName:name,named:true,by:from,itemId:curItem().cur?.id||"",at:now(),state:"pending",ord:maxOrd(S.handovers)+1,u:now()});
+   commit(); return;
+ }
+ var record=S.handovers.find(function(x){return x.id===(button.dataset.handoverAccept||button.dataset.handoverCancel);});
+ if(!record||record.state!=="pending") return;
+ if(button.dataset.handoverAccept&&canAcceptHandover(record)){
+   record.state="accepted";
+   record.acceptedBy=(L.myNames||{})[record.toRole]||L.me||myName();
+   record.acceptedAt=now();
+ } else if(button.dataset.handoverCancel&&record.fromRole===L.role&&nkey(myName())===nkey(record.by)) record.state="cancelled";
+ else return;
+ tick(record); commit();
+});

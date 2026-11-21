@@ -56,7 +56,6 @@ function renderAll(){
   else v.innerHTML=gramHTML();
   if(curView()==="now" || (curView()==="role" && L.role==="speaker")) v.insertAdjacentHTML("beforeend",preparedRunHTML(false));
   if(curView()==="role"){
-    v.insertAdjacentHTML("beforeend",handoverHTML());
     if(!["gram","seval","tteval"].includes(L.role)) v.insertAdjacentHTML("beforeend",draftAccessHTML());
     var nextDraftPanel=v.querySelector("#draftPin")?.closest("details");
     if(draftPanel&&nextDraftPanel) nextDraftPanel.open=draftPanel.open;
@@ -70,7 +69,7 @@ function renderAll(){
   if(curView()==="role" && !inFocus() && L.role!=="coord" && !(S.run&&S.run.cur)){ var up=upcomingHTML(false); if(up) v.insertAdjacentHTML("afterbegin",up); }
   if(L.role==="speaker"||L.role==="member"){ try{ histCapture(L.role==="speaker"?myName():(L.cardName||"")); }catch(e){} }
   if(document.getElementById("stage").classList.contains("on")) renderStage();
-  renderAgendaLine(); renderMemberList(); renderVoteBar(); renderFin(); maybeShowWinners(false); flushPending(); syncPrivateDrafts(); checkNewFeedback(); renderCompanion();
+  renderIncomingFloor(); renderAgendaLine(); renderMemberList(); renderVoteBar(); renderFin(); maybeShowWinners(false); flushPending(); syncPrivateDrafts(); checkNewFeedback(); renderCompanion();
   if(document.getElementById("voteModal").classList.contains("on")) renderVoteModal();
   renderConnBtn();
   if(document.getElementById("welcome").classList.contains("on")&&W.step==="role"){ var ae=document.activeElement; if(ae&&ae.id==="wName") wRefreshWho(); else renderWelcome(); }
@@ -79,7 +78,7 @@ function renderAll(){
     if(candidates.length===1) candidates[0].focus({preventScroll:true});
   }
 }
-function renderLiveOnly(){ renderFin(); renderNow(); renderCompanion(); renderAgendaLine(); renderVoteBar(); maybeShowWinners(false); renderConnBtn(); renderRoles(); if(document.getElementById("voteModal").classList.contains("on")) renderVoteModal(); }
+function renderLiveOnly(){ renderIncomingFloor(); renderFin(); renderNow(); renderCompanion(); renderAgendaLine(); renderVoteBar(); maybeShowWinners(false); renderConnBtn(); renderRoles(); if(document.getElementById("voteModal").classList.contains("on")) renderVoteModal(); }
 function renderMeta(){
   var w=document.getElementById("mWeek"), d=document.getElementById("mDate"), n=document.getElementById("myName");
   if(document.activeElement!==w) w.value=S.meta.week||"";
