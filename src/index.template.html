@@ -26,25 +26,41 @@
       <span class="saved" id="saved"></span>
       <button class="conn" id="connBtn" aria-haspopup="dialog" aria-controls="connModal" title="Connect devices"><i></i><span id="connTxt">Not connected</span></button>
       <button class="btn ghost" id="homeBtn" title="Back to the start screen: choose your role and meeting">🏠 Home</button>
-      <span class="morewrap"><button class="btn ghost" id="moreBtn" aria-controls="moreMenu" aria-expanded="false" title="More options">⋯ More</button>
-        <span class="moremenu" id="moreMenu" role="group" aria-label="More options">
-          <button class="mi mobonly" id="homeMi">🏠 Home<small>Start screen: change your role or meeting</small></button>
-          <button class="mi" id="backupBtn">⤓ Save meeting record<small>Download this meeting as a file (backup)</small></button>
-          <button class="mi" id="restoreBtn">⤒ Import meeting record<small>Bring a saved record back onto this device</small></button>
-          <button class="mi" id="newMeeting">🆕 New meeting<small>Clear this meeting; keep members and settings</small></button>
-          <button class="mi" id="installBtn" hidden>📲 Install as an app<small>Home-screen icon; opens even with weak signal</small></button>
-          <button class="mi" id="ccBtn">🔌 Connection check<small>Is this device ready for the meeting?</small></button>
-          <button class="mi" id="howBtn">❓ How to use<small>Short tips for every part of the app</small></button>
-          <button class="mi" id="guidesBtn">📘 Role guides<small>One printable page per role</small></button>
-          <button class="mi" id="practiceBtn">🎓 Practice meeting<small>Try every role with sample data; the real meeting isn’t touched</small></button>
-          <button class="mi" id="projBtn">📺 Projector view<small>Full screen for the room screen or Zoom share</small></button>
-          <a class="mi" href="https://github.com/NPFernando/toastmasters-speechcraft" target="_blank" rel="noopener">🐙 Open on GitHub<small>Source code, issues and ideas</small></a>
-          <button class="mi" id="fbBtn">💬 Report a problem or idea<small>Goes to the organisers; no account needed</small></button>
-          <button class="mi" id="aboutBtn">ℹ️ About &amp; clean up<small>Help, version, reset this device</small></button>
-          <span class="mset" id="mset"><b>Display <small>this device</small></b>
+      <div class="morewrap"><button class="btn ghost" id="moreBtn" aria-controls="moreMenu" aria-expanded="false">⋯ More</button>
+        <div class="moremenu" id="moreMenu" role="group" aria-labelledby="moreTitle">
+          <div class="morehead"><h2 id="moreTitle" tabindex="-1">More options</h2><button class="btn sm" id="moreClose">Close</button></div>
+          <section class="moregroup" aria-labelledby="moreMeeting">
+            <h3 id="moreMeeting">Meeting</h3>
+            <button class="mi mobonly" id="homeMi">🏠 Home<small>Change your role or meeting</small></button>
+            <button class="mi" id="projBtn">📺 Projector view<small>Show the meeting on a room screen or share it online</small></button>
+            <button class="mi" id="ccBtn">🔌 Connection check</button>
+          </section>
+          <section class="moregroup" aria-labelledby="moreRecords">
+            <h3 id="moreRecords">Meeting records</h3>
+            <button class="mi" id="backupBtn">⤓ Download meeting record</button>
+            <button class="mi" id="restoreBtn">⤒ Import meeting record</button>
+            <button class="mi more-caution" id="newMeeting">🆕 Start a new meeting<small>Clears the current meeting. Keeps members and settings.</small></button>
+          </section>
+          <section class="moregroup" aria-labelledby="moreHelp">
+            <h3 id="moreHelp">Help and practice</h3>
+            <button class="mi" id="howBtn">❓ How to use</button>
+            <button class="mi" id="guidesBtn">📘 Printable role guides</button>
+            <button class="mi" id="practiceBtn">🎓 Practice meeting<small>Try roles with sample data</small></button>
+            <button class="mi" id="fbBtn">💬 Report a problem or idea</button>
+          </section>
+          <section class="moregroup" aria-labelledby="moreApp">
+            <h3 id="moreApp">App and device</h3>
+            <button class="mi" id="installBtn" hidden>📲 Install as an app</button>
+            <button class="mi" id="aboutBtn">ℹ️ About &amp; device reset</button>
+            <a class="mi" href="https://github.com/NPFernando/toastmasters-speechcraft" target="_blank" rel="noopener">Open on GitHub ↗<small>Source code and issues (new tab)</small></a>
+          </section>
+          <section class="mset" id="mset" aria-labelledby="moreDisplay">
+            <h3 id="moreDisplay">Display <small>This device</small></h3>
             <span class="seg" role="group" aria-label="Theme"><button data-theme-set="auto">Auto</button><button data-theme-set="light">☀️ Light</button><button data-theme-set="dark">🌙 Dark</button></span>
-            <label class="tgl"><input type="checkbox" id="bigText"> <span>Bigger text</span></label></span>
-        </span></span>
+            <label class="tgl"><input type="checkbox" id="bigText"> <span>Bigger text</span></label>
+          </section>
+        </div>
+      </div>
       <input type="file" id="restoreFile" accept=".json,application/json" style="display:none">
       <button class="btn primary" id="openReport" aria-haspopup="dialog" aria-controls="reportWrap">Meeting report</button>
     </div>

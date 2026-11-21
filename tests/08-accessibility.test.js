@@ -40,6 +40,12 @@ module.exports = async (b) => {
   await phone.keyboard.press("Enter");
   await phone.waitForSelector("#moreMenu.on");
   T.assert.strictEqual(await phone.getAttribute("[data-nav=more]", "aria-expanded"), "true");
+  T.assert.strictEqual(await phone.evaluate(() => document.activeElement.id), "moreTitle");
+  T.assert.deepStrictEqual(await phone.locator("#moreMenu h3").allTextContents(),
+    ["Meeting", "Meeting records", "Help and practice", "App and device", "Display This device"]);
+  T.assert.strictEqual(await phone.locator("#installBtn").isVisible(), false);
+  await phone.keyboard.press("Tab");
+  T.assert.strictEqual(await phone.evaluate(() => document.activeElement.id), "moreClose");
   await phone.keyboard.press("Escape");
   T.assert.strictEqual(await phone.evaluate(() => document.activeElement.dataset.nav), "more");
 

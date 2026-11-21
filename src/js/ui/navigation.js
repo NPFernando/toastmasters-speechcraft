@@ -14,6 +14,7 @@ function renderNav(){
     var focused=document.activeElement?.dataset.nav;
     el.navHTML=html;
     el.innerHTML=html;
+    if(document.getElementById("moreMenu").classList.contains("on")) el.querySelector('[data-nav="more"]').setAttribute("aria-expanded","true");
     if(focused) el.querySelector('[data-nav="'+focused+'"]')?.focus({preventScroll:true});
   }
   document.body.classList.toggle("v-now",v==="now"); document.body.classList.toggle("v-agenda",v==="agenda");
@@ -21,7 +22,7 @@ function renderNav(){
 document.getElementById("bnav").addEventListener("click",function(e){
   var b=e.target.closest("[data-nav]"); if(!b) return; var n=b.dataset.nav;
   if(n==="report"){ document.getElementById("openReport").click(); return; }
-  if(n==="more"){ e.stopPropagation(); openMoreMenu(true); return; }
+  if(n==="more"){ e.stopPropagation(); openMoreMenu(); return; }
   setView(n);
 });
 
