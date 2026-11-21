@@ -187,7 +187,8 @@ function coordHTML(){
        '<select class="t agrole" data-it="role" aria-label="Role">'+AROLES.filter(function(a){return !a.multi;}).map(function(a){ return '<option value="'+a.k+'"'+(it.role===a.k?' selected':'')+'>'+a.n+'</option>'; }).join("")+'</select>'+
        '<textarea class="t agtext" data-it="text" rows="2" aria-label="Activity">'+esc(it.text)+'</textarea>'+
        '<select class="t agx" data-it="x" title="Add names automatically" aria-label="Add names automatically">'+XTRAS.map(function(x){ return '<option value="'+x.k+'"'+((it.x||"")===x.k?' selected':'')+'>'+x.n+'</option>'; }).join("")+'</select>'+
-       '<span class="agacts"><button class="iconbtn" data-agins title="Insert an item below" aria-label="Insert an item below">＋</button><button class="iconbtn" data-itdel title="Remove item" aria-label="Remove item">✕</button></span></div>';
+       '<span class="agacts"><button class="iconbtn" data-agins title="Insert an item below" aria-label="Insert an item below">＋</button><button class="iconbtn" data-itdel title="Remove item" aria-label="Remove item">✕</button></span></div>'+
+       (["speakers","evals"].includes(it.x)?'<div class="agplan-assignments">'+(agExtraHTML(it.x,it)||'<span class="saved">No role players assigned yet.</span>')+'<button class="linkbtn" data-cotab="setup">Edit role players</button></div>':'');
   });
   h+='</div><div class="row" style="margin-top:8px"><button class="btn" id="itAdd">+ Add agenda item</button></div>';
   }

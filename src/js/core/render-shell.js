@@ -32,6 +32,7 @@ function renderAll(){
   var focusArea=focused?.closest("#view,#roles,#live,#nowStrip,#companion");
   var controlKey=focusArea&&focused.matches("button,a[href]")?focusKey(focused):null;
   populateAgendaMembers();
+  if(ensureAssignedPreparedRows()) commitQuiet();
   pendingRender=false; renderNav(); renderProj();
   renderMeta(); renderRoles(); renderRoster();
   renderLive(); renderNow();

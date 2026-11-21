@@ -46,7 +46,7 @@ function timerHTML(){
       '<td class="ctl">'+ctl+'</td><td class="tm">'+timeCell+'</td>'+
       '<td><span class="status '+stx.cls+'" data-live="status">'+esc(stx.text)+'</span>'+(r.manual!=null?'<span class="edited">'+(r.start==null?'✎ entered manually':'✎ edited')+'</span>':'')+'</td>'+
       '<td class="act">'+(st==="idle"&&!(["ps","ev","rep"].includes(s.id)&&S.run.order?.length)?'<button class="iconbtn" data-act="up" title="Move up">↑</button><button class="iconbtn" data-act="down" title="Move down">↓</button>':'')+
-      (st==="running"?'':'<button class="iconbtn" data-act="del" title="Remove this speaker">✕</button>')+'</td></tr>';
+      (st==="running"||st==="idle"&&s.id==="ps"&&!String(r.ak||"").startsWith("keynote:")&&asList("speakers").some(function(name){return nkey(name)===nkey(baseName(r.name))||r.ak==="ps:"+nkey(name);})?'':'<button class="iconbtn" data-act="del" title="Remove this speaker">✕</button>')+'</td></tr>';
   });
   h+='</tbody></table>';
   var done=rows.filter(function(r){return rowState(r)==="done";}), ok=done.filter(function(r){return status(s.id,r,t).ok;}).length;

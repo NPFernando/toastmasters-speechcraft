@@ -4,10 +4,11 @@ module.exports=async()=>{
  const c={localStorage:{getItem:()=>null,setItem:()=>{}},document:{getElementById:()=>el},console,confirm:()=>true,alert:()=>{}};vm.createContext(c);
  const read=p=>fs.readFileSync(path.join(__dirname,'../src/js',p),'utf8');vm.runInContext(read('core/config.js').replace('(function(){',''),c);
  for(const p of ['core/helpers.js','agenda/agenda.js','core/state.js','core/merge.js','core/field-sync.js','roles/shared.js'])vm.runInContext(read(p),c);
- c.ROLE_GUIDE={ge:{app:[]}};c.ROLE_DOCS={};c.ROLE_DOC_ROOT='https://www.toastmasters.org/';c.TIPS={};c.renderAll=()=>{};c.commit=()=>{};c.commitQuiet=()=>{};c.curItem=()=>({cur:null,its:[],i:-1});c.isSkipped=()=>false;c.roleName=x=>x;c.runItems=()=>c.itemsSorted();c.ROLES=c.ROLES;
+ c.ROLE_GUIDE={ge:{app:[]}};c.ROLE_DOCS={};c.ROLE_DOC_ROOT='https://www.toastmasters.org/';c.TIPS={};c.renderAll=()=>{};c.commit=()=>{};c.commitQuiet=()=>{};c.curItem=()=>({cur:null,its:[],i:-1});c.isSkipped=()=>false;c.roleName=x=>x;c.liveItemRole=x=>x.rowId?'speaker':x.role;c.whoForItem=x=>x.name||'';c.runItems=()=>c.itemsSorted();c.ROLES=c.ROLES;
  vm.runInContext(read('features/meeting-workflows.js'),c);
  c.S=c.blank();c.L={role:'tmod'};assert.equal(c.defaultHandoverRole(),'president');
  c.curItem=()=>({cur:{role:'tmod'},its:[{role:'tmod'},{id:'skip',role:'keynote'},{id:'end',role:'president'}],i:0});c.isSkipped=id=>id==='skip';assert.equal(c.defaultHandoverRole(),'president');
+ c.curItem=()=>({cur:{id:'intro',role:'tmod'},its:[{role:'tmod'},{id:'speech',rowId:'prep',role:'speakers',name:'Assigned Speaker'}],i:0});assert.equal(c.suggestedHandover().role,'speaker');assert.equal(c.suggestedHandover().name,'Assigned Speaker');
  c.workflowDraft().geAgendaItem='d2';c.workflowDraft().geObservationKind='improve';c.workflowDraft().geObservationText='Keep me';assert(c.geAgendaHTML().includes('value="d2" selected'));assert(c.geAgendaHTML().includes('value="improve" selected'));c.S.mid='next-meeting';assert.deepStrictEqual(JSON.parse(JSON.stringify(c.workflowDraft())),{});
  c.addWorkflowAction('Fix introduction','Owner','2000-01-01','obs1');c.addWorkflowAction('Fix introduction','Owner','2000-01-01','obs1');assert.equal(c.S.actions.length,1);assert(c.actionOverdue(c.S.actions[0]));c.S.actions[0].archived=true;assert(!c.actionOverdue(c.S.actions[0]));
  const limit=c.presentationLimits(1);assert(limit.g>0&&limit.g<limit.a&&limit.a<limit.r);assert(c.validPresentationLimits(limit));assert(!c.validPresentationLimits({g:0,a:0,r:60}));assert(!c.validPresentationLimits({g:60,a:30,r:90}));

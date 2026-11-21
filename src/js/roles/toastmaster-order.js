@@ -1,6 +1,30 @@
+function addAssignedPreparedRow(name){
+  var row=newRow("ps",name), key=nkey(name);
+  var id="agenda-prepared|"+encodeURIComponent(JSON.stringify([S.mid,key]));
+  row.id=id;
+  for(var turn=2;findRow("ps",row.id);turn++) row.id=id+"|"+turn;
+  row.ak="ps:"+key;
+  row.u=Math.max(row.u,(S.dead[row.id]||0)+1);
+  delete S.dead[row.id];
+  var limits=presetLim((speechRec(name)||{}).lim);
+  if(limits) row.lim=limits;
+  S.rows.ps.push(row);
+}
+function ensureAssignedPreparedRows(){
+  var existing=new Set();
+  S.rows.ps.forEach(function(row){
+    if(String(row.ak||"").startsWith("keynote:")) return;
+    existing.add(nkey(baseName(row.name)));
+    if(String(row.ak||"").startsWith("ps:")) existing.add(nkey(row.ak.slice(3)));
+  });
+  var missing=uniq(asList("speakers")).filter(function(name){return !existing.has(nkey(name));});
+  missing.forEach(addAssignedPreparedRow);
+  return missing.length>0;
+}
+
 /* Live agenda entries keep their identities when the running order changes. */
 function plannedRunItems(){
-  var base=itemsSorted(), block=base.find(function(it){return it.x==="speakers";});
+  var base=itemsSorted(), block=base.find(function(it){return it.x==="speakers";})||base.find(function(it){return !it.x&&/^prepared speech(?:es| session)?(?:\s*[-–—:]|$)/i.test(String(it.text||"").trim());});
   var scheduled=new Set(asList("speakers").map(nkey)), start=hm2min(block?.time);
   var speeches=S.rows.ps.filter(function(row){
     return String(row.name||"").trim()&&!String(row.ak||"").startsWith("keynote:")&&(block||scheduled.has(nkey(baseName(row.name))));

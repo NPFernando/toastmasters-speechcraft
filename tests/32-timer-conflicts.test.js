@@ -62,6 +62,8 @@ module.exports = async () => {
   vm.runInContext(source("features/live-meeting-roles.js"), model);
   model.activeEvaluatorPairs = () => [];
   model.speechTitle = () => "";
+  model.speechRec = () => null;
+  model.presetLim = () => null;
   model.presentationRow = () => undefined;
   const agendaQueue = vm.runInContext(`(() => {
     S = blank();
@@ -124,4 +126,15 @@ module.exports = async () => {
   assert.deepStrictEqual(reports.queue, ["ah","timer"]);
   assert.strictEqual(reports.timer, "ah");
   assert.strictEqual(reports.afterSkip, "timer");
+  const recovered = JSON.parse(vm.runInContext(`JSON.stringify((() => {
+    S = blank();
+    S.agenda.assign.speakers = ["Assigned Speaker"];
+    S.agenda.items.find(item => item.id === "d7").x = "";
+    const repaired = ensureAssignedPreparedRows();
+    const secondRepair = ensureAssignedPreparedRows();
+    const agenda = runItems();
+    const intro = agenda.findIndex(item => item.id === "d7");
+    return { repaired, secondRepair, next: agenda[intro+1].name, timer: firstQueued("ps").name };
+  })())`, model));
+  assert.deepStrictEqual(recovered, {repaired:true, secondRepair:false, next:"Assigned Speaker", timer:"Assigned Speaker"});
 };
