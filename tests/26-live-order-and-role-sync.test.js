@@ -63,9 +63,17 @@ module.exports = async (browser) => {
 
   await host.click('[data-nav="role"]');
   await host.click('[data-rtab="ge"]');
-  await host.fill("#geObservationText", "Check the handover");
-  await T.eventually(async () => await phone.inputValue("#geObservationText") === "Check the handover", "Observation draft reaches second device");
-  await phone.fill("#geObservationText", "Handover checked");
-  await T.eventually(async () => await host.inputValue("#geObservationText") === "Handover checked", "Second device edit reaches first device");
+  const observation = "#geObservationText";
+  const height = (page) => page.locator(observation).evaluate(field => field.clientHeight);
+  const initialHeight = await height(host);
+  const notes = Array.from({ length: 12 }, (_, i) => "Handover observation " + (i + 1)).join("\n");
+  await host.fill(observation, notes);
+  await T.eventually(async () => await height(host) > initialHeight, "Observation grows as the evaluator types");
+  await T.eventually(async () => await phone.inputValue(observation) === notes, "Observation draft reaches second device");
+  await T.eventually(async () => await phone.locator(observation).evaluate(field =>
+    field.clientHeight > 100 && field.scrollHeight <= field.clientHeight + 1), "Synced text fits on the phone");
+  await phone.fill(observation, "Handover checked");
+  await T.eventually(async () => await host.inputValue(observation) === "Handover checked", "Second device edit reaches first device");
+  await T.eventually(async () => await height(host) === initialHeight, "Observation shrinks after the text is shortened");
   T.noErrors(host, phone, timer, speaker);
 };

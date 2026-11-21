@@ -65,4 +65,5 @@ ui/more-menu.js
 ui/home-about.js
 features/meeting-workflows.js
 features/device-drafts.js
+ui/textarea-size.js
 start/boot.js
