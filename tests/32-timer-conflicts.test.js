@@ -126,6 +126,19 @@ module.exports = async () => {
   assert.deepStrictEqual(reports.queue, ["ah","timer"]);
   assert.strictEqual(reports.timer, "ah");
   assert.strictEqual(reports.afterSkip, "timer");
+  const retimed = vm.runInContext(`(() => {
+    S = blank();
+    const current = { id: "d11", x: "evals" }, report = { id: "report", time: "", report: {} };
+    S.run.cur = current.id;
+    S.run.started[current.id] = +new Date(2026,10,21,18,57);
+    globalThis.curItem = () => ({ cur: current, next: report, i: 0, its: [current,report] });
+    globalThis.now = () => +new Date(2026,10,21,18,57);
+    globalThis.minutesNow = () => 18*60+57;
+    globalThis.runBy = () => "Toastmaster";
+    runRetimeNow();
+    return S.run.adj.report;
+  })()`, model);
+  assert.strictEqual(retimed, -1);
   const recovered = JSON.parse(vm.runInContext(`JSON.stringify((() => {
     S = blank();
     S.agenda.assign.speakers = ["Assigned Speaker"];

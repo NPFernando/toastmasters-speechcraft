@@ -9,6 +9,9 @@ module.exports=async()=>{
  c.S=c.blank();c.L={role:'tmod'};assert.equal(c.defaultHandoverRole(),'president');
  c.curItem=()=>({cur:{role:'tmod'},its:[{role:'tmod'},{id:'skip',role:'keynote'},{id:'end',role:'president'}],i:0});c.isSkipped=id=>id==='skip';assert.equal(c.defaultHandoverRole(),'president');
  c.curItem=()=>({cur:{id:'intro',role:'tmod'},its:[{role:'tmod'},{id:'speech',rowId:'prep',role:'speakers',name:'Assigned Speaker'}],i:0});assert.equal(c.suggestedHandover().role,'speaker');assert.equal(c.suggestedHandover().name,'Assigned Speaker');
+ assert.equal(c.handoverChanged({suggestedItem:'one',suggestedName:'alex'},{id:'one',name:'Alex'}),false);
+ assert.equal(c.handoverChanged({suggestedItem:'one',suggestedName:'alex'},{id:'two',name:'Alex'}),true);
+ assert.equal(c.handoverChanged({suggestedItem:'one',suggestedName:'alex'},{id:'one',name:'Taylor'}),true);
  c.workflowDraft().geAgendaItem='d2';c.workflowDraft().geObservationKind='improve';c.workflowDraft().geObservationText='Keep me';assert(c.geAgendaHTML().includes('value="d2" selected'));assert(c.geAgendaHTML().includes('value="improve" selected'));c.S.mid='next-meeting';assert.deepStrictEqual(JSON.parse(JSON.stringify(c.workflowDraft())),{});
  c.addWorkflowAction('Fix introduction','Owner','2000-01-01','obs1');c.addWorkflowAction('Fix introduction','Owner','2000-01-01','obs1');assert.equal(c.S.actions.length,1);assert(c.actionOverdue(c.S.actions[0]));c.S.actions[0].archived=true;assert(!c.actionOverdue(c.S.actions[0]));
  const limit=c.presentationLimits(1);assert(limit.g>0&&limit.g<limit.a&&limit.a<limit.r);assert(c.validPresentationLimits(limit));assert(!c.validPresentationLimits({g:0,a:0,r:60}));assert(!c.validPresentationLimits({g:60,a:30,r:90}));
