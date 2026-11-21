@@ -55,6 +55,7 @@ features/linked-roles.js
 features/role-guides.js
 features/connection-check.js
 features/nudges.js
+features/live-meeting-roles.js
 features/guest-check-in.js
 agenda/templates.js
 features/next-meeting.js

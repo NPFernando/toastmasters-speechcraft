@@ -202,3 +202,13 @@ body.dialog-open #app{isolation:isolate}
 .floor-controls{margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}
 .floor-controls .row{align-items:end}
 .floor-request{justify-content:space-between;border-inline-start:4px solid var(--brand);margin-bottom:8px}
+
+.live-move{margin-top:6px}
+.live-grip{cursor:grab;color:var(--muted);padding:6px 8px;user-select:none;touch-action:none}
+.live-grip:active{cursor:grabbing}
+.live-move [aria-disabled=true]{opacity:.55;cursor:default}
+.agv2i.live-drop-before{box-shadow:inset 0 3px var(--a)}
+.agv2i.live-drop-after{box-shadow:inset 0 -3px var(--a)}
+.role-turn-status{font-size:.78em;padding:2px 5px;border:1px solid currentColor;border-radius:6px;white-space:nowrap}
+.live-report-queue .tlist li{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.live-role-cue .btn{margin-inline-start:8px}

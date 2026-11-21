@@ -15,7 +15,7 @@ function voteControlHTML(canOpen,canReveal){
   return h;
 }
 function geHTML(){
-  var h='<section class="card">'+voteControlHTML(true,false)+geObservationsHTML()+geAgendaHTML()+actionsHTML();
+  var h=liveReportQueueHTML(true)+'<section class="card">'+voteControlHTML(true,false)+geObservationsHTML()+geAgendaHTML()+actionsHTML();
   h+='<h2 class="sec">📣 Call for reports</h2><div class="sumlist">'+reportsSummary().map(function(x){ return '<div><b>'+x[0]+'</b>'+(x[1]?' · '+esc(x[1]):'')+'<div class="muted">'+esc(x[2])+'</div></div>'; }).join("")+'</div><div class="row" style="margin-top:6px"><button class="btn" id="geReport">📄 Open full report</button>'+copyBtn("ge")+'</div>';
   h+='<h2 class="sec">🗣 Evaluations</h2><table class="sumtable"><thead><tr><th>Speaker</th><th>Type</th><th>Assigned</th><th>Status</th></tr></thead><tbody>';
   var rows=preparedSpeakers().map(function(n){return [n,"ps"];}).concat(ttSpeakers().map(function(n){return [n,"tt"];}));

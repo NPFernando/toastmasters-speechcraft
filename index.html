@@ -679,6 +679,16 @@ body.dialog-open #app{isolation:isolate}
 .floor-controls{margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}
 .floor-controls .row{align-items:end}
 .floor-request{justify-content:space-between;border-inline-start:4px solid var(--brand);margin-bottom:8px}
+
+.live-move{margin-top:6px}
+.live-grip{cursor:grab;color:var(--muted);padding:6px 8px;user-select:none;touch-action:none}
+.live-grip:active{cursor:grabbing}
+.live-move [aria-disabled=true]{opacity:.55;cursor:default}
+.agv2i.live-drop-before{box-shadow:inset 0 3px var(--a)}
+.agv2i.live-drop-after{box-shadow:inset 0 -3px var(--a)}
+.role-turn-status{font-size:.78em;padding:2px 5px;border:1px solid currentColor;border-radius:6px;white-space:nowrap}
+.live-report-queue .tlist li{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.live-role-cue .btn{margin-inline-start:8px}
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#004165">
@@ -856,7 +866,7 @@ var KEY="speechcraftMeeting.v2"+NS, LKEY="speechcraftMeeting.local"+NS, OLDKEY="
 var SESSIONS=[{id:"tt",name:"Table Topics",type:"std"},{id:"ps",name:"Prepared Speech",type:"std"},{id:"rr",name:"Round Robin",type:"rr"},{id:"ev",name:"Evaluations",type:"std"},{id:"rep",name:"Role reports",type:"rep"}];
 var ROLES=[{id:"keynote",name:"Educational Presenter / Keynote",icon:"🌟"},{id:"coord",name:"Speechcraft Coordinator",icon:"🗂"},{id:"president",name:"President",icon:"🔔"},{id:"tmod",name:"Toastmaster of the Day",icon:"🎩"},{id:"ge",name:"General Evaluator",icon:"🧭"},{id:"timer",name:"Timer",icon:"⏱"},{id:"ttm",name:"Table Topics Master",icon:"🎤"},{id:"rrm",name:"Round Robin Master",icon:"🔁"},{id:"ah",name:"Ah-Counter",icon:"🔢"},{id:"gram",name:"Grammarian",icon:"📝"},{id:"saa",name:"Sergeant at Arms",icon:"🛎"},{id:"speaker",name:"Speaker",icon:"🎙"},{id:"seval",name:"Speech Evaluator",icon:"🗣"},{id:"tteval",name:"Table Topics Evaluator",icon:"💬"},{id:"member",name:"Participant",icon:"🙋"}];
 var FILLERS=["Um","Ah","Er","So","Like","And","You know","Repeat"];
-var COLLS=[["roleChoices"],["roleFields"],["presentations"],["geobs"],["handovers"],["rows","tt"],["rows","ps"],["rows","rr"],["rows","ev"],["rows","rep"],["topics"],["ahRows"],["gramRows"],["evals"],["notes"],["votes"],["rrq"],["speeches"],["assigns"],["rsvp"],["fin"],["guests"],["ttassign"]];
+var COLLS=[["roleChoices"],["roleFields"],["presentations"],["geobs"],["liveReports"],["handovers"],["rows","tt"],["rows","ps"],["rows","rr"],["rows","ev"],["rows","rep"],["topics"],["ahRows"],["gramRows"],["evals"],["notes"],["votes"],["rrq"],["speeches"],["assigns"],["rsvp"],["fin"],["guests"],["ttassign"]];
 var MEETING_LWW=["timerTurn","timerDemo","meta","cur","gram","agenda","run","vote","genotes","rrcur","wrap","pres","saa"], KEEP_LWW=["limits","fill","members","pin"];
 
 /* ---------- helpers ---------- */
@@ -896,7 +906,7 @@ function blank(){
     people:{coord:"",president:"",saa:"",tmod:"",ge:"",rrm:"",timer:"",ttm:"",ah:"",gram:"",keynote:""}, peopleU:{coord:0,president:0,saa:0,tmod:0,ge:0,rrm:0,timer:0,ttm:0,ah:0,gram:0,keynote:0},
     limits:{tt:{g:60,a:90,r:120},ps:{g:240,a:300,r:360},rr:{b:20},ev:{g:90,a:105,r:120},rep:{g:30,a:45,r:60},u:0},
     members:{list:[],u:0,fu:{}}, coorg:[], ideas:[], tpls:[], pin:{hash:"",rhash:"",salt:"",u:0}, agenda:defaultAgenda(), run:{cur:null,started:{},u:0},
-    roleChoices:[], roleFields:[], voterPeople:[], presentations:[], actions:[], geobs:[], handovers:[], evals:[], notes:[], votes:[], rrq:[], speeches:[], assigns:[], rsvp:[], attend:[], keys:[], fin:[], guests:[], ttassign:[], wrap:{on:false,at:0,u:0}, pres:{chk:{},notes:"",u:0}, saa:{chk:{},u:0}, vote:{state:"closed",u:0}, genotes:{good:"",improve:"",u:0}, rrcur:{id:null,u:0},
+    roleChoices:[], roleFields:[], voterPeople:[], presentations:[], actions:[], geobs:[], liveReports:[], handovers:[], evals:[], notes:[], votes:[], rrq:[], speeches:[], assigns:[], rsvp:[], attend:[], keys:[], fin:[], guests:[], ttassign:[], wrap:{on:false,at:0,u:0}, pres:{chk:{},notes:"",u:0}, saa:{chk:{},u:0}, vote:{state:"closed",u:0}, genotes:{good:"",improve:"",u:0}, rrcur:{id:null,u:0},
     rows:{tt:[],ps:[],rr:[],ev:[],rep:[]}, topics:[], cur:{id:null,u:0},
     fill:{words:FILLERS.slice(),u:0}, ahRows:[],
     gram:{wotd:"",meaning:"",example:"",u:0}, gramRows:[],
@@ -914,7 +924,7 @@ function normalize(st){
   if(!Array.isArray(o.fill.words)) o.fill.words=FILLERS.slice();
   SESSIONS.forEach(function(s){ var k=s.id; o.rows[k]=Array.isArray(st.rows&&st.rows[k])?st.rows[k]:[]; });
   ["ev","rep"].forEach(function(k){ if(!o.limits[k]) o.limits[k]=blank().limits[k]; });
-  ["roleChoices","roleFields","voterPeople","presentations","actions","geobs","handovers","evals","notes","votes","rrq","speeches","assigns","rsvp","fin","guests","ttassign"].forEach(function(k){ o[k]=Array.isArray(st[k])?st[k]:[]; });
+  ["roleChoices","roleFields","voterPeople","presentations","actions","geobs","liveReports","handovers","evals","notes","votes","rrq","speeches","assigns","rsvp","fin","guests","ttassign"].forEach(function(k){ o[k]=Array.isArray(st[k])?st[k]:[]; });
   ["actions","voterPeople"].forEach(function(k){o[k]=o[k].filter(function(x){return x&&typeof x==="object"&&x.id;}).map(function(x){x.u=+x.u||1;x.ord=+x.ord||1;return x;});});
   o.keys=Array.isArray(st.keys)?st.keys.filter(function(k){return k&&k.id;}).map(function(k){ k.u=+k.u||1; k.ord=+k.ord||1; return k; }):[];
   o.evals.forEach(function(e){ if(e&&(e.c1!=null||e.r!=null||e.c2!=null||e.rate)){ if(e.done==null) e.done=!!(e.c1||e.r||e.c2); delete e.c1; delete e.r; delete e.c2; delete e.rate; } });
@@ -980,7 +990,7 @@ function renderMemberList(){ var el=document.getElementById("memberlist"); if(el
 function mergeColl(a,b,dead,mergeRecord){
   var m={};
   a.forEach(function(x){ m[x.id]=x; });
-  b.forEach(function(x){ var y=m[x.id]; if(y&&mergeRecord){ m[x.id]=mergeRecord(y,x); return; } if(!y||x.u>y.u||(x.u===y.u&&/^(v|role|field|note|live)\|/.test(x.id)&&stable(x)>stable(y))) m[x.id]=clone(x); });
+  b.forEach(function(x){ var y=m[x.id]; if(y&&mergeRecord){ m[x.id]=mergeRecord(y,x); return; } if(!y||x.u>y.u||(x.u===y.u&&/^(v|role|field|note|live|report)\|/.test(x.id)&&stable(x)>stable(y))) m[x.id]=clone(x); });
   var out=Object.keys(m).map(function(k){return m[k];}).filter(function(x){ return !(dead[x.id]>=x.u); });
   out.sort(function(p,q){ return (p.ord-q.ord)||(p.id<q.id?-1:p.id>q.id?1:0); });
   return out;
@@ -1102,7 +1112,7 @@ function mergeInto(A,B,mode){
     COLLS.forEach(function(p){ setColl(A,p,clone(getColl(B,p))); });
   } else if(B.mid===A.mid){
     Object.keys(B.dead).forEach(function(id){ if(!(A.dead[id]>=B.dead[id])) A.dead[id]=B.dead[id]; });
-    MEETING_LWW.forEach(function(k){ if(k==="agenda") mergeAgenda(A,B); else if(k==="genotes") mergeGENotes(A,B); else if(k==="pres"||k==="saa") A[k]=mergeRoleEdit(A[k],B[k]); else if((B[k].u||0)>(A[k].u||0)||(k==="timerTurn"&&B[k].u===A[k].u&&stable(B[k])>stable(A[k]))) A[k]=clone(B[k]); });
+    MEETING_LWW.forEach(function(k){ if(k==="agenda") mergeAgenda(A,B); else if(k==="run") A.run=mergeLiveRun(A.run,B.run); else if(k==="genotes") mergeGENotes(A,B); else if(k==="pres"||k==="saa") A[k]=mergeRoleEdit(A[k],B[k]); else if((B[k].u||0)>(A[k].u||0)||(k==="timerTurn"&&B[k].u===A[k].u&&stable(B[k])>stable(A[k]))) A[k]=clone(B[k]); });
     COLLS.forEach(function(p){ setColl(A,p,mergeColl(getColl(A,p),getColl(B,p),A.dead,["speeches","presentations"].includes(p[0])?mergeRoleEdit:null)); });
   }
   reconcileTimerTurns(A);
@@ -1110,6 +1120,18 @@ function mergeInto(A,B,mode){
   return stable(A)!==before;
 }
 
+
+/* Advancing the meeting and editing future order can happen on different devices. */
+function mergeLiveRun(local,remote){
+  var run=clone((remote.u||0)>(local.u||0)?remote:local);
+  var localOrder=local.orderU||(local.order?.length?local.u:0)||0;
+  var remoteOrder=remote.orderU||(remote.order?.length?remote.u:0)||0;
+  if(!localOrder&&!remoteOrder) return run;
+  var newer=remoteOrder>localOrder||(remoteOrder===localOrder&&stable(remote.order)>stable(local.order));
+  run.order=clone((newer?remote:local).order||[]);
+  run.orderU=Math.max(localOrder,remoteOrder);
+  return run;
+}
 /* ---------- timer logic ---------- */
 function sessionOf(id){ for(var i=0;i<SESSIONS.length;i++) if(SESSIONS[i].id===id) return SESSIONS[i]; }
 var timerClockOffsets=new Map();
@@ -1153,6 +1175,7 @@ function runningList(){ var out=[]; SESSIONS.forEach(function(s){ S.rows[s.id].f
 function anyRunning(){ return runningList().length>0; }
 function timerRows(sid){
   var rows=S.rows[sid];
+  if(sid==="ps") return orderPreparedTimerRows(rows);
   if(sid!=="rr") return rows;
   var seen=new Set(rows.filter(function(row){return row.qid&&rowState(row)!=="idle";}).map(roundRobinTurnKey));
   return rows.filter(function(row){
@@ -1164,7 +1187,7 @@ function timerRows(sid){
   });
 }
 function roundRobinTurnKey(row){ return JSON.stringify([row.qid,nkey(row.name)]); }
-function firstQueued(sid){ return timerRows(sid).find(function(r){return rowState(r)==="idle";}); }
+function firstQueued(sid){ return timerRows(sid).find(function(r){return rowState(r)==="idle"&&(sid!=="ps"||!preparedTimerSkipped(r));}); }
 var timerConflictMessage="";
 function reconcileTimerTurns(state){
   var running=SESSIONS.flatMap(function(session){
@@ -1192,7 +1215,7 @@ function reconcileTimerTurns(state){
 }
 function startRow(sid,id){
   var r=findRow(sid,id);
-  if(!r||rowState(r)!=="idle"||(sid==="rr"&&!timerRows(sid).includes(r))) return;
+  if(!r||rowState(r)!=="idle"||(sid==="ps"&&preparedTimerSkipped(r))||(sid==="rr"&&!timerRows(sid).includes(r))) return;
   if(S.timerDemo.until){ S.timerDemo.until=0; tick(S.timerDemo); }
   r.timedLim=clone(limOf(sid,r));
   r.start=now(); r.clockOwner=timerClockOwner(); r.end=null; r.manual=null; r.pz=0; r.paused=null;
@@ -1358,6 +1381,10 @@ function renderAll(){
     if(draftPanel&&nextDraftPanel) nextDraftPanel.open=draftPanel.open;
     restoreDeviceForms();
   }
+  if(curView()==="role"){
+    var roleActions=(L.role==="ge"&&!inFocus()?"":liveReportQueueHTML(false))+liveRoleCueHTML();
+    if(roleActions) v.insertAdjacentHTML("afterbegin",roleActions);
+  }
   if(curView()!=="now" && (curView()!=="role" || L.role!=="gram" || inFocus()) && S.gram.wotd){
     v.insertAdjacentHTML("afterbegin",'<section class="card" id="publishedWord"><h2 class="sec" style="margin-top:0">📝 Word of the Day · '+esc(S.gram.wotd)+'</h2>'+wordOfDayDetailsHTML()+'</section>');
   }
@@ -1427,7 +1454,7 @@ function nextAgendaTiming(){
     if(isSkipped(item.id)) continue;
     var sid, row;
     if(item.role==="keynote"){ sid="ps"; row=presentationRow(item.id); }
-    else if(item.x==="speakers"){ sid="ps"; row=queuedPreparedRows()[0]; }
+    else if(item.rowId){ sid="ps"; row=findRow(sid,item.rowId); }
     else if(item.role==="rrm"){ sid="rr"; row=firstQueued(sid); }
     else if(item.role==="ttm"){ sid="tt"; row=firstQueued(sid); }
     else if(item.x==="evals"){
@@ -1509,16 +1536,16 @@ function timerHTML(){
   if(!rows.length) h+='<tr><td colspan="6" class="empty">No speakers yet. Plan ahead with <b>+ Add to list</b> (e.g. <i>Nimal, Kasun, Amali</i>), or press <b>Start speaker</b> when someone begins.</td></tr>';
   var nx=firstQueued(s.id);
   rows.forEach(function(r,i){
-    var st=rowState(r), sec=timerElapsed(s.id,r,t), sg=signal(s.id,sec,r), stx=status(s.id,r,t), isNext=st==="idle"&&r===nx;
-    if(st==="idle"&&r.manual==null) stx={text:isNext?"Next up":"Waiting",cls:"st-queue"};
-    var ctl= st==="running"?'<button class="btn sm" data-act="'+(r.paused?'resume':'pause')+'">'+(r.paused?'▶':'⏸')+'</button><button class="btn stop sm" data-act="stop">■ Stop</button>': st==="done"?'<span class="donetag">✓ Done</span>':'<button class="btn go sm" data-act="start">▶ Start</button>';
+    var st=rowState(r), sec=timerElapsed(s.id,r,t), sg=signal(s.id,sec,r), stx=status(s.id,r,t), isNext=st==="idle"&&r===nx, skipped=st==="idle"&&s.id==="ps"&&preparedTimerSkipped(r);
+    if(st==="idle"&&r.manual==null) stx={text:skipped?"Skipped on agenda":isNext?"Next up":"Waiting",cls:"st-queue"};
+    var ctl= st==="running"?'<button class="btn sm" data-act="'+(r.paused?'resume':'pause')+'">'+(r.paused?'▶':'⏸')+'</button><button class="btn stop sm" data-act="stop">■ Stop</button>': skipped?'—': st==="done"?'<span class="donetag">✓ Done</span>':'<button class="btn go sm" data-act="start">▶ Start</button>';
     var timeCell= st==="running"?'<div class="timebox '+sg+'" data-live="time">'+fmt(sec)+'</div>'
       :'<input class="timebox '+sg+'" data-edit="time" value="'+(sec==null?"":fmt(sec))+'" placeholder="m:ss" title="Type a time as m:ss to set or correct it">';
     h+='<tr data-id="'+r.id+'" class="'+(st==="idle"?"queued":"")+(isNext?" nextup":"")+'"><td class="n">'+(i+1)+'</td>'+
       '<td><input class="name" data-edit="name" list="roster" autocomplete="off" value="'+esc(r.name)+'" placeholder="Speaker '+(i+1)+' (add name)">'+(s.id==="ps"&&speechTitle(baseName(r.name))?'<div class="spt">“'+esc(speechTitle(baseName(r.name)))+'”'+(r.lim?' · '+fmt(r.lim.g)+'–'+fmt(r.lim.r):'')+'</div>':'')+'</td>'+
       '<td class="ctl">'+ctl+'</td><td class="tm">'+timeCell+'</td>'+
       '<td><span class="status '+stx.cls+'" data-live="status">'+esc(stx.text)+'</span>'+(r.manual!=null?'<span class="edited">'+(r.start==null?'✎ entered manually':'✎ edited')+'</span>':'')+'</td>'+
-      '<td class="act">'+(st==="idle"?'<button class="iconbtn" data-act="up" title="Move up">↑</button><button class="iconbtn" data-act="down" title="Move down">↓</button>':'')+
+      '<td class="act">'+(st==="idle"&&!(s.id==="ps"&&S.run.order?.length)?'<button class="iconbtn" data-act="up" title="Move up">↑</button><button class="iconbtn" data-act="down" title="Move down">↓</button>':'')+
       (st==="running"?'':'<button class="iconbtn" data-act="del" title="Remove this speaker">✕</button>')+'</td></tr>';
   });
   h+='</tbody></table>';
@@ -1877,7 +1904,7 @@ function preparedBlockRequirement(){
 }
 /* ---------- how the agenda ran: planned vs actual length of each item ---------- */
 function runSummary(){
-  var st=(S.run&&S.run.started)||{}, plan=itemsSorted(), done=plan.filter(function(it){return st[it.id]!=null;}).sort(function(a,b){return st[a.id]-st[b.id];});
+  var st=(S.run&&S.run.started)||{}, plan=plannedRunItems(), done=plan.filter(function(it){return st[it.id]!=null;}).sort(function(a,b){return st[a.id]-st[b.id];});
   if(!done.length||(done.length<2&&!S.run.endAt)) return null;
   var rows=done.map(function(it,i){
     var start=st[it.id], nx=done[i+1], end=nx?st[nx.id]:(S.run.cur===it.id?now():(S.run.cur?null:S.run.endAt||null));
@@ -1894,7 +1921,7 @@ function runSummary(){
 function hhmm(ms){ return new Date(ms).toLocaleTimeString("en-AU",{hour:"numeric",minute:"2-digit"}); }
 function sgn(n){ return n>0?"+"+n:n<0?"−"+(-n):"0"; }
 function lateTxt(n){ return n==null||Math.abs(n)>120?"not at the agenda times":Math.abs(n)<2?"on time":n>0?n+" min late":(-n)+" min early"; }
-function itemLabel2(it){ var w=whoFor(it.role); return arole(it.role).n+(w?" · "+w:""); }
+function itemLabel2(it){ var w=whoForItem(it); return arole(it.role).n+(w?" · "+w:""); }
 function runSummaryHTML(){
   var R=runSummary(); if(!R) return "";
   var h='<section class="card ovsum"><div class="row" style="justify-content:space-between"><h2 class="sec" style="margin:0">⏱ How the agenda ran</h2><button class="btn sm" id="ovCopy">📋 Copy summary</button></div>'+
@@ -1932,8 +1959,9 @@ function adjCtlHTML(){
 function liveCtlHTML(){
   if(!canRun()) return "";
   var c=curItem(), h='<div class="livectl"><div class="lc-h">🎛 Live agenda controls <span class="saved">· the Now item only changes when someone taps Next</span></div>';
+  if(!c.cur&&!c.next) return "";
   if(!c.cur) return h+'<div class="row"><button class="btn go" data-lc="start">▶ Start the meeting</button></div></div>';
-  h+='<div class="row"><button class="btn" data-lc="prev"'+(c.i>0?'':' disabled')+'>◀ Back</button>'+(c.next?'<button class="btn go" data-lc="next">Next ▶</button>':'<button class="btn" data-lc="end">Finish</button>')+'</div>';
+  h+='<div class="row"><button class="btn" data-lc="prev"'+(previousLive(c.its,c.i-1)?'':' disabled')+'>◀ Back</button>'+(c.next?'<button class="btn go" data-lc="next">Next ▶</button>':'<button class="btn" data-lc="end">Finish</button>')+'</div>';
   return h+adjCtlHTML()+'</div>';
 }
 (function(){
@@ -1941,8 +1969,8 @@ function liveCtlHTML(){
     var b=e.target.closest("[data-lc]"); if(!b||!canRun()) return;
     var c=curItem(), a=b.dataset.lc;
     if(a==="start"){ var f=nextLive(c.its,0); if(f) runGo(f.id); }
-    else if(a==="next"){ if(c.next) runGo(c.next.id); }
-    else if(a==="prev"){ if(c.i>0) runGo(c.its[c.i-1].id); }
+    else if(a==="next"){ if(c.next&&now()-(S.run.advanceAt||0)>=500&&allowLiveAction("agenda-next")){ S.run.advanceAt=now(); runGo(c.next.id); } }
+    else if(a==="prev"){ var prev=previousLive(c.its,c.i-1); if(prev) runGo(prev.id); }
     else if(a==="plus") runAdjust(5); else if(a==="minus") runAdjust(-5);
     else if(a==="now") runRetimeNow(); else if(a==="reset") runAdjReset(); else if(a==="end") runFinish();
   });
@@ -1963,6 +1991,18 @@ function extraText(x,item){
     return p.join("\n");
   }
   return "";
+}
+function whoForItem(it){
+  if(it.rowId) return it.name;
+  if(it.role==="keynote") return presentationOf(it.id)?.name||whoFor(it.role);
+  return whoFor(it.role);
+}
+function liveItemExtra(it){
+  if(it.rowId){
+    var evaluator=evaluatorOf(it.name);
+    return evaluator?"Evaluator: "+evaluator:"";
+  }
+  return it.x==="speakers"?"":extraText(it.x,it);
 }
 function whoFor(role){ var v=asList(role); return v.join(", "); }
 
@@ -2422,7 +2462,7 @@ function scheduleStatus(){
 }
 function itemCard(it,big){
   if(!it) return '<div class="muted">End of agenda.</div>';
-  var who=whoFor(it.role), x=extraText(it.x,it);
+  var who=whoForItem(it), x=liveItemExtra(it);
   return '<div class="'+(big?'nowtxt':'nexttxt')+'"><span class="tm">'+fmtHM(rt(it))+'</span> <b>'+arole(it.role).n+'</b>'+(who?' · '+esc(who):'')+'</div><div class="'+(big?'nowact':'muted')+'">'+esc(it.text)+'</div>'+(x?'<div class="agx2">'+esc(x).replace(/\n/g,'<br>')+'</div>':'');
 }
 function tmodHTML(){
@@ -2431,7 +2471,7 @@ function tmodHTML(){
         '<button class="btn" id="agPrint">📄 Agenda</button></div>';
   if(!c.cur&&S.run.endAt&&Object.keys(S.run.started||{}).length){ h+='<div class="note" style="margin-top:12px">🏁 Meeting finished at '+hhmm(S.run.endAt)+'. <button class="linkbtn" id="runStart">Start again</button></div></section>'+runSummaryHTML()+'<section class="card">'; }
   else if(!c.cur){
-    h+='<div class="curtopic" style="margin-top:12px"><div class="lbl">First item</div>'+itemCard(c.its[0],true)+'<div class="row" style="margin-top:12px"><button class="btn go big1" id="runStart">▶ Start the meeting</button></div></div>';
+    h+='<div class="curtopic" style="margin-top:12px"><div class="lbl">First item</div>'+itemCard(nextLive(c.its,0),true)+'<div class="row" style="margin-top:12px"><button class="btn go big1" id="runStart">▶ Start the meeting</button></div></div>';
   } else {
     h+='<div class="curtopic" style="margin-top:12px"><div class="lbl">Now'+(S.run.started[c.cur.id]?' · started '+new Date(S.run.started[c.cur.id]).toLocaleTimeString("en-AU",{hour:"numeric",minute:"2-digit"}):'')+'</div>'+itemCard(c.cur,true)+'</div>';
     h+='<div class="wcard"><div class="lbl saved">NEXT</div>'+itemCard(c.next,false)+'</div>';
@@ -2440,22 +2480,23 @@ function tmodHTML(){
   }
   h+=preparedRunHTML(true);
   h+='<h2 class="sec">Full agenda</h2><ul class="tlist runlist">';
+  var planned=plannedRunItems(), editable=new Set(liveEditableItems(c.its).map(function(it){return it.id;}));
   c.its.forEach(function(it,i){
     var cls=c.i>=0&&i<c.i?"done":i===c.i?"cur":"";
-    var sk=isSkipped(it.id), moved=Array.isArray(S.run.order)&&S.run.order.length&&itemsSorted().indexOf(it)!==i;
-    h+='<li data-run="'+it.id+'" class="'+cls+(sk?' skipped':'')+'"><span class="n">'+fmtHM(rt(it))+(rt(it)!==it.time?'<br><s class="muted">'+fmtHM(it.time)+'</s>':'')+(moved?'<br><span class="badge on">moved</span>':'')+'</span><span style="flex:1"><b>'+arole(it.role).n+'</b>'+(whoFor(it.role)?' · '+esc(whoFor(it.role)):'')+(sk?' <span class="badge no">skipped</span>':'')+'<br><span class="muted">'+esc(it.text)+'</span></span>'+(cls==="done"?'<span class="donetag">✓</span>':'')+
-       (cls!=="done"&&cls!=="cur"?'<span class="runact"><button class="btn sm" data-runend="'+it.id+'" title="Move this item to the end of the meeting">⤵ To end</button><button class="btn sm" data-runskip="'+it.id+'">'+(sk?'↩ Unskip':'⏭ Skip')+'</button></span>':'')+'</li>';
+    var sk=isSkipped(it.id), moved=Array.isArray(S.run.order)&&S.run.order.length&&planned[i]?.id!==it.id;
+    h+='<li data-run="'+esc(it.id)+'" class="'+cls+(sk?' skipped':'')+'"><span class="n">'+fmtHM(rt(it))+(rt(it)!==it.time?'<br><s class="muted">'+fmtHM(it.time)+'</s>':'')+(moved?'<br><span class="badge on">moved</span>':'')+'</span><span style="flex:1"><b>'+arole(it.role).n+'</b>'+(whoForItem(it)?' · '+esc(whoForItem(it)):'')+(sk?' <span class="badge no">skipped</span>':'')+'<br><span class="muted">'+esc(it.text)+(it.rowId&&liveItemExtra(it)?' · '+esc(liveItemExtra(it)):'')+'</span></span>'+(cls==="done"?'<span class="donetag">✓</span>':'')+
+       (editable.has(it.id)?'<span class="runact"><button class="btn sm" data-runend="'+esc(it.id)+'" title="Move this item to the end of the meeting">⤵ To end</button><button class="btn sm" data-runskip="'+esc(it.id)+'">'+(sk?'↩ Unskip':'⏭ Skip')+'</button></span>':'')+'</li>';
   });
   h+='</ul><div class="note">Tap any item to jump to it. Running late or someone missing? <b>⤵ To end</b> moves an item (e.g. a late keynote) to the end, and <b>⏭ Skip</b> leaves it out. Everyone connected sees the new order. The printed agenda keeps the original plan.</div></section>';
   return h;
 }
-function runGo(id){ if(S.run.cur===id) return; S.run.by=runBy(); S.run.cur=id; if(id && !S.run.started[id]) S.run.started[id]=now(); tick(S.run); commit(); }
+function runGo(id){ if(S.run.cur===id||isSkipped(id)) return; if(id) delete S.run.endAt; S.run.by=runBy(); S.run.cur=id; if(id && !S.run.started[id]) S.run.started[id]=now(); tick(S.run); commit(); }
 /* compact "Now" line for every role */
 function renderAgendaLine(){
   var el=document.getElementById("agendaLine"); if(!el) return;
   var ss=scheduleStatus();
   if(!ss||L.role==="tmod"){ el.classList.remove("on"); el.innerHTML=""; return; }
-  var who=whoFor(ss.c.cur.role);
+  var who=whoForItem(ss.c.cur);
   el.innerHTML='📋 <b>Now:</b> '+arole(ss.c.cur.role).n+(who?' ('+esc(who)+')':'')+(ss.c.next?' · <span class="muted">Next '+fmtHM(rt(ss.c.next))+' '+arole(ss.c.next.role).n+'</span>':'')+(ss.txt?' · <span class="'+ss.cls+'">'+ss.txt+'</span>':'');
   el.classList.add("on");
 }
@@ -2628,7 +2669,7 @@ function voteControlHTML(canOpen,canReveal){
   return h;
 }
 function geHTML(){
-  var h='<section class="card">'+voteControlHTML(true,false)+geObservationsHTML()+geAgendaHTML()+actionsHTML();
+  var h=liveReportQueueHTML(true)+'<section class="card">'+voteControlHTML(true,false)+geObservationsHTML()+geAgendaHTML()+actionsHTML();
   h+='<h2 class="sec">📣 Call for reports</h2><div class="sumlist">'+reportsSummary().map(function(x){ return '<div><b>'+x[0]+'</b>'+(x[1]?' · '+esc(x[1]):'')+'<div class="muted">'+esc(x[2])+'</div></div>'; }).join("")+'</div><div class="row" style="margin-top:6px"><button class="btn" id="geReport">📄 Open full report</button>'+copyBtn("ge")+'</div>';
   h+='<h2 class="sec">🗣 Evaluations</h2><table class="sumtable"><thead><tr><th>Speaker</th><th>Type</th><th>Assigned</th><th>Status</th></tr></thead><tbody>';
   var rows=preparedSpeakers().map(function(n){return [n,"ps"];}).concat(ttSpeakers().map(function(n){return [n,"tt"];}));
@@ -3532,9 +3573,9 @@ document.addEventListener("fullscreenchange",function(){ if(!document.fullscreen
     if(t.closest("#agPrint")){ openAgendaPrint(); return; }
     if(L.role==="tmod"){
       var c=curItem();
-      if(t.closest("#runStart")){ if(c.its[0]) runGo(c.its[0].id); return; }
+      if(t.closest("#runStart")){ var first=nextLive(c.its,0); if(first) runGo(first.id); return; }
       if(t.closest("#runNext")){ if(c.next&&now()-(S.run.advanceAt||0)>=500&&allowLiveAction("agenda-next")){ S.run.advanceAt=now(); runGo(c.next.id); } return; }
-      if(t.closest("#runPrev")){ if(c.i>0) runGo(c.its[c.i-1].id); return; }
+      if(t.closest("#runPrev")){ var prev=previousLive(c.its,c.i-1); if(prev) runGo(prev.id); return; }
       if(t.closest("#runEnd")){ runFinish(); return; }
       var li=t.closest("[data-run]"); if(li){ runGo(li.dataset.run); return; }
       return;
@@ -3849,7 +3890,7 @@ function refreshPeers(){
   NET.peers=list; refreshHealth();
   /* who's connected changed: refresh the Coordinator's role-player dots */
   var osig=list.map(function(p){return nkey(p.name||"");}).sort().join("|");
-  if(osig!==NET.onSig){ NET.onSig=osig; if(curView()==="role"&&(L.role==="rrm"||(L.role==="coord"&&coTab()==="setup"))) laterRender(); }
+  if(osig!==NET.onSig){ NET.onSig=osig; if((curView()==="role"&&(L.role==="rrm"||(L.role==="coord"&&coTab()==="setup")))||(curView()==="now"&&canEditLiveAgenda())) laterRender(); }
   if(NET.room){
     if(NET.mode==="join"&&NET.synced&&list.length===1) NET.awaitingSnapshot=true;
     if(NET.mode==="host" || (list.length>1 && NET.synced&&!NET.awaitingSnapshot)) setStatus("on");
@@ -4279,7 +4320,7 @@ function selectRolesForNewMeeting(){
 }
 function roleTabsHTML(){
   var rs=myRoles(), h='<div class="rtabs">';
-  rs.forEach(function(id){ var r=roleObj(id); h+='<button class="rtab'+(id===L.role?' on':'')+'" data-rtab="'+id+'">'+r.icon+' '+esc(r.name)+(rs.length>1&&id!==L.role?'<span class="rx" data-rdrop="'+id+'" title="Remove this role from your devices">✕</span>':'')+'</button>'; });
+  rs.forEach(function(id){ var r=roleObj(id), status=liveRoleStatus(id); h+='<button class="rtab'+(id===L.role?' on':'')+'" data-rtab="'+id+'">'+r.icon+' '+esc(r.name)+(status?' <span class="role-turn-status">'+status+'</span>':'')+(rs.length>1&&id!==L.role?'<span class="rx" data-rdrop="'+id+'" title="Remove this role from your devices">✕</span>':'')+'</button>'; });
   h+='<button class="rtab add" data-radd title="Add another role">＋ Role</button></div>';
   var miss=agendaRolesFor(L.me||myName()).filter(function(r){ return rs.indexOf(r)<0; });
   if(miss.length) h+='<div class="rsuggest">📋 The agenda also has you as '+miss.map(function(r){var o=roleObj(r);return o.icon+' '+esc(o.name);}).join(", ")+' <button class="btn sm" data-raddall="'+miss.join(",")+'">Add '+(miss.length>1?'them':'it')+'</button></div>';
@@ -4304,47 +4345,106 @@ function companionHTML(){
 }
 function renderCompanion(){ var el=document.getElementById("companion"); if(!el) return; var h=companionHTML(); el.innerHTML=h; el.classList.toggle("on",!!h); }
 
-/* ---------- Toastmaster can change the running order on the day ---------- */
+/* Live agenda entries keep their identities when the running order changes. */
+function plannedRunItems(){
+  var base=itemsSorted(), block=base.find(function(it){return it.x==="speakers";});
+  var scheduled=new Set(asList("speakers").map(nkey)), start=hm2min(block?.time);
+  var speeches=S.rows.ps.filter(function(row){
+    return String(row.name||"").trim()&&!String(row.ak||"").startsWith("keynote:")&&(block||scheduled.has(nkey(baseName(row.name))));
+  }).map(function(row){
+    var name=baseName(row.name), time=start==null?"":min2hm(start);
+    if(start!=null) start+=Math.ceil(limOf("ps",row).r/60)+1;
+    return {id:preparedItemId(row),rowId:row.id,role:"speakers",name:name,time:time,text:speechTitle(name)||"Prepared speech",x:""};
+  });
+  base.splice(block?base.indexOf(block)+1:base.length,0,...speeches);
+  return base;
+}
+function preparedItemId(row){ return "prepared|"+row.id; }
 function runItems(){
-  var base=itemsSorted(), ord=S.run.order;
-  if(!Array.isArray(ord)||!ord.length) return base;
-  var byId={}; base.forEach(function(it){ byId[it.id]=it; });
-  var out=ord.map(function(id){return byId[id];}).filter(Boolean);
-  base.forEach(function(it){ if(out.indexOf(it)<0) out.push(it); });
+  var base=plannedRunItems(), byId=new Map(base.map(function(it){return [it.id,it];}));
+  var order=Array.isArray(S.run.order)?S.run.order:[];
+  var out=Array.from(new Set(order)).map(function(id){return byId.get(id);}).filter(Boolean);
+  var placed=new Set(out.map(function(it){return it.id;}));
+  base.forEach(function(it,i){
+    if(placed.has(it.id)) return;
+    var previous=i>0?out.findIndex(function(entry){return entry.id===base[i-1].id;}):-1;
+    out.splice(previous+1,0,it);
+  });
   return out;
 }
 function isSkipped(id){ return !!(S.run.skip&&S.run.skip[id]); }
 function nextLive(its,from){ for(var j=from;j<its.length;j++) if(!isSkipped(its[j].id)) return its[j]; return null; }
-function runMoveEnd(id){ var ids=runItems().map(function(x){return x.id;}).filter(function(x){return x!==id;}); ids.push(id); S.run.order=ids; tick(S.run); commit(); }
-function runToggleSkip(id){ S.run.skip=S.run.skip||{}; if(S.run.skip[id]) delete S.run.skip[id]; else S.run.skip[id]=true; tick(S.run); commit(); }
-
-
-/* Prepared speeches share the Timer's queue. Only upcoming prepared rows move. */
-function queuedPreparedRows(){
-  return S.rows.ps.filter(function(row){
-    return rowState(row)==="idle" && row.name.trim() && !String(row.ak||"").startsWith("keynote:");
+function previousLive(its,from){ for(var j=from;j>=0;j--) if(!isSkipped(its[j].id)) return its[j]; return null; }
+function canEditLiveAgenda(){ var roles=myRoles(); return roles.includes("tmod")||(roles.includes("coord")&&coordUnlocked()); }
+function liveEditableItems(items){
+  if(!canEditLiveAgenda()||(!S.run.cur&&S.run.endAt)) return [];
+  var boundary=items.reduce(function(last,it,i){
+    return it.id===S.run.cur||S.run.started[it.id]!=null?i:last;
+  },-1);
+  return items.slice(boundary+1).filter(function(it){
+    var row=it.rowId?findRow("ps",it.rowId):it.role==="keynote"?presentationRow(it.id):null;
+    return !row||rowState(row)==="idle";
   });
+}
+function reorderLiveItem(id,targetId,after){
+  var items=runItems(), editable=liveEditableItems(items);
+  if(id===targetId||!editable.some(function(it){return it.id===id;})||!editable.some(function(it){return it.id===targetId;})) return false;
+  var order=items.map(function(it){return it.id;}).filter(function(value){return value!==id;});
+  order.splice(order.indexOf(targetId)+(after?1:0),0,id);
+  if(order.every(function(value,i){return value===items[i].id;})) return false;
+  S.run.order=order;
+  S.run.orderU=Math.max(now(),(S.run.orderU||S.run.u||0)+1);
+  commit(); return true;
+}
+function runMoveEnd(id){
+  var last=liveEditableItems(runItems()).at(-1);
+  if(last) reorderLiveItem(id,last.id,true);
+}
+function runToggleSkip(id){
+  if(!liveEditableItems(runItems()).some(function(it){return it.id===id;})) return;
+  S.run.skip=S.run.skip||{};
+  if(S.run.skip[id]) delete S.run.skip[id]; else S.run.skip[id]=true;
+  S.run.by=runBy(); tick(S.run); commit();
+}
+function queuedPreparedRows(){
+  return orderPreparedTimerRows(S.rows.ps).filter(function(row){
+    return rowState(row)==="idle"&&String(row.name||"").trim()&&!String(row.ak||"").startsWith("keynote:")&&!isSkipped(preparedItemId(row));
+  });
+}
+function preparedTimerSkipped(row){
+  var itemId=row.presentationItemId;
+  if(!itemId&&String(row.ak||"").startsWith("keynote:")){
+    itemId=keynoteItems().find(function(it){return presentationRow(it.id)===row;})?.id;
+  }
+  return isSkipped(itemId||preparedItemId(row));
+}
+function orderPreparedTimerRows(rows){
+  var rank=new Map();
+  runItems().forEach(function(it,i){
+    var id=it.rowId||(it.role==="keynote"?presentationRow(it.id)?.id:null);
+    if(id) rank.set(id,i);
+  });
+  var upcoming=rows.filter(function(row){return rowState(row)==="idle"&&rank.has(row.id);});
+  upcoming.sort(function(a,b){return rank.get(a.id)-rank.get(b.id);});
+  var index=0;
+  return rows.map(function(row){return rowState(row)==="idle"&&rank.has(row.id)?upcoming[index++]:row;});
 }
 function movePreparedSpeaker(id,destination){
-  var queue=queuedPreparedRows(), from=queue.findIndex(function(row){return row.id===id;});
-  if(from<=0) return;
-  var slots=queue.map(function(row){return S.rows.ps.indexOf(row);});
-  var row=queue.splice(from,1)[0];
-  queue.splice(destination==="next"?0:from-1,0,row);
-  slots.forEach(function(slot,i){ S.rows.ps[slot]=queue[i]; });
-  S.rows.ps.forEach(function(entry,i){
-    if(entry.ord!==i+1){ entry.ord=i+1; tick(entry); }
-  });
-  commit();
+  var editable=new Set(liveEditableItems(runItems()).map(function(it){return it.id;}));
+  var queue=queuedPreparedRows().filter(function(row){return editable.has(preparedItemId(row));});
+  var from=queue.findIndex(function(row){return row.id===id;});
+  if(from>0) reorderLiveItem(preparedItemId(queue[from]),preparedItemId(queue[destination==="next"?0:from-1]),false);
 }
 function preparedRunHTML(edit){
-  var queue=queuedPreparedRows();
+  var queue=queuedPreparedRows(), movable=new Set(liveEditableItems(runItems()).map(function(it){return it.id;})), before=false;
   if(!queue.length) return "";
-  return '<section class="card"><h2 class="sec">Upcoming prepared speakers</h2><ol>'+queue.map(function(row,i){
+  return '<section class="card"><h2 class="sec">Upcoming prepared speakers</h2><ol>'+queue.map(function(row){
     var name=baseName(row.name), evaluator=evaluatorOf(name), title=speechTitle(name);
+    var canMove=movable.has(preparedItemId(row)), buttons=edit&&before&&canMove;
+    if(canMove) before=true;
     return '<li><b>'+esc(name)+'</b>'+(title?' · '+esc(title):'')+
       (evaluator?' · Evaluator: '+esc(evaluator):'')+
-      (edit&&i>0?' <button class="btn sm" data-speech-order="'+esc(row.id)+'" data-destination="up" aria-label="Move up '+esc(name)+'">Move up</button>'+
+      (buttons?' <button class="btn sm" data-speech-order="'+esc(row.id)+'" data-destination="up" aria-label="Move up '+esc(name)+'">Move up</button>'+
         ' <button class="btn sm" data-speech-order="'+esc(row.id)+'" data-destination="next" aria-label="Speak next: '+esc(name)+'">Speak next</button>':'')+'</li>';
   }).join("")+'</ol></section>';
 }
@@ -4390,7 +4490,8 @@ function replaceRolePlayer(key,oldName,replacement){
     if(!role||!assignedNames.some(function(n){return nkey(n)===nkey(oldName);})) return false;
     if(key==="speakers"){
       if(assignedNames.some(function(n){return nkey(n)===nkey(replacement);})||
-        S.rows.ps.some(function(row){return nkey(baseName(row.name))===nkey(oldName)&&rowState(row)!=="idle";})) return false;
+        S.rows.ps.some(function(row){return !String(row.ak||"").startsWith("keynote:")&&nkey(baseName(row.name))===nkey(replacement);})||
+        S.rows.ps.some(function(row){return !String(row.ak||"").startsWith("keynote:")&&nkey(baseName(row.name))===nkey(oldName)&&rowState(row)!=="idle";})) return false;
       var evaluation=S.assigns.find(function(a){return nkey(a.speaker)===nkey(oldName)&&a.evaluator;});
       if(evaluation&&!S.assigns.some(function(a){return nkey(a.speaker)===nkey(replacement)&&a.evaluator;})){
         var newPair=upsert(["assigns"],"as|"+nkey(replacement),{speaker:replacement});
@@ -4398,8 +4499,8 @@ function replaceRolePlayer(key,oldName,replacement){
         tick(newPair);
       }
       if(evaluation){ evaluation.evaluator=""; tick(evaluation); }
-      var queued=S.rows.ps.find(function(row){return row.ak==="ps:"+oldName.toLowerCase()&&rowState(row)==="idle";});
-      if(queued&&!S.rows.ps.some(function(row){return nkey(baseName(row.name))===nkey(replacement);})){
+      var queued=S.rows.ps.find(function(row){return !String(row.ak||"").startsWith("keynote:")&&nkey(baseName(row.name))===nkey(oldName)&&rowState(row)==="idle";});
+      if(queued){
         queued.ak="ps:"+replacement.toLowerCase(); queued.name=replacement;
         var limits=presetLim((speechRec(replacement)||{}).lim);
         if(limits) queued.lim=limits; else delete queued.lim;
@@ -4767,20 +4868,21 @@ function refreshDashboardOnline(){
   if(card.onlineHTML!==html){ card.onlineHTML=html; card.innerHTML=html; }
 }
 function dashHTML(){
-  var ss=scheduleStatus(), pr=agendaProgress(), h='';
+  var ss=scheduleStatus(), c=curItem(), pr=agendaProgress(), h='';
   h+='<section class="card dash-hero"><div class="dh-top"><div><div class="dh-kicker">'+esc(GROUP)+(S.meta.week?' · '+esc(S.meta.week):'')+'</div><div class="dh-title">'+esc(fmtDate(S.meta.date)||"Today’s meeting")+'</div></div>'+
      '<button class="btn" id="projOpen">📺 Projector view</button></div>';
-  if(ss){ var c=ss.c, who=whoFor(c.cur.role);
+  if(ss){ var who=whoForItem(c.cur);
     h+='<div class="dh-now"><div class="dh-lbl">Now</div><div class="dh-item"><b>'+esc(fmtHM(rt(c.cur)))+'</b> '+esc(arole(c.cur.role).n)+(who?' · '+esc(who):'')+'<div class="muted">'+esc(c.cur.text)+'</div></div></div>';
-    if(c.next){ var wn=whoFor(c.next.role); h+='<div class="dh-next"><div class="dh-lbl">Next</div><div class="dh-item"><b>'+esc(fmtHM(rt(c.next)))+'</b> '+esc(arole(c.next.role).n)+(wn?' · '+esc(wn):'')+'</div></div>'; }
+    if(c.next){ var wn=whoForItem(c.next); h+='<div class="dh-next"><div class="dh-lbl">Next</div><div class="dh-item"><b>'+esc(fmtHM(rt(c.next)))+'</b> '+esc(arole(c.next.role).n)+(wn?' · '+esc(wn):'')+(c.next.rowId?'<div class="muted">'+esc(c.next.text)+'</div>':'')+'</div></div>'; }
     if(ss.txt) h+='<div class="'+ss.cls+'" style="margin-top:6px;font-weight:700">'+ss.txt+'</div>';
-  } else { var f=runItems()[0]; h+='<div class="dh-now"><div class="dh-lbl">Not started</div><div class="dh-item">The Toastmaster starts the run-sheet when the meeting begins.'+(f?'<div class="muted">First: '+esc(fmtHM(f.time))+' '+esc(arole(f.role).n)+(whoFor(f.role)?' · '+esc(whoFor(f.role)):'')+'</div>':'')+'</div></div>'; }
+  } else if(S.run.endAt){ h+='<div class="dh-now"><div class="dh-lbl">Meeting finished</div><div class="dh-item">'+esc(hhmm(S.run.endAt))+'</div></div>'; }
+  else { var f=nextLive(c.its,0); h+='<div class="dh-now"><div class="dh-lbl">Not started</div><div class="dh-item">The Toastmaster starts the run-sheet when the meeting begins.'+(f?'<div class="muted">First: '+esc(fmtHM(f.time))+' '+esc(arole(f.role).n)+(whoForItem(f)?' · '+esc(whoForItem(f)):'')+'</div>':'')+'</div></div>'; }
   var floor=document.querySelector(".floor-controls");
   var choice=floor?.dataset.item===(S.run.cur||"")&&floor.dataset.role===L.role
     ?{role:document.getElementById("handoverTarget")?.value,name:document.getElementById("handoverRecipient")?.value}:null;
-  h+=liveCtlHTML()+handoverHTML(choice);
+  h+=liveRoleCueHTML()+liveCtlHTML()+liveSubstitutionHTML(c)+handoverHTML(choice);
   if(pr.n) h+='<div class="dh-prog"><div class="bar"><i style="width:'+Math.round(pr.done/pr.n*100)+'%"></i></div><span class="saved">'+pr.done+' of '+pr.n+' agenda items</span></div>';
-  h+='</section>';
+  h+='</section>'+liveReportQueueHTML(myRoles().includes("ge"));
   /* timing so far */
   var tparts=[]; SESSIONS.forEach(function(s){ var done=S.rows[s.id].filter(function(r){return rowState(r)==="done";}); if(done.length){ var ok=done.filter(function(r){return status(s.id,r,now()).ok;}).length; tparts.push('<div class="dstat"><b>'+done.length+'</b><span>'+esc(s.name)+'</span><small>'+ok+' within time</small></div>'); } });
   h+='<div class="dgrid">';
@@ -4795,17 +4897,92 @@ function dashHTML(){
 }
 /* the agenda for everyone, with where the meeting is up to */
 function agendaViewHTML(){
-  var A=S.agenda, c=curItem(), h='<section class="card"><div class="row" style="justify-content:space-between"><h2 class="sec" style="margin:0">📋 Agenda'+(A.no?' · No '+esc(A.no):'')+'</h2><button class="btn" id="agPrint">📄 Print / PDF</button></div>';
-  h+='<div class="saved" style="margin:4px 0 10px">'+esc(fmtDate(S.meta.date)||"")+(A.venue?' · '+esc(A.venue):'')+'</div>'+(A.theme?'<p><b>Meeting theme</b> · '+esc(A.theme)+'</p>':'')+'<div class="agv2">';
-  runItems().forEach(function(it){
-    var who=whoFor(it.role), st=isSkipped(it.id)?"skip":(c.cur&&c.cur.id===it.id)?"cur":(S.run.started&&S.run.started[it.id]!=null)?"done":"";
-    var x=agExtraHTML(it.x,it);
-    h+='<div class="agv2i '+st+'"><div class="agv2t">'+esc(fmtHM(rt(it)))+'</div><div><div class="agv2r">'+esc(arole(it.role).n)+(who?' · <b>'+esc(who)+'</b>':'')+(st==="cur"?' <span class="badge on">Now</span>':st==="skip"?' <span class="badge no">Skipped</span>':'')+'</div><div class="agv2x">'+agActivityHTML(Object.assign({},it,{x:""}))+'</div>'+(x?'<div class="agv2s">'+x+'</div>':'')+'</div></div>';
+  var A=S.agenda, c=curItem(), editable=liveEditableItems(c.its), h='<section class="card"><div class="row" style="justify-content:space-between"><h2 class="sec" style="margin:0">📋 Agenda'+(A.no?' · No '+esc(A.no):'')+'</h2><button class="btn" id="agPrint">📄 Print / PDF</button></div>';
+  h+='<div class="saved" style="margin:4px 0 10px">'+esc(fmtDate(S.meta.date)||"")+(A.venue?' · '+esc(A.venue):'')+'</div>'+(A.theme?'<p><b>Meeting theme</b> · '+esc(A.theme)+'</p>':'')+(editable.length>1?'<p class="saved">Drag future items or use Move earlier and Move later. Times shown are from the plan, with any live time adjustments.</p>':'')+'<div class="agv2">';
+  c.its.forEach(function(it){
+    var who=whoForItem(it), st=isSkipped(it.id)?"skip":(c.cur&&c.cur.id===it.id)?"cur":(S.run.started&&S.run.started[it.id]!=null)?"done":"";
+    var x=it.rowId?esc(liveItemExtra(it)):it.x==="speakers"?"":agExtraHTML(it.x,it);
+    var index=editable.indexOf(it), movable=index>=0&&editable.length>1;
+    h+='<div class="agv2i '+st+'" data-live-item="'+esc(it.id)+'"'+(movable?' data-live-movable':'')+'><div class="agv2t">'+esc(fmtHM(rt(it)))+'</div><div><div class="agv2r">'+esc(arole(it.role).n)+(who?' · <b>'+esc(who)+'</b>':'')+(st==="cur"?' <span class="badge on">Now</span>':st==="skip"?' <span class="badge no">Skipped</span>':'')+'</div><div class="agv2x">'+agActivityHTML(Object.assign({},it,{x:""}))+'</div>'+(x?'<div class="agv2s">'+x+'</div>':'')+(movable?agendaMoveControls(it,index,editable):'')+'</div></div>';
   });
   h+='</div>'+(A.next?'<div class="saved" style="margin-top:10px">Next meeting: '+esc(fmtDate(A.next))+'</div>':'')+'</section>';
   return h;
 }
 
+
+function agendaMoveControls(item,index,editable){
+  var label=whoForItem(item)||String(item.text||"").split(" — ")[0]||arole(item.role).n;
+  return '<div class="row live-move"><span class="live-grip" draggable="true" aria-hidden="true" title="Drag to move">⠿ Drag</span>'+
+    [["earlier",index>0],["later",index<editable.length-1]].map(function(action){
+      return '<button class="btn sm" data-live-move="'+action[0]+'" data-live-id="'+esc(item.id)+'" aria-label="Move '+esc(label)+' '+action[0]+'"'+(action[1]?'':' aria-disabled="true"')+'>Move '+action[0]+'</button>';
+    }).join("")+'</div>';
+}
+(function(){
+  var view=document.getElementById("view"), dragged="", touch=null;
+  function target(event){ return event.target.closest("[data-live-movable]"); }
+  function clearDrop(){
+    view.querySelectorAll(".live-drop-before,.live-drop-after").forEach(function(row){row.classList.remove("live-drop-before","live-drop-after");});
+  }
+  function dropAfter(event,row){
+    var bounds=row.getBoundingClientRect();
+    return event.clientY>=bounds.top+bounds.height/2;
+  }
+  view.addEventListener("dragstart",function(event){
+    var row=target(event);
+    if(!event.target.matches(".live-grip")||!row||!canEditLiveAgenda()) return;
+    dragged=row.dataset.liveItem;
+    event.dataTransfer.setData("text/plain",dragged);
+    event.dataTransfer.effectAllowed="move";
+  });
+  view.addEventListener("dragover",function(event){
+    var row=target(event);
+    if(!dragged) return;
+    clearDrop();
+    if(!row||row.dataset.liveItem===dragged) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect="move";
+    row.classList.add(dropAfter(event,row)?"live-drop-after":"live-drop-before");
+  });
+  view.addEventListener("drop",function(event){
+    var row=target(event), id=dragged;
+    dragged=""; clearDrop();
+    if(!id||!row) return;
+    event.preventDefault();
+    if(reorderLiveItem(id,row.dataset.liveItem,dropAfter(event,row))) showToastMsg("Running order updated");
+  });
+  view.addEventListener("dragend",function(){ dragged=""; clearDrop(); });
+  view.addEventListener("pointerdown",function(event){
+    var row=target(event);
+    if(event.pointerType!=="touch"||!event.isPrimary||!event.target.matches(".live-grip")||!row||!canEditLiveAgenda()) return;
+    touch={pointer:event.pointerId,id:row.dataset.liveItem,startY:event.clientY};
+    event.target.setPointerCapture(event.pointerId);
+  });
+  view.addEventListener("pointermove",function(event){
+    if(touch?.pointer!==event.pointerId) return;
+    clearDrop();
+    if(Math.abs(event.clientY-touch.startY)<8) return;
+    var row=document.elementFromPoint(event.clientX,event.clientY)?.closest("[data-live-movable]");
+    if(row&&row.dataset.liveItem!==touch.id) row.classList.add(dropAfter(event,row)?"live-drop-after":"live-drop-before");
+  });
+  view.addEventListener("pointerup",function(event){
+    if(touch?.pointer!==event.pointerId) return;
+    var move=touch; touch=null; clearDrop();
+    if(Math.abs(event.clientY-move.startY)<8) return;
+    var row=document.elementFromPoint(event.clientX,event.clientY)?.closest("[data-live-movable]");
+    if(row&&reorderLiveItem(move.id,row.dataset.liveItem,dropAfter(event,row))) showToastMsg("Running order updated");
+  });
+  view.addEventListener("lostpointercapture",function(event){
+    if(touch?.pointer===event.pointerId){ touch=null; clearDrop(); }
+  });
+  view.addEventListener("click",function(event){
+    var button=event.target.closest("[data-live-move]");
+    if(!button||button.getAttribute("aria-disabled")==="true") return;
+    var items=liveEditableItems(runItems()), id=button.dataset.liveId, after=button.dataset.liveMove==="later";
+    var index=items.findIndex(function(it){return it.id===id;});
+    var adjacent=index<0?null:items[index+(after?1:-1)];
+    if(adjacent&&reorderLiveItem(id,adjacent.id,after)) showToastMsg("Running order updated");
+  });
+})();
 /* ---------- Focus mode: only what the role needs right now ---------- */
 var FOCUS_ROLES={timer:1,ah:1,gram:1,tmod:1,ttm:1};
 function inFocus(){ return curView()==="role" && !!L.focus && !!FOCUS_ROLES[L.role]; }
@@ -4822,7 +4999,7 @@ function focusWhoPicker(who){
 function focusHTML(){
   var r=L.role, h='<div class="fbar"><b>🎯 Focus · '+esc(roleObj(r).name)+'</b><button class="btn sm" data-focus="off">Show everything</button></div>';
   if(r==="timer"){
-    var sid=L.tab||"tt", s=sessionOf(sid)||SESSIONS[0], idle=timerRows(sid).filter(function(x){return rowState(x)==="idle";}).slice(0,4);
+    var sid=L.tab||"tt", s=sessionOf(sid)||SESSIONS[0], idle=timerRows(sid).filter(function(x){return rowState(x)==="idle"&&(sid!=="ps"||!preparedTimerSkipped(x));}).slice(0,4);
     h+='<section class="card fcard"><div class="flbl">'+esc(s.name)+' · '+esc(limitsLine(sid,null))+'</div>'+
        '<div class="seg fseg">'+SESSIONS.map(function(x){ return '<button data-ftab="'+x.id+'" class="'+(x.id===sid?'on':'')+'">'+esc(x.name)+'</button>'; }).join("")+'</div>'+
        (runningList().length?'<div class="note" style="text-align:center">Timing now — use <b>Stop</b> on the live bar above.</div>':'')+
@@ -4841,9 +5018,9 @@ function focusHTML(){
   } else if(r==="tmod"){
     var c=curItem(), ss=scheduleStatus();
     h+='<section class="card fcard" style="text-align:center">';
-    if(c.cur){ var w1=whoFor(c.cur.role); h+='<div class="flbl">Now · '+esc(fmtHM(rt(c.cur)))+'</div><div class="fname">'+esc(arole(c.cur.role).n)+'</div>'+(w1?'<div class="fwho2">'+esc(w1)+'</div>':'')+'<div class="muted" style="margin-top:6px">'+esc(c.cur.text)+'</div>'+(ss?'<div class="'+ss.cls+'" style="margin-top:8px;font-weight:800">'+ss.txt+'</div>':''); }
+    if(c.cur){ var w1=whoForItem(c.cur); h+='<div class="flbl">Now · '+esc(fmtHM(rt(c.cur)))+'</div><div class="fname">'+esc(arole(c.cur.role).n)+'</div>'+(w1?'<div class="fwho2">'+esc(w1)+'</div>':'')+'<div class="muted" style="margin-top:6px">'+esc(c.cur.text)+'</div>'+(ss?'<div class="'+ss.cls+'" style="margin-top:8px;font-weight:800">'+ss.txt+'</div>':''); }
     else h+='<div class="flbl">Ready</div><div class="fname">Start the meeting</div>';
-    if(c.next){ var w2=whoFor(c.next.role); h+='<div class="fnextitem">Next · '+esc(fmtHM(rt(c.next)))+' '+esc(arole(c.next.role).n)+(w2?' · '+esc(w2):'')+'</div>'; }
+    if(c.next){ var w2=whoForItem(c.next); h+='<div class="fnextitem">Next · '+esc(fmtHM(rt(c.next)))+' '+esc(arole(c.next.role).n)+(w2?' · '+esc(w2):'')+'</div>'; }
     h+='<button class="btn primary fbig" style="margin-top:12px" data-frun>'+(c.cur?(c.next?'Next ▶':'End of agenda'):'▶ Start the meeting')+'</button></section>';
   } else if(r==="ttm"){
     var cur=topicById(S.cur.id), rem=remaining();
@@ -4869,7 +5046,7 @@ var fUndo=null;
     if(t.closest("[data-fundo]")){ if(!fUndo) return; var r2=S.ahRows.find(function(x){return x.id===fUndo.id;}); if(r2&&r2.c[fUndo.w]>0){ r2.c[fUndo.w]--; tick(r2); commit(); } fUndo=null; return; }
     if(t.closest("[data-fwotd]")){ var g=focusWho(); if(!g) return; var gr=fRec("gram",g); gr.w=(gr.w||0)+1; tick(gr); commit(); return; }
     if((b=t.closest("[data-fnote]"))){ var g2=focusWho(), inp=document.getElementById("fNote"), tx=(inp.value||"").trim(); if(!g2||!tx){ inp.focus(); return; } var gr2=fRec("gram",g2); gr2[b.dataset.fnote].push(tx); tick(gr2); commit(); showToastMsg(b.dataset.fnote==="good"?"👍 Saved for "+g2:"✎ Slip noted for "+g2); return; }
-    if(t.closest("[data-frun]")){ var c=curItem(); if(!c.cur){ if(c.its[0]) runGo(c.its[0].id); } else if(c.next) runGo(c.next.id); return; }
+    if(t.closest("[data-frun]")){ var c=curItem(); if(!c.cur){ var first=nextLive(c.its,0); if(first) runGo(first.id); } else if(c.next) runGo(c.next.id); return; }
     if(t.closest("[data-frandom]")){ randomTopic(); return; }
     if(t.closest("[data-fshow]")){ openStage(); return; }
     if(t.closest("[data-fcall]")){ callSpeaker(); return; }
@@ -5521,35 +5698,194 @@ function openCC(){ document.getElementById("ccModal").classList.add("on"); ccMea
   });
   document.getElementById("ccBtn").addEventListener("click",openCC);
 })();
-/* ---------- 1. "You're up next" nudges ---------- */
-/* which agenda items concern this device's person/roles */
-function itemIsMine(it){
-  if(!it) return false;
-  var names=myNameKeys(), rs=myRoles(), inList=function(k){ return asList(k).some(function(n){return names.indexOf(nkey(n))>=0;}); };
-  if(rs.indexOf(it.role)>=0 && it.role!=="coord" || (it.role==="coord"&&rs.indexOf("coord")>=0)) return true;
-  if(inList(it.role)) return true;
-  if(it.x==="speakers" && (inList("speakers")||rs.indexOf("speaker")>=0&&inList("speakers"))) return true;
-  if(it.x==="keynote" && inList("keynote")) return true;
-  if(it.x==="ttevals" && inList("ttevals")) return true;
-  if(it.x==="evals" && (inList("sevals")||inList("ttevals")||["timer","ah","gram"].some(function(r){ return rs.indexOf(r)>=0; }))) return true;
-  return false;
+/* Match the agenda assignment to the signed-in participant before showing a turn cue. */
+function liveItemRole(it){
+  if(!it) return "";
+  return it.rowId?"speaker":it.role;
 }
-function itemLabel(it){ var w=whoFor(it.role); return arole(it.role).n+(w?" ("+w+")":"")+(it.text?" — "+String(it.text).split(" — ")[0].split(". ")[0]:""); }
+function itemIsMine(it){
+  var role=liveItemRole(it);
+  if(!roleObj(role)) return false;
+  var me=nkey(L.me||myName()), names=it.rowId||role==="keynote"?[whoForItem(it)]:asList(role);
+  if(names.some(Boolean)) return names.some(function(name){return nkey(name)===me;});
+  return myRoles().includes(role);
+}
+function itemLabel(it){ var w=whoForItem(it); return arole(it.role).n+(w?" ("+w+")":"")+(it.text?" — "+String(it.text).split(" — ")[0].split(". ")[0]:""); }
+function liveRoleStatus(role){
+  var c=curItem();
+  if(!c.cur) return "";
+  if(liveItemRole(c.cur)===role&&itemIsMine(c.cur)) return "On now";
+  if(liveItemRole(c.next)===role&&itemIsMine(c.next)) return "Up next";
+  if(reportQueue().some(function(entry){return entry.role===role&&isMyLiveReport(entry)&&liveReportState(entry)==="called";})) return "Action needed";
+  return "";
+}
+function liveRoleCueHTML(){
+  var c=curItem();
+  if(!c.cur) return "";
+  var item=itemIsMine(c.cur)?c.cur:itemIsMine(c.next)?c.next:null;
+  if(!item) return "";
+  var role=liveItemRole(item), details=liveItemExtra(item);
+  var row=item.rowId?findRow("ps",item.rowId):item.role==="keynote"?presentationRow(item.id):null;
+  if(row) details=[details,limitsLine("ps",row)].filter(Boolean).join(" · ");
+  return '<div class="note live-role-cue"><b>'+(item===c.cur?"You’re on now":"You’re up next")+'</b> · '+esc(roleName(role))+
+    (item.rowId?' · '+esc(item.text):'')+(details?'<div>'+esc(details)+'</div>':'')+
+    '<button class="btn sm" data-live-open-role="'+role+'">Open my role</button></div>';
+}
 var lastNudge="";
 function checkNudge(){
-  if(!S.run||!S.run.cur||L.role==="tmod") return;
-  var c=curItem(); if(!c.cur) return;
-  var key=c.cur.id+"|"+(c.next?c.next.id:"");
-  if(key===lastNudge) return; var first=!lastNudge; lastNudge=key; if(first) return;
-  var msg="", buzzP=null;
-  if(itemIsMine(c.cur)){ msg="🎤 You're on now: "+itemLabel(c.cur); buzzP=[300,120,300]; }
-  else if(c.next&&itemIsMine(c.next)){ var mins=hm2min(rt(c.next)), cm=hm2min(rt(c.cur)); msg="⏭ You're up next: "+itemLabel(c.next)+(mins!=null&&cm!=null&&mins>cm?" (about "+(mins-cm)+" min)":""); buzzP=[120,80,120]; }
-  if(!msg) return;
-  try{ if(navigator.vibrate&&buzzP) navigator.vibrate(buzzP); }catch(e){}
-  var el=document.getElementById("nudge"); if(el){ el.textContent=msg; el.classList.add("on"); clearTimeout(el._t); el._t=setTimeout(function(){ el.classList.remove("on"); },15000); }
+  var c=curItem();
+  if(!c.cur){ lastNudge=""; return; }
+  var key=JSON.stringify([S.mid,c.cur.id,c.next?.id,whoForItem(c.cur),c.next&&whoForItem(c.next)]);
+  if(key===lastNudge) return;
+  lastNudge=key;
+  var item=itemIsMine(c.cur)?c.cur:itemIsMine(c.next)?c.next:null, el=document.getElementById("nudge");
+  clearTimeout(el._t);
+  if(!item||!L.setup){ el.classList.remove("on"); return; }
+  var role=liveItemRole(item);
+  el.innerHTML=esc((item===c.cur?"You’re on now: ":"You’re up next: ")+itemLabel(item))+
+    ' <button class="btn sm" data-live-open-role="'+role+'">Open my role</button>';
+  el.classList.add("on");
+  el._t=setTimeout(function(){ el.classList.remove("on"); },15000);
 }
 setInterval(checkNudge,1000);
-
+document.getElementById("app").addEventListener("click",function(e){
+  var action=e.target.closest("[data-live-open-role]");
+  if(!action) return;
+  var role=action.dataset.liveOpenRole;
+  if(!roleObj(role)||(!myRoles().includes(role)&&!agendaRolesFor(L.me||myName()).includes(role))) return;
+  if(!myRoles().includes(role)) saveRoleChoices([role],true);
+  if(role==="keynote"){ var c=curItem(); var item=c.cur?.role===role&&itemIsMine(c.cur)?c.cur:c.next; if(item?.role===role) workflowDraft().keynoteItem=item.id; }
+  document.getElementById("nudge").classList.remove("on");
+  switchRole(role);
+});
+/* Public report coordination. Private evaluation text stays in the feedback workflow. */
+function reportQueue(){
+  var entries=[];
+  function addReport(role,name,speaker,turn){
+    if(!name) return;
+    var id="report|"+JSON.stringify([role,nkey(name),nkey(speaker),turn||""]);
+    if(entries.some(function(entry){return entry.id===id;})) return;
+    entries.push({id:id,role:role,name:name,speaker:speaker||"",turn:turn||""});
+  }
+  ["timer","ah","gram"].forEach(function(role){addReport(role,assigned(role)||S.people[role]);});
+  [["ps","seval","sevals"],["tt","tteval","ttevals"]].forEach(function(group){
+    var pairs=activeEvaluatorPairs(group[0]);
+    pairs.forEach(function(pair){addReport(group[1],pair.evaluator,pair.speaker,pair.turnId);});
+    asList(group[2]).forEach(function(name){
+      if(!pairs.some(function(pair){return nkey(pair.evaluator)===nkey(name);})) addReport(group[1],name);
+    });
+  });
+  return entries;
+}
+function isMyLiveReport(entry){ return nkey(entry.name)===nkey(L.me||myName()); }
+function liveReportState(entry){ return S.liveReports.find(function(record){return record.id===entry.id;})?.state||"waiting"; }
+function liveReportQueueHTML(manager){
+  var reports=reportQueue().filter(function(entry){return manager||isMyLiveReport(entry);});
+  if(!reports.length) return "";
+  var control=manager&&!reports.some(function(entry){return liveReportState(entry)==="called";})?reports.find(function(entry){return liveReportState(entry)==="ready";}):null;
+  return '<section class="card live-report-queue"><h2 class="sec">'+(manager?"Evaluation report queue":"My meeting reports")+'</h2>'+
+    (control?'<button class="btn primary" data-report-id="'+esc(control.id)+'" data-report-state="called">Call next ready report</button>':'')+
+    '<ul class="tlist">'+reports.map(function(entry){
+      var state=liveReportState(entry), labels={waiting:"Waiting",ready:"Ready",called:"Called",presented:"Presented"};
+      var mine=isMyLiveReport(entry), team=["timer","ah","gram"].includes(entry.role);
+      function button(action,label){
+        return '<button class="btn sm" data-report-id="'+esc(entry.id)+'" data-report-state="'+action+'">'+label+'</button>';
+      }
+      return '<li><div><b>'+esc(roleName(entry.role))+'</b> · '+esc(entry.name)+(entry.speaker?' · for '+esc(entry.speaker):'')+
+        ' <span class="badge '+(state==="called"||state==="ready"?'on':'')+'">'+labels[state]+'</span></div><div class="row">'+
+        (mine&&state==="waiting"?button("ready","Mark ready"):"")+
+        (manager&&state!=="called"&&state!=="presented"?button("called","Call report"):"")+
+        ((manager||mine)&&state!=="presented"?button("presented","Mark presented"):"")+
+        (manager&&state==="presented"?button("ready","Reopen"):"")+
+        (manager&&team?copyBtn(entry.role):!team&&mine?'<button class="btn sm" data-report-evaluation="'+esc(entry.id)+'">Open evaluation</button>':"")+
+        '</div></li>';
+    }).join("")+'</ul></section>';
+}
+function substitutionRoles(c){
+  var entries=[];
+  function addSubstitution(key,name,label,itemId){
+    if(entries.some(function(entry){return entry.key===key&&entry.name===name;})) return;
+    entries.push({key:key,name:name,label:label,itemId:itemId||""});
+  }
+  [c.cur,c.next].filter(Boolean).forEach(function(it){
+    if(!it.rowId&&it.role!=="keynote") return;
+    var row=it.rowId?findRow("ps",it.rowId):presentationRow(it.id);
+    if(row&&rowState(row)!=="idle") return;
+    addSubstitution(it.rowId?"speakers":"keynote|"+it.id,whoForItem(it),arole(it.role).n,it.id);
+  });
+  var finished=new Set(S.rows.ps.filter(function(row){return rowState(row)!=="idle"&&!String(row.ak||"").startsWith("keynote:");}).map(function(row){return nkey(baseName(row.name));}));
+  AROLES.forEach(function(role){
+    if(role.k==="keynote") return;
+    asList(role.k).forEach(function(name){
+      if(role.k!=="speakers"||!finished.has(nkey(name))) addSubstitution(role.k,name,role.n);
+    });
+  });
+  c.its.filter(function(it){return it.role==="keynote"&&!S.run.started[it.id];}).forEach(function(it){
+    var row=presentationRow(it.id);
+    if(!row||rowState(row)==="idle") addSubstitution("keynote|"+it.id,whoForItem(it),String(it.text||"").split(" — ")[0]||arole(it.role).n,it.id);
+  });
+  [["ps","evaluation|"],["tt","topics|"]].forEach(function(group){
+    activeEvaluatorPairs(group[0]).forEach(function(pair){addSubstitution(group[1]+pair.id,pair.evaluator,"Evaluator for "+pair.speaker);});
+  });
+  return entries;
+}
+function substituteLiveRole(entry,name){
+  if(!canEditLiveAgenda()||!name||nkey(entry.name)===nkey(name)||rsvpOf(name)?.status==="no") return false;
+  if(!entry.key.startsWith("keynote|")) return replaceRolePlayer(entry.key,entry.name,name);
+  var row=presentationRow(entry.itemId);
+  if(row&&rowState(row)!=="idle") return false;
+  var presentation=editablePresentation(entry.itemId);
+  if(!presentation) return false;
+  presentation.name=name; tick(presentation);
+  if(row){ row.name=name+" – Educational presentation"; tick(row); }
+  commit(); return true;
+}
+function liveSubstitutionHTML(c){
+  if(!canEditLiveAgenda()||(!c.cur&&S.run.endAt)) return "";
+  var roles=substitutionRoles(c);
+  if(!roles.length) return "";
+  var connected=NET.room&&NET.status==="on"?onlinePeople().map(function(person){return person.name;}):[];
+  var checkedIn=attendLive().filter(function(record){return record.mid===S.mid;}).map(function(record){return record.name;});
+  var candidates=uniq(connected.concat(checkedIn,meetingNames())).filter(function(name){return rsvpOf(name)?.status!=="no";});
+  if(!candidates.length) return "";
+  var oldForm=document.getElementById("liveSubstitution");
+  function options(values,oldValue){
+    return values.map(function(x){return '<option value="'+esc(x[0])+'"'+(x[0]===oldValue?' selected':'')+'>'+esc(x[1])+'</option>';}).join("");
+  }
+  return '<details id="liveSubstitution" class="fold"'+(oldForm?.open?' open':'')+'><summary>Substitute a role player</summary><div class="row">'+
+    '<label class="f"><b>Role player</b><select class="t" id="liveReplaceRole">'+options(roles.map(function(entry){
+      return [JSON.stringify([entry.key,entry.name]),entry.label+" · "+(entry.name||"Unassigned")];
+    }),document.getElementById("liveReplaceRole")?.value)+'</select></label>'+
+    '<label class="f"><b>Replacement</b><select class="t" id="liveReplacement"><option value="">Choose a participant</option>'+options(candidates.map(function(name){
+      return [name,name+(connected.some(function(person){return nkey(person)===nkey(name);})?" · Connected":
+        checkedIn.some(function(person){return nkey(person)===nkey(name);})?" · Checked in":"")];
+    }),document.getElementById("liveReplacement")?.value)+'</select></label><button class="btn" id="liveReplace">Reassign</button></div></details>';
+}
+document.getElementById("view").addEventListener("click",function(e){
+  var button=e.target.closest("[data-report-state],[data-report-evaluation],#liveReplace");
+  if(!button) return;
+  if(button.id==="liveReplace"){
+    var role=document.getElementById("liveReplaceRole"), replacement=document.getElementById("liveReplacement");
+    var entry=substitutionRoles(curItem()).find(function(item){return JSON.stringify([item.key,item.name])===role.value;});
+    if(entry&&substituteLiveRole(entry,replacement.value)){ document.getElementById("liveReplacement").value=""; showToastMsg("Role reassigned"); }
+    else{ replacement.focus(); showToastMsg("Choose an available replacement for this role"); }
+    return;
+  }
+  var report=reportQueue().find(function(entry){return entry.id===(button.dataset.reportId||button.dataset.reportEvaluation);});
+  if(!report) return;
+  var mine=isMyLiveReport(report), manager=myRoles().includes("ge"), current=liveReportState(report), action=button.dataset.reportState;
+  if(button.dataset.reportEvaluation&&mine){
+    if(report.speaker){ L.evSel=L.evSel||{}; L.evSel[report.role==="seval"?"ps":"tt"]=report.turn?"tt-turn:"+encodeURIComponent(report.turn):report.speaker; }
+    if(!myRoles().includes(report.role)) saveRoleChoices([report.role],true);
+    switchRole(report.role);
+    return;
+  }
+  if(!(action==="ready"&&(mine&&current==="waiting"||manager&&current==="presented")||
+    action==="called"&&manager&&current!=="presented"||
+    action==="presented"&&(manager||mine))) return;
+  var record=upsert(["liveReports"],report.id,{});
+  record.state=action; tick(record); commit();
+});
 /* ---------- 2. guest self check-in ---------- */
 function guestLink(){ return NET.code? inviteLink(NET.code)+"&guest=1" : ""; }
 function guestQRHTML(compact){
@@ -5662,8 +5998,8 @@ function projHTML(){
     main='<div class="pj-lbl">🏆 Award winners</div>'+VCATS.map(function(c){ var w=tally(c.k).winners; return w.length?'<div class="pj-win"><span>'+esc(c.n)+'</span><b>'+esc(w.map(function(z){return z.name;}).join(" & "))+'</b></div>':''; }).join("");
   } else if(S.cur&&S.cur.id&&topicById(S.cur.id)&&!topicById(S.cur.id).used){ var tp=topicById(S.cur.id);
     main='<div class="pj-lbl">Table Topic</div><div class="pj-topic">'+esc(tp.text)+'</div>';
-  } else if(ss){ var c=ss.c, who=whoFor(c.cur.role);
-    main='<div class="pj-lbl">Now</div><div class="pj-name">'+esc(arole(c.cur.role).n)+'</div>'+(who?'<div class="pj-who">'+esc(who)+'</div>':'')+'<div class="pj-sub">'+esc(String(c.cur.text||"").split(" — ")[0])+'</div>'+(c.next?'<div class="pj-next">Next · '+esc(fmtHM(rt(c.next)))+' '+esc(arole(c.next.role).n)+(whoFor(c.next.role)?' · '+esc(whoFor(c.next.role)):'')+'</div>':'');
+  } else if(ss){ var c=ss.c, who=whoForItem(c.cur);
+    main='<div class="pj-lbl">Now</div><div class="pj-name">'+esc(arole(c.cur.role).n)+'</div>'+(who?'<div class="pj-who">'+esc(who)+'</div>':'')+'<div class="pj-sub">'+esc(String(c.cur.text||"").split(" — ")[0])+'</div>'+(c.next?'<div class="pj-next">Next · '+esc(fmtHM(rt(c.next)))+' '+esc(arole(c.next.role).n)+(whoForItem(c.next)?' · '+esc(whoForItem(c.next)):'')+'</div>':'');
   } else {
     main='<div class="pj-lbl">Welcome to</div><div class="pj-name">'+esc(S.agenda.title||GROUP)+'</div><div class="pj-who">Speechcraft'+(S.meta.week?' · '+esc(S.meta.week):'')+'</div><div class="pj-sub">'+esc(fmtDate(S.meta.date)||"")+'</div>'+
       (S.agenda.theme?'<div class="pj-who">'+esc(S.agenda.theme)+'</div>':'')+(guestLink()?'<div class="pj-guest">'+qrSvg(guestLink())+'<div>👋 Guests: scan to check in</div></div>':'');
@@ -5820,8 +6156,8 @@ function queueKeynote(){
  if(!r){r=newRow('ps',name+' – Educational presentation');r.id='keynote|'+S.mid+'|'+it.id;delete S.dead[r.id];S.rows.ps.push(r);}r.ak='keynote:'+S.mid+':'+it.id;r.presentationItemId=it.id;r.name=name+' – Educational presentation';r.lim=clone(lim);tick(r);tick(p);commit();
 }
 function geAgendaHTML(){
- var d=sharedWorkflowDraft(),items=itemsSorted(),selected=d.geAgendaItem||S.run.cur||(items[0]&&items[0].id)||'',missing=selected&&!items.some(function(it){return it.id===selected;});
- var h='<section class="card"><h2>Agenda observations</h2><label class="f"><b>Agenda item</b><select class="t" id="geAgendaItem">'+(missing?'<option value="'+esc(selected)+'" selected>Removed agenda item — select another</option>':'')+items.map(function(it){return '<option value="'+esc(it.id)+'"'+(selected===it.id?' selected':'')+'>'+esc(fmtHM(it.time)+' · '+arole(it.role).n+' · '+it.text)+'</option>';}).join('')+'</select></label><label class="f"><b>Type</b><select class="t" id="geObservationKind"><option value="commend"'+(d.geObservationKind!=='improve'?' selected':'')+'>Commendation</option><option value="improve"'+(d.geObservationKind==='improve'?' selected':'')+'>Improvement</option></select></label><label class="f"><b>Evidence / suggestion</b><textarea class="t" id="geObservationText">'+wfDraft('geObservationText')+'</textarea></label><button class="btn" id="geObservationAdd">Save observation</button>';
+ var d=sharedWorkflowDraft(),items=runItems(),selected=d.geAgendaItem||S.run.cur||(items[0]&&items[0].id)||'',missing=selected&&!items.some(function(it){return it.id===selected;});
+ var h='<section class="card"><h2>Agenda observations</h2><label class="f"><b>Agenda item</b><select class="t" id="geAgendaItem">'+(missing?'<option value="'+esc(selected)+'" selected>Removed agenda item — select another</option>':'')+items.map(function(it){return '<option value="'+esc(it.id)+'"'+(selected===it.id?' selected':'')+'>'+esc(fmtHM(it.time)+' · '+arole(it.role).n+(it.rowId?' · '+it.name:'')+' · '+it.text)+'</option>';}).join('')+'</select></label><label class="f"><b>Type</b><select class="t" id="geObservationKind"><option value="commend"'+(d.geObservationKind!=='improve'?' selected':'')+'>Commendation</option><option value="improve"'+(d.geObservationKind==='improve'?' selected':'')+'>Improvement</option></select></label><label class="f"><b>Evidence / suggestion</b><textarea class="t" id="geObservationText">'+wfDraft('geObservationText')+'</textarea></label><button class="btn" id="geObservationAdd">Save observation</button>';
  h+=S.geobs.map(function(o){var a=actionForObservation(o.id);return '<div class="wcard"><b>'+esc(o.itemLabel)+'</b><div>'+esc(o.kind+' · '+o.role+' · '+(o.who||'Unassigned')+' · '+clock(o.at))+'</div><p>'+esc(o.note)+'</p><button class="btn sm" data-observation-action="'+esc(o.id)+'">'+(a?'Open action':'Create follow-up action')+'</button><button class="linkbtn" data-observation-remove="'+esc(o.id)+'">Remove</button></div>';}).join('');return h+'</section>';
 }
 function actionForObservation(id){return S.actions.find(function(a){return a.source===id;});}
@@ -5923,7 +6259,7 @@ ROLE_GUIDE.ge.app.push('Record observations against specific agenda items; creat
  V.addEventListener('click',function(e){
   var t=e.target;if(t.closest('#keynoteQueue')&&(L.role==='keynote'||L.role==='coord'&&coordUnlocked())){queueKeynote();return;}
   if(L.role!=='ge'&&!(L.role==='coord'&&coordUnlocked()))return;
-  if(t.closest('#geObservationAdd')){var it=S.agenda.items.find(function(i){return i.id===document.getElementById('geAgendaItem').value;}),note=document.getElementById('geObservationText').value.trim();if(!it){alert('Choose an existing agenda item.');return;}if(!note)return;saveWorkflowFields({geObservationText:null});S.geobs.push({id:uid(),itemId:it.id,itemLabel:it.text,role:arole(it.role).n,who:whoFor(it.role),kind:document.getElementById('geObservationKind').value,note:note,at:now(),by:myName(),ord:maxOrd(S.geobs)+1,u:now()});commit();return;}
+  if(t.closest('#geObservationAdd')){var it=runItems().find(function(i){return i.id===document.getElementById('geAgendaItem').value;}),note=document.getElementById('geObservationText').value.trim();if(!it){alert('Choose an existing agenda item.');return;}if(!note)return;saveWorkflowFields({geObservationText:null});S.geobs.push({id:uid(),itemId:it.id,itemLabel:it.text,role:arole(it.role).n,who:whoForItem(it),kind:document.getElementById('geObservationKind').value,note:note,at:now(),by:myName(),ord:maxOrd(S.geobs)+1,u:now()});commit();return;}
   var oa=t.closest('[data-observation-action]');if(oa){var o=S.geobs.find(function(x){return x.id===oa.dataset.observationAction;});if(o)addWorkflowAction(o.note,o.who,S.agenda.next,o.id);return;}
   var rem=t.closest('[data-observation-remove]');if(rem){removeItem(['geobs'],rem.dataset.observationRemove,'Observation');return;}
   if(t.closest('#actionCancel')){clearActionDraft();renderAll();return;}

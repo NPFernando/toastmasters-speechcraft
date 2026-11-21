@@ -1,6 +1,6 @@
 /* ---------- how the agenda ran: planned vs actual length of each item ---------- */
 function runSummary(){
-  var st=(S.run&&S.run.started)||{}, plan=itemsSorted(), done=plan.filter(function(it){return st[it.id]!=null;}).sort(function(a,b){return st[a.id]-st[b.id];});
+  var st=(S.run&&S.run.started)||{}, plan=plannedRunItems(), done=plan.filter(function(it){return st[it.id]!=null;}).sort(function(a,b){return st[a.id]-st[b.id];});
   if(!done.length||(done.length<2&&!S.run.endAt)) return null;
   var rows=done.map(function(it,i){
     var start=st[it.id], nx=done[i+1], end=nx?st[nx.id]:(S.run.cur===it.id?now():(S.run.cur?null:S.run.endAt||null));
@@ -17,7 +17,7 @@ function runSummary(){
 function hhmm(ms){ return new Date(ms).toLocaleTimeString("en-AU",{hour:"numeric",minute:"2-digit"}); }
 function sgn(n){ return n>0?"+"+n:n<0?"−"+(-n):"0"; }
 function lateTxt(n){ return n==null||Math.abs(n)>120?"not at the agenda times":Math.abs(n)<2?"on time":n>0?n+" min late":(-n)+" min early"; }
-function itemLabel2(it){ var w=whoFor(it.role); return arole(it.role).n+(w?" · "+w:""); }
+function itemLabel2(it){ var w=whoForItem(it); return arole(it.role).n+(w?" · "+w:""); }
 function runSummaryHTML(){
   var R=runSummary(); if(!R) return "";
   var h='<section class="card ovsum"><div class="row" style="justify-content:space-between"><h2 class="sec" style="margin:0">⏱ How the agenda ran</h2><button class="btn sm" id="ovCopy">📋 Copy summary</button></div>'+
@@ -55,8 +55,9 @@ function adjCtlHTML(){
 function liveCtlHTML(){
   if(!canRun()) return "";
   var c=curItem(), h='<div class="livectl"><div class="lc-h">🎛 Live agenda controls <span class="saved">· the Now item only changes when someone taps Next</span></div>';
+  if(!c.cur&&!c.next) return "";
   if(!c.cur) return h+'<div class="row"><button class="btn go" data-lc="start">▶ Start the meeting</button></div></div>';
-  h+='<div class="row"><button class="btn" data-lc="prev"'+(c.i>0?'':' disabled')+'>◀ Back</button>'+(c.next?'<button class="btn go" data-lc="next">Next ▶</button>':'<button class="btn" data-lc="end">Finish</button>')+'</div>';
+  h+='<div class="row"><button class="btn" data-lc="prev"'+(previousLive(c.its,c.i-1)?'':' disabled')+'>◀ Back</button>'+(c.next?'<button class="btn go" data-lc="next">Next ▶</button>':'<button class="btn" data-lc="end">Finish</button>')+'</div>';
   return h+adjCtlHTML()+'</div>';
 }
 (function(){
@@ -64,8 +65,8 @@ function liveCtlHTML(){
     var b=e.target.closest("[data-lc]"); if(!b||!canRun()) return;
     var c=curItem(), a=b.dataset.lc;
     if(a==="start"){ var f=nextLive(c.its,0); if(f) runGo(f.id); }
-    else if(a==="next"){ if(c.next) runGo(c.next.id); }
-    else if(a==="prev"){ if(c.i>0) runGo(c.its[c.i-1].id); }
+    else if(a==="next"){ if(c.next&&now()-(S.run.advanceAt||0)>=500&&allowLiveAction("agenda-next")){ S.run.advanceAt=now(); runGo(c.next.id); } }
+    else if(a==="prev"){ var prev=previousLive(c.its,c.i-1); if(prev) runGo(prev.id); }
     else if(a==="plus") runAdjust(5); else if(a==="minus") runAdjust(-5);
     else if(a==="now") runRetimeNow(); else if(a==="reset") runAdjReset(); else if(a==="end") runFinish();
   });
@@ -86,6 +87,18 @@ function extraText(x,item){
     return p.join("\n");
   }
   return "";
+}
+function whoForItem(it){
+  if(it.rowId) return it.name;
+  if(it.role==="keynote") return presentationOf(it.id)?.name||whoFor(it.role);
+  return whoFor(it.role);
+}
+function liveItemExtra(it){
+  if(it.rowId){
+    var evaluator=evaluatorOf(it.name);
+    return evaluator?"Evaluator: "+evaluator:"";
+  }
+  return it.x==="speakers"?"":extraText(it.x,it);
 }
 function whoFor(role){ var v=asList(role); return v.join(", "); }
 

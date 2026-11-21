@@ -42,7 +42,7 @@ function refreshPeers(){
   NET.peers=list; refreshHealth();
   /* who's connected changed: refresh the Coordinator's role-player dots */
   var osig=list.map(function(p){return nkey(p.name||"");}).sort().join("|");
-  if(osig!==NET.onSig){ NET.onSig=osig; if(curView()==="role"&&(L.role==="rrm"||(L.role==="coord"&&coTab()==="setup"))) laterRender(); }
+  if(osig!==NET.onSig){ NET.onSig=osig; if((curView()==="role"&&(L.role==="rrm"||(L.role==="coord"&&coTab()==="setup")))||(curView()==="now"&&canEditLiveAgenda())) laterRender(); }
   if(NET.room){
     if(NET.mode==="join"&&NET.synced&&list.length===1) NET.awaitingSnapshot=true;
     if(NET.mode==="host" || (list.length>1 && NET.synced&&!NET.awaitingSnapshot)) setStatus("on");

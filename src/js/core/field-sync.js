@@ -114,7 +114,7 @@ function mergeInto(A,B,mode){
     COLLS.forEach(function(p){ setColl(A,p,clone(getColl(B,p))); });
   } else if(B.mid===A.mid){
     Object.keys(B.dead).forEach(function(id){ if(!(A.dead[id]>=B.dead[id])) A.dead[id]=B.dead[id]; });
-    MEETING_LWW.forEach(function(k){ if(k==="agenda") mergeAgenda(A,B); else if(k==="genotes") mergeGENotes(A,B); else if(k==="pres"||k==="saa") A[k]=mergeRoleEdit(A[k],B[k]); else if((B[k].u||0)>(A[k].u||0)||(k==="timerTurn"&&B[k].u===A[k].u&&stable(B[k])>stable(A[k]))) A[k]=clone(B[k]); });
+    MEETING_LWW.forEach(function(k){ if(k==="agenda") mergeAgenda(A,B); else if(k==="run") A.run=mergeLiveRun(A.run,B.run); else if(k==="genotes") mergeGENotes(A,B); else if(k==="pres"||k==="saa") A[k]=mergeRoleEdit(A[k],B[k]); else if((B[k].u||0)>(A[k].u||0)||(k==="timerTurn"&&B[k].u===A[k].u&&stable(B[k])>stable(A[k]))) A[k]=clone(B[k]); });
     COLLS.forEach(function(p){ setColl(A,p,mergeColl(getColl(A,p),getColl(B,p),A.dead,["speeches","presentations"].includes(p[0])?mergeRoleEdit:null)); });
   }
   reconcileTimerTurns(A);
@@ -122,3 +122,15 @@ function mergeInto(A,B,mode){
   return stable(A)!==before;
 }
 
+
+/* Advancing the meeting and editing future order can happen on different devices. */
+function mergeLiveRun(local,remote){
+  var run=clone((remote.u||0)>(local.u||0)?remote:local);
+  var localOrder=local.orderU||(local.order?.length?local.u:0)||0;
+  var remoteOrder=remote.orderU||(remote.order?.length?remote.u:0)||0;
+  if(!localOrder&&!remoteOrder) return run;
+  var newer=remoteOrder>localOrder||(remoteOrder===localOrder&&stable(remote.order)>stable(local.order));
+  run.order=clone((newer?remote:local).order||[]);
+  run.orderU=Math.max(localOrder,remoteOrder);
+  return run;
+}

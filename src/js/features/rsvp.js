@@ -40,7 +40,8 @@ function replaceRolePlayer(key,oldName,replacement){
     if(!role||!assignedNames.some(function(n){return nkey(n)===nkey(oldName);})) return false;
     if(key==="speakers"){
       if(assignedNames.some(function(n){return nkey(n)===nkey(replacement);})||
-        S.rows.ps.some(function(row){return nkey(baseName(row.name))===nkey(oldName)&&rowState(row)!=="idle";})) return false;
+        S.rows.ps.some(function(row){return !String(row.ak||"").startsWith("keynote:")&&nkey(baseName(row.name))===nkey(replacement);})||
+        S.rows.ps.some(function(row){return !String(row.ak||"").startsWith("keynote:")&&nkey(baseName(row.name))===nkey(oldName)&&rowState(row)!=="idle";})) return false;
       var evaluation=S.assigns.find(function(a){return nkey(a.speaker)===nkey(oldName)&&a.evaluator;});
       if(evaluation&&!S.assigns.some(function(a){return nkey(a.speaker)===nkey(replacement)&&a.evaluator;})){
         var newPair=upsert(["assigns"],"as|"+nkey(replacement),{speaker:replacement});
@@ -48,8 +49,8 @@ function replaceRolePlayer(key,oldName,replacement){
         tick(newPair);
       }
       if(evaluation){ evaluation.evaluator=""; tick(evaluation); }
-      var queued=S.rows.ps.find(function(row){return row.ak==="ps:"+oldName.toLowerCase()&&rowState(row)==="idle";});
-      if(queued&&!S.rows.ps.some(function(row){return nkey(baseName(row.name))===nkey(replacement);})){
+      var queued=S.rows.ps.find(function(row){return !String(row.ak||"").startsWith("keynote:")&&nkey(baseName(row.name))===nkey(oldName)&&rowState(row)==="idle";});
+      if(queued){
         queued.ak="ps:"+replacement.toLowerCase(); queued.name=replacement;
         var limits=presetLim((speechRec(replacement)||{}).lim);
         if(limits) queued.lim=limits; else delete queued.lim;
