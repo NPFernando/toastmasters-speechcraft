@@ -198,3 +198,7 @@ body.dialog-open #app{isolation:isolate}
 @media (max-width:640px){
   .moremenu{position:fixed;inset:auto 12px calc(66px + env(safe-area-inset-bottom));width:auto}
 }
+
+.floor-controls{margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}
+.floor-controls .row{align-items:end}
+.floor-request{justify-content:space-between;border-inline-start:4px solid var(--brand);margin-bottom:8px}
