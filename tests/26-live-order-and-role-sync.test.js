@@ -61,6 +61,7 @@ module.exports = async (browser) => {
   await timer.getByRole("button", { name: "Mark presented" }).click();
   await host.locator(".live-report-queue li").filter({ hasText: "Taylor" }).getByText("Presented", { exact: true }).waitFor();
 
+  await host.click('[data-nav="role"]');
   await host.click('[data-rtab="ge"]');
   await host.fill("#geObservationText", "Check the handover");
   await T.eventually(async () => await phone.inputValue("#geObservationText") === "Check the handover", "Observation draft reaches second device");
