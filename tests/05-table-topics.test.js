@@ -10,7 +10,7 @@ module.exports = async (b) => {
   const M = await T.device(b); await T.join(M, code, "Misfar", ["timer"]);
   await Q.fill("#topicInput", "Best advice\nA place you love\nYour hero\nA small habit"); await Q.click("#addTopics");
   for (const n of ["Danushka", "Laurel", "Misfar"]) { await Q.click("[data-tact=pick]"); await Q.fill("#callName", n); await Q.click('button:has-text("Call speaker")'); await T.sleep(300); }
-  await T.eventually(async () => JSON.stringify(await Q.$$eval("[data-ttev]", (e) => e.map((x) => x.dataset.ttev + ">" + x.value))) === JSON.stringify(["Danushka>Rashmi", "Laurel>Afraa", "Misfar>Rashmi"]), "speakers shared out to the evaluator with the fewest");
+  await T.eventually(async () => JSON.stringify(await Q.$$eval("[data-ttev]", (e) => e.map((x) => x.closest("li").querySelector("[data-edit=tspeaker]").value + ">" + x.value))) === JSON.stringify(["Danushka>Rashmi", "Laurel>Afraa", "Misfar>Rashmi"]), "speakers shared out to the evaluator with the fewest");
   // Timer starts Danushka: Afraa's Ah-Counter and TT-evaluator tabs both follow
   await M.click("[data-tab=tt]");
   await T.eventually(async () => (await M.$$("#view tr[data-id]")).length >= 3, "Timer has the called speakers");
