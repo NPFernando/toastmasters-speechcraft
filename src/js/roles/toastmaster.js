@@ -16,7 +16,7 @@ function scheduleStatus(){
 }
 function itemCard(it,big){
   if(!it) return '<div class="muted">End of agenda.</div>';
-  var who=whoFor(it.role), x=extraText(it.x,it);
+  var who=whoForItem(it), x=liveItemExtra(it);
   return '<div class="'+(big?'nowtxt':'nexttxt')+'"><span class="tm">'+fmtHM(rt(it))+'</span> <b>'+arole(it.role).n+'</b>'+(who?' · '+esc(who):'')+'</div><div class="'+(big?'nowact':'muted')+'">'+esc(it.text)+'</div>'+(x?'<div class="agx2">'+esc(x).replace(/\n/g,'<br>')+'</div>':'');
 }
 function tmodHTML(){
@@ -25,7 +25,7 @@ function tmodHTML(){
         '<button class="btn" id="agPrint">📄 Agenda</button></div>';
   if(!c.cur&&S.run.endAt&&Object.keys(S.run.started||{}).length){ h+='<div class="note" style="margin-top:12px">🏁 Meeting finished at '+hhmm(S.run.endAt)+'. <button class="linkbtn" id="runStart">Start again</button></div></section>'+runSummaryHTML()+'<section class="card">'; }
   else if(!c.cur){
-    h+='<div class="curtopic" style="margin-top:12px"><div class="lbl">First item</div>'+itemCard(c.its[0],true)+'<div class="row" style="margin-top:12px"><button class="btn go big1" id="runStart">▶ Start the meeting</button></div></div>';
+    h+='<div class="curtopic" style="margin-top:12px"><div class="lbl">First item</div>'+itemCard(nextLive(c.its,0),true)+'<div class="row" style="margin-top:12px"><button class="btn go big1" id="runStart">▶ Start the meeting</button></div></div>';
   } else {
     h+='<div class="curtopic" style="margin-top:12px"><div class="lbl">Now'+(S.run.started[c.cur.id]?' · started '+new Date(S.run.started[c.cur.id]).toLocaleTimeString("en-AU",{hour:"numeric",minute:"2-digit"}):'')+'</div>'+itemCard(c.cur,true)+'</div>';
     h+='<div class="wcard"><div class="lbl saved">NEXT</div>'+itemCard(c.next,false)+'</div>';
@@ -34,22 +34,23 @@ function tmodHTML(){
   }
   h+=preparedRunHTML(true);
   h+='<h2 class="sec">Full agenda</h2><ul class="tlist runlist">';
+  var planned=plannedRunItems(), editable=new Set(liveEditableItems(c.its).map(function(it){return it.id;}));
   c.its.forEach(function(it,i){
     var cls=c.i>=0&&i<c.i?"done":i===c.i?"cur":"";
-    var sk=isSkipped(it.id), moved=Array.isArray(S.run.order)&&S.run.order.length&&itemsSorted().indexOf(it)!==i;
-    h+='<li data-run="'+it.id+'" class="'+cls+(sk?' skipped':'')+'"><span class="n">'+fmtHM(rt(it))+(rt(it)!==it.time?'<br><s class="muted">'+fmtHM(it.time)+'</s>':'')+(moved?'<br><span class="badge on">moved</span>':'')+'</span><span style="flex:1"><b>'+arole(it.role).n+'</b>'+(whoFor(it.role)?' · '+esc(whoFor(it.role)):'')+(sk?' <span class="badge no">skipped</span>':'')+'<br><span class="muted">'+esc(it.text)+'</span></span>'+(cls==="done"?'<span class="donetag">✓</span>':'')+
-       (cls!=="done"&&cls!=="cur"?'<span class="runact"><button class="btn sm" data-runend="'+it.id+'" title="Move this item to the end of the meeting">⤵ To end</button><button class="btn sm" data-runskip="'+it.id+'">'+(sk?'↩ Unskip':'⏭ Skip')+'</button></span>':'')+'</li>';
+    var sk=isSkipped(it.id), moved=Array.isArray(S.run.order)&&S.run.order.length&&planned[i]?.id!==it.id;
+    h+='<li data-run="'+esc(it.id)+'" class="'+cls+(sk?' skipped':'')+'"><span class="n">'+fmtHM(rt(it))+(rt(it)!==it.time?'<br><s class="muted">'+fmtHM(it.time)+'</s>':'')+(moved?'<br><span class="badge on">moved</span>':'')+'</span><span style="flex:1"><b>'+arole(it.role).n+'</b>'+(whoForItem(it)?' · '+esc(whoForItem(it)):'')+(sk?' <span class="badge no">skipped</span>':'')+'<br><span class="muted">'+esc(it.text)+(it.rowId&&liveItemExtra(it)?' · '+esc(liveItemExtra(it)):'')+'</span></span>'+(cls==="done"?'<span class="donetag">✓</span>':'')+
+       (editable.has(it.id)?'<span class="runact"><button class="btn sm" data-runend="'+esc(it.id)+'" title="Move this item to the end of the meeting">⤵ To end</button><button class="btn sm" data-runskip="'+esc(it.id)+'">'+(sk?'↩ Unskip':'⏭ Skip')+'</button></span>':'')+'</li>';
   });
   h+='</ul><div class="note">Tap any item to jump to it. Running late or someone missing? <b>⤵ To end</b> moves an item (e.g. a late keynote) to the end, and <b>⏭ Skip</b> leaves it out. Everyone connected sees the new order. The printed agenda keeps the original plan.</div></section>';
   return h;
 }
-function runGo(id){ if(S.run.cur===id) return; S.run.by=runBy(); S.run.cur=id; if(id && !S.run.started[id]) S.run.started[id]=now(); tick(S.run); commit(); }
+function runGo(id){ if(S.run.cur===id||isSkipped(id)) return; if(id) delete S.run.endAt; S.run.by=runBy(); S.run.cur=id; if(id && !S.run.started[id]) S.run.started[id]=now(); tick(S.run); commit(); }
 /* compact "Now" line for every role */
 function renderAgendaLine(){
   var el=document.getElementById("agendaLine"); if(!el) return;
   var ss=scheduleStatus();
   if(!ss||L.role==="tmod"){ el.classList.remove("on"); el.innerHTML=""; return; }
-  var who=whoFor(ss.c.cur.role);
+  var who=whoForItem(ss.c.cur);
   el.innerHTML='📋 <b>Now:</b> '+arole(ss.c.cur.role).n+(who?' ('+esc(who)+')':'')+(ss.c.next?' · <span class="muted">Next '+fmtHM(rt(ss.c.next))+' '+arole(ss.c.next.role).n+'</span>':'')+(ss.txt?' · <span class="'+ss.cls+'">'+ss.txt+'</span>':'');
   el.classList.add("on");
 }

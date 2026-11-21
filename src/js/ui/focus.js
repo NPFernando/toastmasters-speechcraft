@@ -14,7 +14,7 @@ function focusWhoPicker(who){
 function focusHTML(){
   var r=L.role, h='<div class="fbar"><b>🎯 Focus · '+esc(roleObj(r).name)+'</b><button class="btn sm" data-focus="off">Show everything</button></div>';
   if(r==="timer"){
-    var sid=L.tab||"tt", s=sessionOf(sid)||SESSIONS[0], idle=timerRows(sid).filter(function(x){return rowState(x)==="idle";}).slice(0,4);
+    var sid=L.tab||"tt", s=sessionOf(sid)||SESSIONS[0], idle=timerRows(sid).filter(function(x){return rowState(x)==="idle"&&(sid!=="ps"||!preparedTimerSkipped(x));}).slice(0,4);
     h+='<section class="card fcard"><div class="flbl">'+esc(s.name)+' · '+esc(limitsLine(sid,null))+'</div>'+
        '<div class="seg fseg">'+SESSIONS.map(function(x){ return '<button data-ftab="'+x.id+'" class="'+(x.id===sid?'on':'')+'">'+esc(x.name)+'</button>'; }).join("")+'</div>'+
        (runningList().length?'<div class="note" style="text-align:center">Timing now — use <b>Stop</b> on the live bar above.</div>':'')+
@@ -33,9 +33,9 @@ function focusHTML(){
   } else if(r==="tmod"){
     var c=curItem(), ss=scheduleStatus();
     h+='<section class="card fcard" style="text-align:center">';
-    if(c.cur){ var w1=whoFor(c.cur.role); h+='<div class="flbl">Now · '+esc(fmtHM(rt(c.cur)))+'</div><div class="fname">'+esc(arole(c.cur.role).n)+'</div>'+(w1?'<div class="fwho2">'+esc(w1)+'</div>':'')+'<div class="muted" style="margin-top:6px">'+esc(c.cur.text)+'</div>'+(ss?'<div class="'+ss.cls+'" style="margin-top:8px;font-weight:800">'+ss.txt+'</div>':''); }
+    if(c.cur){ var w1=whoForItem(c.cur); h+='<div class="flbl">Now · '+esc(fmtHM(rt(c.cur)))+'</div><div class="fname">'+esc(arole(c.cur.role).n)+'</div>'+(w1?'<div class="fwho2">'+esc(w1)+'</div>':'')+'<div class="muted" style="margin-top:6px">'+esc(c.cur.text)+'</div>'+(ss?'<div class="'+ss.cls+'" style="margin-top:8px;font-weight:800">'+ss.txt+'</div>':''); }
     else h+='<div class="flbl">Ready</div><div class="fname">Start the meeting</div>';
-    if(c.next){ var w2=whoFor(c.next.role); h+='<div class="fnextitem">Next · '+esc(fmtHM(rt(c.next)))+' '+esc(arole(c.next.role).n)+(w2?' · '+esc(w2):'')+'</div>'; }
+    if(c.next){ var w2=whoForItem(c.next); h+='<div class="fnextitem">Next · '+esc(fmtHM(rt(c.next)))+' '+esc(arole(c.next.role).n)+(w2?' · '+esc(w2):'')+'</div>'; }
     h+='<button class="btn primary fbig" style="margin-top:12px" data-frun>'+(c.cur?(c.next?'Next ▶':'End of agenda'):'▶ Start the meeting')+'</button></section>';
   } else if(r==="ttm"){
     var cur=topicById(S.cur.id), rem=remaining();
@@ -61,7 +61,7 @@ var fUndo=null;
     if(t.closest("[data-fundo]")){ if(!fUndo) return; var r2=S.ahRows.find(function(x){return x.id===fUndo.id;}); if(r2&&r2.c[fUndo.w]>0){ r2.c[fUndo.w]--; tick(r2); commit(); } fUndo=null; return; }
     if(t.closest("[data-fwotd]")){ var g=focusWho(); if(!g) return; var gr=fRec("gram",g); gr.w=(gr.w||0)+1; tick(gr); commit(); return; }
     if((b=t.closest("[data-fnote]"))){ var g2=focusWho(), inp=document.getElementById("fNote"), tx=(inp.value||"").trim(); if(!g2||!tx){ inp.focus(); return; } var gr2=fRec("gram",g2); gr2[b.dataset.fnote].push(tx); tick(gr2); commit(); showToastMsg(b.dataset.fnote==="good"?"👍 Saved for "+g2:"✎ Slip noted for "+g2); return; }
-    if(t.closest("[data-frun]")){ var c=curItem(); if(!c.cur){ if(c.its[0]) runGo(c.its[0].id); } else if(c.next) runGo(c.next.id); return; }
+    if(t.closest("[data-frun]")){ var c=curItem(); if(!c.cur){ var first=nextLive(c.its,0); if(first) runGo(first.id); } else if(c.next) runGo(c.next.id); return; }
     if(t.closest("[data-frandom]")){ randomTopic(); return; }
     if(t.closest("[data-fshow]")){ openStage(); return; }
     if(t.closest("[data-fcall]")){ callSpeaker(); return; }

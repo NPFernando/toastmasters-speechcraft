@@ -4,7 +4,7 @@ module.exports=async()=>{
  const c={localStorage:{getItem:()=>null,setItem:()=>{}},document:{getElementById:()=>el},console,confirm:()=>true,alert:()=>{}};vm.createContext(c);
  const read=p=>fs.readFileSync(path.join(__dirname,'../src/js',p),'utf8');vm.runInContext(read('core/config.js').replace('(function(){',''),c);
  for(const p of ['core/helpers.js','agenda/agenda.js','core/state.js','core/merge.js','core/field-sync.js','roles/shared.js'])vm.runInContext(read(p),c);
- c.ROLE_GUIDE={ge:{app:[]}};c.ROLE_DOCS={};c.ROLE_DOC_ROOT='https://www.toastmasters.org/';c.TIPS={};c.renderAll=()=>{};c.commit=()=>{};c.commitQuiet=()=>{};c.curItem=()=>({cur:null,its:[],i:-1});c.isSkipped=()=>false;c.roleName=x=>x;c.ROLES=c.ROLES;
+ c.ROLE_GUIDE={ge:{app:[]}};c.ROLE_DOCS={};c.ROLE_DOC_ROOT='https://www.toastmasters.org/';c.TIPS={};c.renderAll=()=>{};c.commit=()=>{};c.commitQuiet=()=>{};c.curItem=()=>({cur:null,its:[],i:-1});c.isSkipped=()=>false;c.roleName=x=>x;c.runItems=()=>c.itemsSorted();c.ROLES=c.ROLES;
  vm.runInContext(read('features/meeting-workflows.js'),c);
  c.S=c.blank();c.L={role:'tmod'};assert.equal(c.defaultHandoverRole(),'president');
  c.curItem=()=>({cur:{role:'tmod'},its:[{role:'tmod'},{id:'skip',role:'keynote'},{id:'end',role:'president'}],i:0});c.isSkipped=id=>id==='skip';assert.equal(c.defaultHandoverRole(),'president');

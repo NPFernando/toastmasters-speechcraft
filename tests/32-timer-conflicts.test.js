@@ -58,11 +58,13 @@ module.exports = async () => {
 
   const view = source("core/render-shell.js");
   vm.runInContext(view.slice(view.indexOf("function nextAgendaTiming"), view.indexOf("function renderTimerHandoff")), model);
-  vm.runInContext(source("roles/toastmaster-order.js"), model);
+  for (const file of ["roles/shared.js", "agenda/timing.js", "roles/toastmaster-order.js"]) vm.runInContext(source(file), model);
+  model.speechTitle = () => "";
+  model.presentationRow = () => undefined;
   const agendaQueue = vm.runInContext(`(() => {
     S = blank();
     S.run.cur = "d5";
-    S.run.skip = { d6: true, d7: true };
+    S.run.skip = { d6: true, d7: true, "prepared|prepared": true };
     S.rows.ps.push({ id: "prepared", name: "Prepared speaker" });
     S.rows.tt.push({ id: "topic", name: "Table Topics speaker" });
     function liveItem() {
@@ -73,4 +75,24 @@ module.exports = async () => {
     return nextAgendaTiming().row.id;
   })()`, model);
   assert.strictEqual(agendaQueue, "topic");
+  const liveOrder = JSON.parse(vm.runInContext(`JSON.stringify((() => {
+    S = blank();
+    S.rows.ps = ["first", "second"].map((id) => ({ id, name: id }));
+    S.run.cur = "d7";
+    S.run.started.d7 = 100;
+    globalThis.myRoles = () => ["tmod"];
+    globalThis.commit = () => {};
+    const previous = clone(S.run);
+    const rejected = reorderLiveItem("d7", "prepared|second", true);
+    const moved = reorderLiveItem("prepared|second", "prepared|first", false);
+    const queue = timerRows("ps").map((row) => row.id);
+    const advanced = { ...previous, cur: "prepared|second", u: previous.u + 1 };
+    const merged = mergeLiveRun(S.run, advanced);
+    return { rejected, moved, queue, current: merged.cur, order: merged.order };
+  })())`, model));
+  assert.strictEqual(liveOrder.rejected, false);
+  assert.strictEqual(liveOrder.moved, true);
+  assert.deepStrictEqual(liveOrder.queue, ["second", "first"]);
+  assert.strictEqual(liveOrder.current, "prepared|second");
+  assert.ok(liveOrder.order.indexOf("prepared|second") < liveOrder.order.indexOf("prepared|first"));
 };

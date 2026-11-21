@@ -13,8 +13,8 @@ function projHTML(){
     main='<div class="pj-lbl">🏆 Award winners</div>'+VCATS.map(function(c){ var w=tally(c.k).winners; return w.length?'<div class="pj-win"><span>'+esc(c.n)+'</span><b>'+esc(w.map(function(z){return z.name;}).join(" & "))+'</b></div>':''; }).join("");
   } else if(S.cur&&S.cur.id&&topicById(S.cur.id)&&!topicById(S.cur.id).used){ var tp=topicById(S.cur.id);
     main='<div class="pj-lbl">Table Topic</div><div class="pj-topic">'+esc(tp.text)+'</div>';
-  } else if(ss){ var c=ss.c, who=whoFor(c.cur.role);
-    main='<div class="pj-lbl">Now</div><div class="pj-name">'+esc(arole(c.cur.role).n)+'</div>'+(who?'<div class="pj-who">'+esc(who)+'</div>':'')+'<div class="pj-sub">'+esc(String(c.cur.text||"").split(" — ")[0])+'</div>'+(c.next?'<div class="pj-next">Next · '+esc(fmtHM(rt(c.next)))+' '+esc(arole(c.next.role).n)+(whoFor(c.next.role)?' · '+esc(whoFor(c.next.role)):'')+'</div>':'');
+  } else if(ss){ var c=ss.c, who=whoForItem(c.cur);
+    main='<div class="pj-lbl">Now</div><div class="pj-name">'+esc(arole(c.cur.role).n)+'</div>'+(who?'<div class="pj-who">'+esc(who)+'</div>':'')+'<div class="pj-sub">'+esc(String(c.cur.text||"").split(" — ")[0])+'</div>'+(c.next?'<div class="pj-next">Next · '+esc(fmtHM(rt(c.next)))+' '+esc(arole(c.next.role).n)+(whoForItem(c.next)?' · '+esc(whoForItem(c.next)):'')+'</div>':'');
   } else {
     main='<div class="pj-lbl">Welcome to</div><div class="pj-name">'+esc(S.agenda.title||GROUP)+'</div><div class="pj-who">Speechcraft'+(S.meta.week?' · '+esc(S.meta.week):'')+'</div><div class="pj-sub">'+esc(fmtDate(S.meta.date)||"")+'</div>'+
       (S.agenda.theme?'<div class="pj-who">'+esc(S.agenda.theme)+'</div>':'')+(guestLink()?'<div class="pj-guest">'+qrSvg(guestLink())+'<div>👋 Guests: scan to check in</div></div>':'');

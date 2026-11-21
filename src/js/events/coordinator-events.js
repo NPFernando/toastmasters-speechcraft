@@ -7,9 +7,9 @@
     if(t.closest("#agPrint")){ openAgendaPrint(); return; }
     if(L.role==="tmod"){
       var c=curItem();
-      if(t.closest("#runStart")){ if(c.its[0]) runGo(c.its[0].id); return; }
+      if(t.closest("#runStart")){ var first=nextLive(c.its,0); if(first) runGo(first.id); return; }
       if(t.closest("#runNext")){ if(c.next&&now()-(S.run.advanceAt||0)>=500&&allowLiveAction("agenda-next")){ S.run.advanceAt=now(); runGo(c.next.id); } return; }
-      if(t.closest("#runPrev")){ if(c.i>0) runGo(c.its[c.i-1].id); return; }
+      if(t.closest("#runPrev")){ var prev=previousLive(c.its,c.i-1); if(prev) runGo(prev.id); return; }
       if(t.closest("#runEnd")){ runFinish(); return; }
       var li=t.closest("[data-run]"); if(li){ runGo(li.dataset.run); return; }
       return;

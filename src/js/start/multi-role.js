@@ -76,7 +76,7 @@ function selectRolesForNewMeeting(){
 }
 function roleTabsHTML(){
   var rs=myRoles(), h='<div class="rtabs">';
-  rs.forEach(function(id){ var r=roleObj(id); h+='<button class="rtab'+(id===L.role?' on':'')+'" data-rtab="'+id+'">'+r.icon+' '+esc(r.name)+(rs.length>1&&id!==L.role?'<span class="rx" data-rdrop="'+id+'" title="Remove this role from your devices">✕</span>':'')+'</button>'; });
+  rs.forEach(function(id){ var r=roleObj(id), status=liveRoleStatus(id); h+='<button class="rtab'+(id===L.role?' on':'')+'" data-rtab="'+id+'">'+r.icon+' '+esc(r.name)+(status?' <span class="role-turn-status">'+status+'</span>':'')+(rs.length>1&&id!==L.role?'<span class="rx" data-rdrop="'+id+'" title="Remove this role from your devices">✕</span>':'')+'</button>'; });
   h+='<button class="rtab add" data-radd title="Add another role">＋ Role</button></div>';
   var miss=agendaRolesFor(L.me||myName()).filter(function(r){ return rs.indexOf(r)<0; });
   if(miss.length) h+='<div class="rsuggest">📋 The agenda also has you as '+miss.map(function(r){var o=roleObj(r);return o.icon+' '+esc(o.name);}).join(", ")+' <button class="btn sm" data-raddall="'+miss.join(",")+'">Add '+(miss.length>1?'them':'it')+'</button></div>';

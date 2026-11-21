@@ -50,20 +50,21 @@ function refreshDashboardOnline(){
   if(card.onlineHTML!==html){ card.onlineHTML=html; card.innerHTML=html; }
 }
 function dashHTML(){
-  var ss=scheduleStatus(), pr=agendaProgress(), h='';
+  var ss=scheduleStatus(), c=curItem(), pr=agendaProgress(), h='';
   h+='<section class="card dash-hero"><div class="dh-top"><div><div class="dh-kicker">'+esc(GROUP)+(S.meta.week?' · '+esc(S.meta.week):'')+'</div><div class="dh-title">'+esc(fmtDate(S.meta.date)||"Today’s meeting")+'</div></div>'+
      '<button class="btn" id="projOpen">📺 Projector view</button></div>';
-  if(ss){ var c=ss.c, who=whoFor(c.cur.role);
+  if(ss){ var who=whoForItem(c.cur);
     h+='<div class="dh-now"><div class="dh-lbl">Now</div><div class="dh-item"><b>'+esc(fmtHM(rt(c.cur)))+'</b> '+esc(arole(c.cur.role).n)+(who?' · '+esc(who):'')+'<div class="muted">'+esc(c.cur.text)+'</div></div></div>';
-    if(c.next){ var wn=whoFor(c.next.role); h+='<div class="dh-next"><div class="dh-lbl">Next</div><div class="dh-item"><b>'+esc(fmtHM(rt(c.next)))+'</b> '+esc(arole(c.next.role).n)+(wn?' · '+esc(wn):'')+'</div></div>'; }
+    if(c.next){ var wn=whoForItem(c.next); h+='<div class="dh-next"><div class="dh-lbl">Next</div><div class="dh-item"><b>'+esc(fmtHM(rt(c.next)))+'</b> '+esc(arole(c.next.role).n)+(wn?' · '+esc(wn):'')+(c.next.rowId?'<div class="muted">'+esc(c.next.text)+'</div>':'')+'</div></div>'; }
     if(ss.txt) h+='<div class="'+ss.cls+'" style="margin-top:6px;font-weight:700">'+ss.txt+'</div>';
-  } else { var f=runItems()[0]; h+='<div class="dh-now"><div class="dh-lbl">Not started</div><div class="dh-item">The Toastmaster starts the run-sheet when the meeting begins.'+(f?'<div class="muted">First: '+esc(fmtHM(f.time))+' '+esc(arole(f.role).n)+(whoFor(f.role)?' · '+esc(whoFor(f.role)):'')+'</div>':'')+'</div></div>'; }
+  } else if(S.run.endAt){ h+='<div class="dh-now"><div class="dh-lbl">Meeting finished</div><div class="dh-item">'+esc(hhmm(S.run.endAt))+'</div></div>'; }
+  else { var f=nextLive(c.its,0); h+='<div class="dh-now"><div class="dh-lbl">Not started</div><div class="dh-item">The Toastmaster starts the run-sheet when the meeting begins.'+(f?'<div class="muted">First: '+esc(fmtHM(f.time))+' '+esc(arole(f.role).n)+(whoForItem(f)?' · '+esc(whoForItem(f)):'')+'</div>':'')+'</div></div>'; }
   var floor=document.querySelector(".floor-controls");
   var choice=floor?.dataset.item===(S.run.cur||"")&&floor.dataset.role===L.role
     ?{role:document.getElementById("handoverTarget")?.value,name:document.getElementById("handoverRecipient")?.value}:null;
-  h+=liveCtlHTML()+handoverHTML(choice);
+  h+=liveRoleCueHTML()+liveCtlHTML()+liveSubstitutionHTML(c)+handoverHTML(choice);
   if(pr.n) h+='<div class="dh-prog"><div class="bar"><i style="width:'+Math.round(pr.done/pr.n*100)+'%"></i></div><span class="saved">'+pr.done+' of '+pr.n+' agenda items</span></div>';
-  h+='</section>';
+  h+='</section>'+liveReportQueueHTML(myRoles().includes("ge"));
   /* timing so far */
   var tparts=[]; SESSIONS.forEach(function(s){ var done=S.rows[s.id].filter(function(r){return rowState(r)==="done";}); if(done.length){ var ok=done.filter(function(r){return status(s.id,r,now()).ok;}).length; tparts.push('<div class="dstat"><b>'+done.length+'</b><span>'+esc(s.name)+'</span><small>'+ok+' within time</small></div>'); } });
   h+='<div class="dgrid">';
@@ -78,14 +79,89 @@ function dashHTML(){
 }
 /* the agenda for everyone, with where the meeting is up to */
 function agendaViewHTML(){
-  var A=S.agenda, c=curItem(), h='<section class="card"><div class="row" style="justify-content:space-between"><h2 class="sec" style="margin:0">📋 Agenda'+(A.no?' · No '+esc(A.no):'')+'</h2><button class="btn" id="agPrint">📄 Print / PDF</button></div>';
-  h+='<div class="saved" style="margin:4px 0 10px">'+esc(fmtDate(S.meta.date)||"")+(A.venue?' · '+esc(A.venue):'')+'</div>'+(A.theme?'<p><b>Meeting theme</b> · '+esc(A.theme)+'</p>':'')+'<div class="agv2">';
-  runItems().forEach(function(it){
-    var who=whoFor(it.role), st=isSkipped(it.id)?"skip":(c.cur&&c.cur.id===it.id)?"cur":(S.run.started&&S.run.started[it.id]!=null)?"done":"";
-    var x=agExtraHTML(it.x,it);
-    h+='<div class="agv2i '+st+'"><div class="agv2t">'+esc(fmtHM(rt(it)))+'</div><div><div class="agv2r">'+esc(arole(it.role).n)+(who?' · <b>'+esc(who)+'</b>':'')+(st==="cur"?' <span class="badge on">Now</span>':st==="skip"?' <span class="badge no">Skipped</span>':'')+'</div><div class="agv2x">'+agActivityHTML(Object.assign({},it,{x:""}))+'</div>'+(x?'<div class="agv2s">'+x+'</div>':'')+'</div></div>';
+  var A=S.agenda, c=curItem(), editable=liveEditableItems(c.its), h='<section class="card"><div class="row" style="justify-content:space-between"><h2 class="sec" style="margin:0">📋 Agenda'+(A.no?' · No '+esc(A.no):'')+'</h2><button class="btn" id="agPrint">📄 Print / PDF</button></div>';
+  h+='<div class="saved" style="margin:4px 0 10px">'+esc(fmtDate(S.meta.date)||"")+(A.venue?' · '+esc(A.venue):'')+'</div>'+(A.theme?'<p><b>Meeting theme</b> · '+esc(A.theme)+'</p>':'')+(editable.length>1?'<p class="saved">Drag future items or use Move earlier and Move later. Times shown are from the plan, with any live time adjustments.</p>':'')+'<div class="agv2">';
+  c.its.forEach(function(it){
+    var who=whoForItem(it), st=isSkipped(it.id)?"skip":(c.cur&&c.cur.id===it.id)?"cur":(S.run.started&&S.run.started[it.id]!=null)?"done":"";
+    var x=it.rowId?esc(liveItemExtra(it)):it.x==="speakers"?"":agExtraHTML(it.x,it);
+    var index=editable.indexOf(it), movable=index>=0&&editable.length>1;
+    h+='<div class="agv2i '+st+'" data-live-item="'+esc(it.id)+'"'+(movable?' data-live-movable':'')+'><div class="agv2t">'+esc(fmtHM(rt(it)))+'</div><div><div class="agv2r">'+esc(arole(it.role).n)+(who?' · <b>'+esc(who)+'</b>':'')+(st==="cur"?' <span class="badge on">Now</span>':st==="skip"?' <span class="badge no">Skipped</span>':'')+'</div><div class="agv2x">'+agActivityHTML(Object.assign({},it,{x:""}))+'</div>'+(x?'<div class="agv2s">'+x+'</div>':'')+(movable?agendaMoveControls(it,index,editable):'')+'</div></div>';
   });
   h+='</div>'+(A.next?'<div class="saved" style="margin-top:10px">Next meeting: '+esc(fmtDate(A.next))+'</div>':'')+'</section>';
   return h;
 }
 
+
+function agendaMoveControls(item,index,editable){
+  var label=whoForItem(item)||String(item.text||"").split(" — ")[0]||arole(item.role).n;
+  return '<div class="row live-move"><span class="live-grip" draggable="true" aria-hidden="true" title="Drag to move">⠿ Drag</span>'+
+    [["earlier",index>0],["later",index<editable.length-1]].map(function(action){
+      return '<button class="btn sm" data-live-move="'+action[0]+'" data-live-id="'+esc(item.id)+'" aria-label="Move '+esc(label)+' '+action[0]+'"'+(action[1]?'':' aria-disabled="true"')+'>Move '+action[0]+'</button>';
+    }).join("")+'</div>';
+}
+(function(){
+  var view=document.getElementById("view"), dragged="", touch=null;
+  function target(event){ return event.target.closest("[data-live-movable]"); }
+  function clearDrop(){
+    view.querySelectorAll(".live-drop-before,.live-drop-after").forEach(function(row){row.classList.remove("live-drop-before","live-drop-after");});
+  }
+  function dropAfter(event,row){
+    var bounds=row.getBoundingClientRect();
+    return event.clientY>=bounds.top+bounds.height/2;
+  }
+  view.addEventListener("dragstart",function(event){
+    var row=target(event);
+    if(!event.target.matches(".live-grip")||!row||!canEditLiveAgenda()) return;
+    dragged=row.dataset.liveItem;
+    event.dataTransfer.setData("text/plain",dragged);
+    event.dataTransfer.effectAllowed="move";
+  });
+  view.addEventListener("dragover",function(event){
+    var row=target(event);
+    if(!dragged) return;
+    clearDrop();
+    if(!row||row.dataset.liveItem===dragged) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect="move";
+    row.classList.add(dropAfter(event,row)?"live-drop-after":"live-drop-before");
+  });
+  view.addEventListener("drop",function(event){
+    var row=target(event), id=dragged;
+    dragged=""; clearDrop();
+    if(!id||!row) return;
+    event.preventDefault();
+    if(reorderLiveItem(id,row.dataset.liveItem,dropAfter(event,row))) showToastMsg("Running order updated");
+  });
+  view.addEventListener("dragend",function(){ dragged=""; clearDrop(); });
+  view.addEventListener("pointerdown",function(event){
+    var row=target(event);
+    if(event.pointerType!=="touch"||!event.isPrimary||!event.target.matches(".live-grip")||!row||!canEditLiveAgenda()) return;
+    touch={pointer:event.pointerId,id:row.dataset.liveItem,startY:event.clientY};
+    event.target.setPointerCapture(event.pointerId);
+  });
+  view.addEventListener("pointermove",function(event){
+    if(touch?.pointer!==event.pointerId) return;
+    clearDrop();
+    if(Math.abs(event.clientY-touch.startY)<8) return;
+    var row=document.elementFromPoint(event.clientX,event.clientY)?.closest("[data-live-movable]");
+    if(row&&row.dataset.liveItem!==touch.id) row.classList.add(dropAfter(event,row)?"live-drop-after":"live-drop-before");
+  });
+  view.addEventListener("pointerup",function(event){
+    if(touch?.pointer!==event.pointerId) return;
+    var move=touch; touch=null; clearDrop();
+    if(Math.abs(event.clientY-move.startY)<8) return;
+    var row=document.elementFromPoint(event.clientX,event.clientY)?.closest("[data-live-movable]");
+    if(row&&reorderLiveItem(move.id,row.dataset.liveItem,dropAfter(event,row))) showToastMsg("Running order updated");
+  });
+  view.addEventListener("lostpointercapture",function(event){
+    if(touch?.pointer===event.pointerId){ touch=null; clearDrop(); }
+  });
+  view.addEventListener("click",function(event){
+    var button=event.target.closest("[data-live-move]");
+    if(!button||button.getAttribute("aria-disabled")==="true") return;
+    var items=liveEditableItems(runItems()), id=button.dataset.liveId, after=button.dataset.liveMove==="later";
+    var index=items.findIndex(function(it){return it.id===id;});
+    var adjacent=index<0?null:items[index+(after?1:-1)];
+    if(adjacent&&reorderLiveItem(id,adjacent.id,after)) showToastMsg("Running order updated");
+  });
+})();

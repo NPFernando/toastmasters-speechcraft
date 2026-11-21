@@ -1,29 +1,60 @@
-/* ---------- 1. "You're up next" nudges ---------- */
-/* which agenda items concern this device's person/roles */
-function itemIsMine(it){
-  if(!it) return false;
-  var names=myNameKeys(), rs=myRoles(), inList=function(k){ return asList(k).some(function(n){return names.indexOf(nkey(n))>=0;}); };
-  if(rs.indexOf(it.role)>=0 && it.role!=="coord" || (it.role==="coord"&&rs.indexOf("coord")>=0)) return true;
-  if(inList(it.role)) return true;
-  if(it.x==="speakers" && (inList("speakers")||rs.indexOf("speaker")>=0&&inList("speakers"))) return true;
-  if(it.x==="keynote" && inList("keynote")) return true;
-  if(it.x==="ttevals" && inList("ttevals")) return true;
-  if(it.x==="evals" && (inList("sevals")||inList("ttevals")||["timer","ah","gram"].some(function(r){ return rs.indexOf(r)>=0; }))) return true;
-  return false;
+/* Match the agenda assignment to the signed-in participant before showing a turn cue. */
+function liveItemRole(it){
+  if(!it) return "";
+  return it.rowId?"speaker":it.role;
 }
-function itemLabel(it){ var w=whoFor(it.role); return arole(it.role).n+(w?" ("+w+")":"")+(it.text?" — "+String(it.text).split(" — ")[0].split(". ")[0]:""); }
+function itemIsMine(it){
+  var role=liveItemRole(it);
+  if(!roleObj(role)) return false;
+  var me=nkey(L.me||myName()), names=it.rowId||role==="keynote"?[whoForItem(it)]:asList(role);
+  if(names.some(Boolean)) return names.some(function(name){return nkey(name)===me;});
+  return myRoles().includes(role);
+}
+function itemLabel(it){ var w=whoForItem(it); return arole(it.role).n+(w?" ("+w+")":"")+(it.text?" — "+String(it.text).split(" — ")[0].split(". ")[0]:""); }
+function liveRoleStatus(role){
+  var c=curItem();
+  if(!c.cur) return "";
+  if(liveItemRole(c.cur)===role&&itemIsMine(c.cur)) return "On now";
+  if(liveItemRole(c.next)===role&&itemIsMine(c.next)) return "Up next";
+  if(reportQueue().some(function(entry){return entry.role===role&&isMyLiveReport(entry)&&liveReportState(entry)==="called";})) return "Action needed";
+  return "";
+}
+function liveRoleCueHTML(){
+  var c=curItem();
+  if(!c.cur) return "";
+  var item=itemIsMine(c.cur)?c.cur:itemIsMine(c.next)?c.next:null;
+  if(!item) return "";
+  var role=liveItemRole(item), details=liveItemExtra(item);
+  var row=item.rowId?findRow("ps",item.rowId):item.role==="keynote"?presentationRow(item.id):null;
+  if(row) details=[details,limitsLine("ps",row)].filter(Boolean).join(" · ");
+  return '<div class="note live-role-cue"><b>'+(item===c.cur?"You’re on now":"You’re up next")+'</b> · '+esc(roleName(role))+
+    (item.rowId?' · '+esc(item.text):'')+(details?'<div>'+esc(details)+'</div>':'')+
+    '<button class="btn sm" data-live-open-role="'+role+'">Open my role</button></div>';
+}
 var lastNudge="";
 function checkNudge(){
-  if(!S.run||!S.run.cur||L.role==="tmod") return;
-  var c=curItem(); if(!c.cur) return;
-  var key=c.cur.id+"|"+(c.next?c.next.id:"");
-  if(key===lastNudge) return; var first=!lastNudge; lastNudge=key; if(first) return;
-  var msg="", buzzP=null;
-  if(itemIsMine(c.cur)){ msg="🎤 You're on now: "+itemLabel(c.cur); buzzP=[300,120,300]; }
-  else if(c.next&&itemIsMine(c.next)){ var mins=hm2min(rt(c.next)), cm=hm2min(rt(c.cur)); msg="⏭ You're up next: "+itemLabel(c.next)+(mins!=null&&cm!=null&&mins>cm?" (about "+(mins-cm)+" min)":""); buzzP=[120,80,120]; }
-  if(!msg) return;
-  try{ if(navigator.vibrate&&buzzP) navigator.vibrate(buzzP); }catch(e){}
-  var el=document.getElementById("nudge"); if(el){ el.textContent=msg; el.classList.add("on"); clearTimeout(el._t); el._t=setTimeout(function(){ el.classList.remove("on"); },15000); }
+  var c=curItem();
+  if(!c.cur){ lastNudge=""; return; }
+  var key=JSON.stringify([S.mid,c.cur.id,c.next?.id,whoForItem(c.cur),c.next&&whoForItem(c.next)]);
+  if(key===lastNudge) return;
+  lastNudge=key;
+  var item=itemIsMine(c.cur)?c.cur:itemIsMine(c.next)?c.next:null, el=document.getElementById("nudge");
+  clearTimeout(el._t);
+  if(!item||!L.setup){ el.classList.remove("on"); return; }
+  var role=liveItemRole(item);
+  el.innerHTML=esc((item===c.cur?"You’re on now: ":"You’re up next: ")+itemLabel(item))+
+    ' <button class="btn sm" data-live-open-role="'+role+'">Open my role</button>';
+  el.classList.add("on");
+  el._t=setTimeout(function(){ el.classList.remove("on"); },15000);
 }
 setInterval(checkNudge,1000);
-
+document.getElementById("app").addEventListener("click",function(e){
+  var action=e.target.closest("[data-live-open-role]");
+  if(!action) return;
+  var role=action.dataset.liveOpenRole;
+  if(!roleObj(role)||(!myRoles().includes(role)&&!agendaRolesFor(L.me||myName()).includes(role))) return;
+  if(!myRoles().includes(role)) saveRoleChoices([role],true);
+  if(role==="keynote"){ var c=curItem(); var item=c.cur?.role===role&&itemIsMine(c.cur)?c.cur:c.next; if(item?.role===role) workflowDraft().keynoteItem=item.id; }
+  document.getElementById("nudge").classList.remove("on");
+  switchRole(role);
+});

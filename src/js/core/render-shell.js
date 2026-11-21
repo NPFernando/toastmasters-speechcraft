@@ -61,6 +61,10 @@ function renderAll(){
     if(draftPanel&&nextDraftPanel) nextDraftPanel.open=draftPanel.open;
     restoreDeviceForms();
   }
+  if(curView()==="role"){
+    var roleActions=(L.role==="ge"&&!inFocus()?"":liveReportQueueHTML(false))+liveRoleCueHTML();
+    if(roleActions) v.insertAdjacentHTML("afterbegin",roleActions);
+  }
   if(curView()!=="now" && (curView()!=="role" || L.role!=="gram" || inFocus()) && S.gram.wotd){
     v.insertAdjacentHTML("afterbegin",'<section class="card" id="publishedWord"><h2 class="sec" style="margin-top:0">📝 Word of the Day · '+esc(S.gram.wotd)+'</h2>'+wordOfDayDetailsHTML()+'</section>');
   }
@@ -130,7 +134,7 @@ function nextAgendaTiming(){
     if(isSkipped(item.id)) continue;
     var sid, row;
     if(item.role==="keynote"){ sid="ps"; row=presentationRow(item.id); }
-    else if(item.x==="speakers"){ sid="ps"; row=queuedPreparedRows()[0]; }
+    else if(item.rowId){ sid="ps"; row=findRow(sid,item.rowId); }
     else if(item.role==="rrm"){ sid="rr"; row=firstQueued(sid); }
     else if(item.role==="ttm"){ sid="tt"; row=firstQueued(sid); }
     else if(item.x==="evals"){
