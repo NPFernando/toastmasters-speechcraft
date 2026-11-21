@@ -185,7 +185,7 @@ body.dialog-open #app{isolation:isolate}
 
 /* More options disclosure */
 .moremenu{width:380px;z-index:48;padding:10px}
-.morehead{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 8px 8px}
+.morehead{padding:4px 8px 8px}
 .morehead h2{font-size:1rem;margin:0}
 .moregroup,.moremenu .mset{border-top:1px solid var(--line);padding:8px 0 4px;margin:0}
 .moregroup h3,.moremenu .mset h3{color:var(--muted);font-size:.82rem;margin:0;padding:0 12px 4px}

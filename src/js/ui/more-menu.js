@@ -12,7 +12,6 @@
     else if(wasOpen&&restore) (layout.matches?mobile:b)?.focus();
   }
   b.addEventListener("click",function(){ setOpen(!isOpen(),true); });
-  document.getElementById("moreClose").addEventListener("click",function(){ setOpen(false,true); });
   m.addEventListener("click",function(e){
     if(e.target.closest("#mset")||!e.target.closest(".mi")) return;
     setTimeout(function(){ setOpen(false,m.contains(document.activeElement)); },0);

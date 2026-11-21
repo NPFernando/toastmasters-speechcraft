@@ -45,7 +45,7 @@ module.exports = async (b) => {
     ["Meeting", "Meeting records", "Help and practice", "App and device", "Display This device"]);
   T.assert.strictEqual(await phone.locator("#installBtn").isVisible(), false);
   await phone.keyboard.press("Tab");
-  T.assert.strictEqual(await phone.evaluate(() => document.activeElement.id), "moreClose");
+  T.assert.strictEqual(await phone.evaluate(() => document.activeElement.id), "homeMi");
   await phone.keyboard.press("Escape");
   T.assert.strictEqual(await phone.evaluate(() => document.activeElement.dataset.nav), "more");
 
