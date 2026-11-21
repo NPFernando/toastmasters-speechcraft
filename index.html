@@ -662,7 +662,7 @@ body.dialog-open #app{isolation:isolate}
 
 /* More options disclosure */
 .moremenu{width:380px;z-index:48;padding:10px}
-.morehead{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 8px 8px}
+.morehead{padding:4px 8px 8px}
 .morehead h2{font-size:1rem;margin:0}
 .moregroup,.moremenu .mset{border-top:1px solid var(--line);padding:8px 0 4px;margin:0}
 .moregroup h3,.moremenu .mset h3{color:var(--muted);font-size:.82rem;margin:0;padding:0 12px 4px}
@@ -701,7 +701,7 @@ body.dialog-open #app{isolation:isolate}
       <button class="btn ghost" id="homeBtn" title="Back to the start screen: choose your role and meeting">🏠 Home</button>
       <div class="morewrap"><button class="btn ghost" id="moreBtn" aria-controls="moreMenu" aria-expanded="false">⋯ More</button>
         <div class="moremenu" id="moreMenu" role="group" aria-labelledby="moreTitle">
-          <div class="morehead"><h2 id="moreTitle" tabindex="-1">More options</h2><button class="btn sm" id="moreClose">Close</button></div>
+          <div class="morehead"><h2 id="moreTitle" tabindex="-1">More options</h2></div>
           <section class="moregroup" aria-labelledby="moreMeeting">
             <h3 id="moreMeeting">Meeting</h3>
             <button class="mi mobonly" id="homeMi">🏠 Home<small>Change your role or meeting</small></button>
@@ -5714,7 +5714,6 @@ applyDisplay();
     else if(wasOpen&&restore) (layout.matches?mobile:b)?.focus();
   }
   b.addEventListener("click",function(){ setOpen(!isOpen(),true); });
-  document.getElementById("moreClose").addEventListener("click",function(){ setOpen(false,true); });
   m.addEventListener("click",function(e){
     if(e.target.closest("#mset")||!e.target.closest(".mi")) return;
     setTimeout(function(){ setOpen(false,m.contains(document.activeElement)); },0);
