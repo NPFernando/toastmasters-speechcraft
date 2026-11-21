@@ -102,7 +102,7 @@ function handoverHTML(choice){
  if(!roles.some(function(r){return r.id===target;})) target=roles[0].id;
  var outgoing=S.handovers.filter(function(x){return x.fromRole===L.role&&nkey(x.by)===nkey(from);}).sort(function(a,b){return b.ord-a.ord;});
  var pending=outgoing.find(function(x){return x.state==="pending";}), last=pending||outgoing[0];
- var h='<div class="floor-controls">';
+ var h='<div class="floor-controls" data-item="'+esc(S.run.cur||"")+'" data-role="'+esc(L.role)+'">';
  if(last){
    var recipient=last.toName||roleName(last.toRole);
    var message=last.state==="pending"?"Waiting for "+recipient+" to accept the floor.":last.state==="accepted"?(last.acceptedBy||recipient)+" accepted the floor.":"Handover to "+recipient+" cancelled.";

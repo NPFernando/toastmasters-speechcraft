@@ -58,7 +58,10 @@ function dashHTML(){
     if(c.next){ var wn=whoFor(c.next.role); h+='<div class="dh-next"><div class="dh-lbl">Next</div><div class="dh-item"><b>'+esc(fmtHM(rt(c.next)))+'</b> '+esc(arole(c.next.role).n)+(wn?' · '+esc(wn):'')+'</div></div>'; }
     if(ss.txt) h+='<div class="'+ss.cls+'" style="margin-top:6px;font-weight:700">'+ss.txt+'</div>';
   } else { var f=runItems()[0]; h+='<div class="dh-now"><div class="dh-lbl">Not started</div><div class="dh-item">The Toastmaster starts the run-sheet when the meeting begins.'+(f?'<div class="muted">First: '+esc(fmtHM(f.time))+' '+esc(arole(f.role).n)+(whoFor(f.role)?' · '+esc(whoFor(f.role)):'')+'</div>':'')+'</div></div>'; }
-  h+=liveCtlHTML()+handoverHTML({role:document.getElementById("handoverTarget")?.value,name:document.getElementById("handoverRecipient")?.value});
+  var floor=document.querySelector(".floor-controls");
+  var choice=floor?.dataset.item===(S.run.cur||"")&&floor.dataset.role===L.role
+    ?{role:document.getElementById("handoverTarget")?.value,name:document.getElementById("handoverRecipient")?.value}:null;
+  h+=liveCtlHTML()+handoverHTML(choice);
   if(pr.n) h+='<div class="dh-prog"><div class="bar"><i style="width:'+Math.round(pr.done/pr.n*100)+'%"></i></div><span class="saved">'+pr.done+' of '+pr.n+' agenda items</span></div>';
   h+='</section>';
   /* timing so far */
